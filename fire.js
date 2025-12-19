@@ -1,11 +1,11 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyB2JTBAGNR64d_yRN4g8q9d1GpMfiiHxkE",
-  authDomain: "kcardentry.firebaseapp.com",
-  projectId: "kcardentry",
-  storageBucket: "kcardentry.firebasestorage.app",
-  messagingSenderId: "897372470233",
-  appId: "1:897372470233:web:e672fc3683b4985b7b37c8",
-  measurementId: "G-B2D7VLDT9X"
+   apiKey: "AIzaSyDojmglqNlJmwgKYe0UcEcrElLV45SK9As",
+  authDomain: "cardsystem-21773.firebaseapp.com",
+  projectId: "cardsystem-21773",
+  storageBucket: "cardsystem-21773.firebasestorage.app",
+  messagingSenderId: "408973003834",
+  appId: "1:408973003834:web:96db400ec750fb62dab903",
+  measurementId: "G-6QX2WLEBTP"
 };
 
 firebase.initializeApp(firebaseConfig);
