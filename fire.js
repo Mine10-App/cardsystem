@@ -1,4 +1,4 @@
-var firebaseConfigCard = {
+const firebaseConfig = {
   apiKey: "AIzaSyB2JTBAGNR64d_yRN4g8q9d1GpMfiiHxkE",
   authDomain: "kcardentry.firebaseapp.com",
   projectId: "kcardentry",
@@ -8,6 +8,6 @@ var firebaseConfigCard = {
   measurementId: "G-B2D7VLDT9X"
 };
 
-firebase.initializeApp(firebaseConfigCard);
-
-var db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+window.db = db; // important!
