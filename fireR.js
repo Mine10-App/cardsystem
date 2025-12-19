@@ -1,11 +1,11 @@
 const firebaseConfig = {
-  apiKey: "AIzaSyD4TFX53rGaZAzvZYWvHKpeDZljZNJS-Wg",
-  authDomain: "atten-14f76.firebaseapp.com",
-  projectId: "atten-14f76",
-  storageBucket: "atten-14f76.firebasestorage.app",
-  messagingSenderId: "1074869564190",
-  appId: "1:1074869564190:web:eb5aa41259eab048ea8f0f",
-  measurementId: "G-F3WGD68VC3"
+    apiKey: "AIzaSyDojmglqNlJmwgKYe0UcEcrElLV45SK9As",
+  authDomain: "cardsystem-21773.firebaseapp.com",
+  projectId: "cardsystem-21773",
+  storageBucket: "cardsystem-21773.firebasestorage.app",
+  messagingSenderId: "408973003834",
+  appId: "1:408973003834:web:96db400ec750fb62dab903",
+  measurementId: "G-6QX2WLEBTP"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
