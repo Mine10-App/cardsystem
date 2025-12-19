@@ -869,6 +869,7 @@
 <!-- Shift System Firebase Configuration -->
 <script src="./fireshift.js"></script>
 <script>
+
 // ----- Airlines dropdown -----
 const airlines = {
   'EK':'Emirates','FZ':'Flydubai','BA':'British Airways','EY':'Etihad',
@@ -882,7 +883,15 @@ const airlines = {
   'JD':'Capital Airlines', 'J2':'Azerbaijan Airlines', 'VO':'Voyages Maldives', 'WK':'Edelweiss','DE':'Condor','NO':'Neos','4Y':'Discover Airlines',
   // Add more airlines for FQTV detection
   'JL':'Japan Airlines', 'QF':'Qantas Airways', 'CX':'Cathay Pacific', 'AA':'American Airlines',
-  'LA':'LATAM Airlines', 'AY':'Finnair', 'IB':'Iberia', 'QR':'Qatar Airways'
+  'LA':'LATAM Airlines', 'AY':'Finnair', 'IB':'Iberia', 'QR':'Qatar Airways',
+  // Added for better FQTV detection
+  'LX':'Swiss International Air Lines', 'LH':'Lufthansa', 'AC':'Air Canada', 'NH':'All Nippon Airways',
+  'BR':'EVA Air', 'CI':'China Airlines', 'NZ':'Air New Zealand', 'VA':'Virgin Australia',
+  'AF':'Air France', 'KL':'KLM', 'DL':'Delta Air Lines', 'UA':'United Airlines',
+  'B6':'JetBlue', 'WN':'Southwest Airlines', 'WS':'WestJet', 'AS':'Alaska Airlines',
+  'F9':'Frontier Airlines', 'G4':'Allegiant Air', 'NK':'Spirit Airlines', 'SY':'Sun Country Airlines',
+  '9W':'Jet Airways', 'ET':'Ethiopian Airlines', 'KE':'Korean Air', 'OZ':'Asiana Airlines',
+  'PR':'Philippine Airlines', 'TG':'Thai Airways'
 };
 
 // ----- FQTV Tier Level Mappings -----
@@ -2131,19 +2140,39 @@ function approveEntry(index) {
       return;
     }
     
-    // ----- Process FQTV with tier level -----
+    // ----- Process FQTV with tier level (FIXED VERSION) -----
     let processedFqtv = '';
     if (entry.fqtv && entry.fqtv.trim() !== '') {
-      const fqtvValue = entry.fqtv.trim();
+      let fqtvValue = entry.fqtv.trim();
       
-      const baseFqtv = fqtvValue.replace(/\/\s*(Platinum|Gold|Silver|Emerald|Sapphire|Ruby|G|S|GOLD|SILVER|PLATINUM)\s*$/i, '').trim();
+      // Check if FQTV already has a tier level (ends with /Sapphire, /Gold, etc.)
+      const tierMatch = fqtvValue.match(/\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S)$/i);
+      const hasTier = tierMatch !== null;
       
-      const tierLevel = processFqtvTier(baseFqtv, entry.flight);
+      console.log('FQTV Processing Debug - Input:', {
+        input: fqtvValue,
+        hasTier: hasTier,
+        tierFound: tierMatch ? tierMatch[0] : 'none'
+      });
       
-      if (tierLevel) {
-        processedFqtv = `${baseFqtv}/${tierLevel}`;
+      if (hasTier) {
+        // Keep the tier if it's already there
+        processedFqtv = fqtvValue;
+        console.log('FQTV Processing: Keeping existing tier:', processedFqtv);
       } else {
-        processedFqtv = baseFqtv;
+        // Only remove non-standard tier suffixes if we're going to add the proper one
+        fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
+        fqtvValue = fqtvValue.replace(/\/[Nn][123]\s*$/, '').trim();
+        
+        const tierLevel = processFqtvTier(fqtvValue, entry.flight);
+        
+        if (tierLevel) {
+          processedFqtv = `${fqtvValue}/${tierLevel}`;
+          console.log('FQTV Processing: Added tier level:', processedFqtv);
+        } else {
+          processedFqtv = fqtvValue;
+          console.log('FQTV Processing: No tier level applied:', processedFqtv);
+        }
       }
     }
 
@@ -2173,7 +2202,7 @@ function approveEntry(index) {
       approvedEntry.date = parseDateToYYYYMMDD(approvedEntry.date);
     }
     
-    console.log("Approved entry with date:", approvedEntry.date); // Debug log
+    console.log("Approved entry with date:", approvedEntry.date, "FQTV:", approvedEntry.fqtv);
 
     // 2. CREATE DOCUMENT NAME
     let docName;
@@ -2323,97 +2352,109 @@ function parseCode(){
     }
   }
 
+  // ----- IMPROVED FQTV DETECTION -----
   let fqtv = null;
   let fqtvTierCode = '';
   let hasNoFqtv = false;
-  
-  // Get ALL airline codes from the airlines object
-  const allAirlineCodes = Object.keys(airlines);
-  
-  // Define tier names to look for (with Y prefix and without)
+
+  // Get ALL possible airline codes (including codes that might not be in airlines dropdown)
+  const allPossibleAirlineCodes = [
+    // From airlines object
+    ...Object.keys(airlines),
+    // Additional known airline codes
+    'LX', 'LH', 'AC', 'NH', 'BR', 'CI', 'NZ', 'VA', 'AF', 'KL', 'DL', 'UA', 'B6', 'WN',
+    'WS', 'AS', 'F9', 'G4', 'NK', 'SY', '9W', 'AI', 'ET', 'KE', 'OZ', 'PR', 'TG'
+  ];
+
+  // Define tier names to look for
   const tierNames = ['SAPPHIRE', 'EMERALD', 'RUBY', 'PLATINUM', 'GOLD', 'SILVER'];
-  
-  console.log("DEBUG: All airline codes:", allAirlineCodes);
-  
-  // SIMPLE FQTV DETECTION: Scan forward through parts
+
+  console.log("DEBUG: Parsing barcode for FQTV...");
+
+  // Look for airline code + number pattern ANYWHERE in the barcode
   for (let i = 0; i < parts.length; i++) {
     const currentToken = parts[i].toUpperCase();
     
-    // Check if token is an airline code
-    if (allAirlineCodes.includes(currentToken)) {
-      console.log(`DEBUG: Found airline code "${currentToken}" at position ${i}`);
-      
-      // Check if next token exists and is a number
-      if (i + 1 < parts.length) {
-        const nextToken = parts[i + 1];
-        console.log(`DEBUG: Next token after "${currentToken}": "${nextToken}"`);
-        
-        // Check if next token is a number (FQTV number)
-        if (/^\d+$/.test(nextToken)) {
-          fqtv = currentToken + ' ' + nextToken;
-          console.log(`DEBUG: FOUND FQTV: ${fqtv}`);
+    console.log(`DEBUG: Token ${i}: "${currentToken}"`);
+    
+    // Check if token contains airline code followed by numbers
+    for (const airlineCode of allPossibleAirlineCodes) {
+      // Pattern 1: Token is exactly airline code (check next token for number)
+      if (currentToken === airlineCode) {
+        if (i + 1 < parts.length) {
+          const nextToken = parts[i + 1];
+          console.log(`DEBUG: Found airline code "${airlineCode}", next token: "${nextToken}"`);
           
-          // Check for tier name in the token after the number
-          if (i + 2 < parts.length) {
-            const tierToken = parts[i + 2].toUpperCase();
-            console.log(`DEBUG: Tier token: "${tierToken}"`);
+          // Check if next token is a number (FQTV number)
+          if (/^\d+$/.test(nextToken)) {
+            fqtv = airlineCode + ' ' + nextToken;
+            console.log(`✅ FOUND FQTV: ${fqtv}`);
             
-            // Check for tier names (including Y prefix like YSAPPHIRE)
-            if (tierToken.includes('SAPPHIRE')) {
-              fqtvTierCode = 'n2';
-              console.log('DEBUG: Found Sapphire tier');
-            } else if (tierToken.includes('EMERALD')) {
-              fqtvTierCode = 'n3';
-              console.log('DEBUG: Found Emerald tier');
-            } else if (tierToken.includes('RUBY')) {
-              fqtvTierCode = 'n1';
-              console.log('DEBUG: Found Ruby tier');
-            } else if (tierToken.includes('PLATINUM')) {
-              fqtvTierCode = 'n3';
-              console.log('DEBUG: Found Platinum tier');
-            } else if (tierToken.includes('GOLD')) {
-              fqtvTierCode = 'n2';
-              console.log('DEBUG: Found Gold tier');
-            } else if (tierToken.includes('SILVER')) {
-              fqtvTierCode = 'n1';
-              console.log('DEBUG: Found Silver tier');
-            } else if (tierToken === 'N0') {
-              hasNoFqtv = true;
-              fqtv = '';
-              console.log('DEBUG: Found N0 (no FQTV)');
-            } else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') {
-              fqtvTierCode = tierToken.toLowerCase();
-              console.log(`DEBUG: Found N-tier: ${tierToken}`);
+            // Check for tier level in following tokens
+            for (let j = i + 2; j < parts.length && j < i + 5; j++) {
+              const tierToken = parts[j].toUpperCase();
+              if (tierToken.includes('SAPPHIRE')) {
+                fqtvTierCode = 'n2';
+              } else if (tierToken.includes('EMERALD')) {
+                fqtvTierCode = 'n3';
+              } else if (tierToken.includes('RUBY')) {
+                fqtvTierCode = 'n1';
+              } else if (tierToken.includes('PLATINUM')) {
+                fqtvTierCode = 'n3';
+              } else if (tierToken.includes('GOLD')) {
+                fqtvTierCode = 'n2';
+              } else if (tierToken.includes('SILVER')) {
+                fqtvTierCode = 'n1';
+              } else if (tierToken === 'N0') {
+                hasNoFqtv = true;
+                fqtv = '';
+              } else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') {
+                fqtvTierCode = tierToken.toLowerCase();
+              }
             }
+            break;
+          }
+        }
+      }
+      
+      // Pattern 2: Token starts with airline code and continues with numbers
+      if (currentToken.startsWith(airlineCode) && currentToken.length > airlineCode.length) {
+        const remainder = currentToken.substring(airlineCode.length);
+        if (/^\d+$/.test(remainder)) {
+          fqtv = airlineCode + ' ' + remainder;
+          console.log(`✅ FOUND FQTV (combined): ${fqtv}`);
+          
+          // Check for tier level in next tokens
+          for (let j = i + 1; j < parts.length && j < i + 4; j++) {
+            const tierToken = parts[j].toUpperCase();
+            if (tierToken.includes('SAPPHIRE')) fqtvTierCode = 'n2';
+            else if (tierToken.includes('EMERALD')) fqtvTierCode = 'n3';
+            else if (tierToken.includes('RUBY')) fqtvTierCode = 'n1';
+            else if (tierToken.includes('PLATINUM')) fqtvTierCode = 'n3';
+            else if (tierToken.includes('GOLD')) fqtvTierCode = 'n2';
+            else if (tierToken.includes('SILVER')) fqtvTierCode = 'n1';
+            else if (tierToken === 'N0') { hasNoFqtv = true; fqtv = ''; }
+            else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') fqtvTierCode = tierToken.toLowerCase();
           }
           break;
         }
       }
     }
     
-    // Also check for combined airline+number pattern (e.g., JL206645985)
-    for (const airlineCode of allAirlineCodes) {
-      if (currentToken.startsWith(airlineCode) && currentToken.length > 2 && /^\d+$/.test(currentToken.substring(2))) {
-        fqtv = airlineCode + ' ' + currentToken.substring(2);
-        console.log(`DEBUG: Found combined FQTV: ${fqtv}`);
-        
-        // Check for tier in next token
-        if (i + 1 < parts.length) {
-          const tierToken = parts[i + 1].toUpperCase();
-          // Same tier detection logic as above
-          if (tierToken.includes('SAPPHIRE')) fqtvTierCode = 'n2';
-          else if (tierToken.includes('EMERALD')) fqtvTierCode = 'n3';
-          else if (tierToken.includes('RUBY')) fqtvTierCode = 'n1';
-          else if (tierToken.includes('PLATINUM')) fqtvTierCode = 'n3';
-          else if (tierToken.includes('GOLD')) fqtvTierCode = 'n2';
-          else if (tierToken.includes('SILVER')) fqtvTierCode = 'n1';
-          else if (tierToken === 'N0') { hasNoFqtv = true; fqtv = ''; }
-          else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') fqtvTierCode = tierToken.toLowerCase();
-        }
+    if (fqtv) break;
+  }
+
+  // Pattern 3: Check for specific barcode patterns with LX/LH
+  if (!fqtv && !hasNoFqtv) {
+    // Look for LX/LH pattern specifically
+    for (let i = 0; i < parts.length - 2; i++) {
+      if ((parts[i] === 'LX' || parts[i] === 'LH') && 
+          /^\d+$/.test(parts[i + 1])) {
+        fqtv = parts[i] + ' ' + parts[i + 1];
+        console.log(`✅ FOUND FQTV (LX/LH pattern): ${fqtv}`);
         break;
       }
     }
-    if (fqtv) break;
   }
 
   // Apply formatting
@@ -2427,7 +2468,7 @@ function parseCode(){
       const airlineCode = fqtv.substring(0, 2).toUpperCase();
       
       // Check if it's a valid airline code
-      if (allAirlineCodes.includes(airlineCode)) {
+      if (allPossibleAirlineCodes.includes(airlineCode)) {
         // Replace space with dash: "JL 206645985" -> "JL-206645985"
         fqtv = fqtv.replace(/^([A-Z0-9]{2})\s+/, '$1-');
       }
@@ -2466,9 +2507,14 @@ function parseCode(){
       
       if (tierName) {
         // Remove any trailing tier code or tier name before adding the standard tier name
-        fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER)\s*$/i, '');
-        fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
-        fqtv = `${fqtv}/${tierName}`;
+        // But only remove if it's not already in standard format
+        const standardTierRegex = /\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver)$/i;
+        if (!standardTierRegex.test(fqtv)) {
+          fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
+          fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
+          fqtv = `${fqtv}/${tierName}`;
+        }
+        console.log('DEBUG: Final FQTV with tier:', fqtv);
       }
     }
   }
@@ -2728,6 +2774,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
   renderEntries();
 });
+
 </script>
 </body>
 </html>
