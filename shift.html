@@ -466,6 +466,9 @@ let shiftData = {
 // Track if any shift is open globally
 let isAnyShiftOpen = false;
 
+// Track if data needs to be saved to Firebase
+let needsFirebaseSave = false;
+
 // ==================== DOM ELEMENTS ====================
 const currentDateEl = document.getElementById('current-date');
 const currentYearEl = document.getElementById('current-year');
@@ -530,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (firebaseInitialized) {
         // Check if any shift is open globally
         await checkForOpenShifts();
-        // Load shift data for today
+        // Load shift data for today (READ ONLY - no save)
         await loadShiftData();
     } else {
         showMessage("Using local storage mode", "info");
@@ -582,13 +585,13 @@ function formatDateForDocument(date) {
 function changeDate(days) {
     currentDate.setDate(currentDate.getDate() + days);
     updateDateDisplay();
-    loadShiftData();
+    loadShiftData(); // READ ONLY - no save
 }
 
 function goToToday() {
     currentDate = new Date();
     updateDateDisplay();
-    loadShiftData();
+    loadShiftData(); // READ ONLY - no save
 }
 
 function updateDateDisplay() {
@@ -611,7 +614,7 @@ async function startNewDay() {
         lastUpdated: new Date().toISOString()
     };
     
-    // Save to Firebase
+    // Save to Firebase (New Day button requires save)
     await saveShiftData();
     showMessage(`New golden day started for ${formatDate(currentDate)}!`, "success");
 }
@@ -719,9 +722,9 @@ async function loadShiftData() {
         const doc = await docRef.get();
         
         if (doc.exists) {
-            // Load existing data
+            // Load existing data (READ ONLY)
             shiftData = doc.data();
-            console.log("Loaded existing shift data:", shiftData);
+            console.log("Loaded existing shift data (read only):", shiftData);
             
             // Check if this shift is open
             if (shiftData.morning.status === 'open' || shiftData.evening.status === 'open') {
@@ -730,7 +733,7 @@ async function loadShiftData() {
             
             showMessage(`Shift data loaded for ${dateString}`, "success");
         } else {
-            // Auto-create new day document if it doesn't exist
+            // Create local copy only - NO Firebase save
             shiftData = {
                 date: dateString,
                 morning: { open: null, close: null, status: 'not_started' },
@@ -738,9 +741,8 @@ async function loadShiftData() {
                 lastUpdated: new Date().toISOString()
             };
             
-            // Auto-save the initial document
-            await saveShiftData();
-            console.log("Auto-created new day document");
+            console.log("Created local shift data (not saved to Firebase)");
+            showMessage(`No shift data found for ${dateString}. Use "New Day" to create.`, "info");
         }
         
         // Update UI with loaded data
@@ -761,12 +763,16 @@ async function saveShiftData() {
         const docRef = db.collection('shifts').doc(docId);
         await docRef.set(shiftData);
         
-        console.log("Shift data saved successfully!");
+        console.log("Shift data saved successfully to Firebase!");
+        showMessage("Shift data saved to Firebase", "success");
+        
+        // Update UI after save
         updateUI();
         
     } catch (error) {
         console.error("Error saving shift data:", error);
-        showMessage("Error saving shift data.", "error");
+        showMessage("Error saving shift data to Firebase.", "error");
+        throw error; // Re-throw so calling functions know save failed
     }
 }
 
@@ -788,24 +794,6 @@ async function openShift(shiftType) {
         // Delete yesterday's data if all shifts are closed
         await deleteYesterdaysData();
         
-        // Auto-create today's document if needed
-        const dateString = formatDate(currentDate);
-        const docId = `shift_${formatDateForDocument(currentDate)}`;
-        
-        const docRef = db.collection('shifts').doc(docId);
-        const doc = await docRef.get();
-        
-        if (!doc.exists) {
-            // Auto-create document with default values
-            shiftData = {
-                date: dateString,
-                morning: { open: null, close: null, status: 'not_started' },
-                evening: { open: null, close: null, status: 'not_available' },
-                lastUpdated: new Date().toISOString()
-            };
-        }
-        
-        // Open the shift
         const now = new Date();
         const timeString = now.toLocaleTimeString('en-US', { 
             hour12: true, 
@@ -814,6 +802,7 @@ async function openShift(shiftType) {
             second: '2-digit'
         });
         
+        // Update shift data
         shiftData[shiftType].open = timeString;
         shiftData[shiftType].status = 'open';
         isAnyShiftOpen = true;
@@ -829,17 +818,19 @@ async function openShift(shiftType) {
             }
         }
         
-        // Save the changes
+        // Update last updated timestamp
         shiftData.lastUpdated = new Date().toISOString();
-        await docRef.set(shiftData);
         
-        // Update UI and show success
+        // SAVE TO FIREBASE (Open button requires save)
+        await saveShiftData();
+        
+        // Update UI
         updateUI();
         
         if (shiftType === 'morning') {
-            showMessage(`🌅 Morning Shift opened!`, "success");
+            showMessage(`🌅 Morning Shift opened and saved to Firebase!`, "success");
         } else if (shiftType === 'evening') {
-            showMessage(`🌙 Evening Shift opened!`, "success");
+            showMessage(`🌙 Evening Shift opened and saved to Firebase!`, "success");
         }
         
     } catch (error) {
@@ -871,6 +862,7 @@ async function closeShift(shiftType) {
             second: '2-digit'
         });
         
+        // Update shift data
         shiftData[shiftType].close = timeString;
         shiftData[shiftType].status = 'closed';
         isAnyShiftOpen = false;
@@ -880,8 +872,13 @@ async function closeShift(shiftType) {
             shiftData.evening.status = 'available';
         }
         
+        // Update last updated timestamp
+        shiftData.lastUpdated = new Date().toISOString();
+        
+        // SAVE TO FIREBASE (Close button requires save)
         await saveShiftData();
-        showMessage(`${shiftType === 'morning' ? '🌅 Morning' : '🌙 Evening'} Shift closed!`, "success");
+        
+        showMessage(`${shiftType === 'morning' ? '🌅 Morning' : '🌙 Evening'} Shift closed and saved to Firebase!`, "success");
         
     } catch (error) {
         console.error("Error closing shift:", error);
