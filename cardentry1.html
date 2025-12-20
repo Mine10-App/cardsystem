@@ -943,7 +943,7 @@ const refreshShiftBtn = document.getElementById('refreshShiftBtn');
 // ----- Global Variables -----
 let isApproving = false;
 let currentShiftType = null;
-let currentShiftDate = null; // Will be in "YYYY-MM-DD" format
+let currentShiftDate = null;
 let renderTimeout = null;
 let isRendering = false;
 let lastRenderData = '';
@@ -954,19 +954,16 @@ let isBackgroundSaving = false;
 
 // ----- Maldives Timezone Functions -----
 function getMaldivesTime() {
-  // Maldives Time = UTC+5
   const now = new Date();
   const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-  const maldivesTime = new Date(utc + (5 * 3600000)); // UTC+5
+  const maldivesTime = new Date(utc + (5 * 3600000));
   return maldivesTime;
 }
 
 function formatDateToYYYYMMDD(date) {
-  // Always use Maldives time for date formatting
-  const maldivesDate = getMaldivesTime();
-  const year = maldivesDate.getFullYear();
-  const month = String(maldivesDate.getMonth() + 1).padStart(2, '0');
-  const day = String(maldivesDate.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -981,78 +978,302 @@ function getMaldivesDateTimeISO() {
 
 // ----- Optimized Caching Systems -----
 
-// Flight Status Cache with TTL - REDUCED TTL for less memory
+// Flight Status Cache with TTL - 24 hour cache
 const flightStatusCache = new Map();
-const FLIGHT_CACHE_TTL = 10 * 60 * 1000; // Reduced from 30 to 10 minutes
+const FLIGHT_CACHE_TTL = 24 * 60 * 60 * 1000;
 
-// Shift Data Cache - Only store active shift
+// Flight Status Batching System
+let lastFlightCheckTime = 0;
+let flightCheckCounter = 0;
+const FLIGHT_CHECK_BATCH_SIZE = 10;
+const FLIGHT_CHECK_TIME_WINDOW = 2 * 60 * 1000; // 2 minutes
+const FLIGHT_CHECK_RESET_TIME = 5 * 60 * 1000; // 5 minutes
+
+// Cache for batched flight status
+let batchedFlightCache = new Map();
+let pendingFlightChecks = new Map();
+
+// Shift Data Cache
 const shiftCache = {
   data: null,
   timestamp: 0,
-  ttl: 5 * 60 * 1000, // Reduced from 10 to 5 minutes
-  dateKey: ''
+  ttl: 10 * 60 * 1000,
+  dateKey: '',
+  shiftType: '',
+  openTime: ''
 };
 
-// Read Counter for Monitoring
-const readCounter = {
-  shift: 0,
-  flight: 0,
-  total: 0,
-  resetAt: Date.now()
-};
-
-// Reset counter every hour
-setInterval(() => {
-  console.log('Firebase reads in last hour:', readCounter);
-  readCounter.shift = 0;
-  readCounter.flight = 0;
-  readCounter.total = 0;
-  readCounter.resetAt = Date.now();
-}, 60 * 60 * 1000);
-
-// Optimized Duplicate Tracking
+let shiftCacheInitialized = false;
 let approvedEntriesCache = {};
 
-// ----- DATE FORMAT FUNCTIONS -----
+// ----- Flight Status Check with Time-Based Batching -----
 
-// Parse date from various formats to YYYY-MM-DD (using Maldives timezone)
+// Optimized flight status check with batching
+async function checkFlightStatusBatched(flightNo, date) {
+  const cacheKey = `${date}_${flightNo.toUpperCase()}`;
+  
+  // 1. Check if already in long-term cache (24-hour cache)
+  const cached = flightStatusCache.get(cacheKey);
+  if (cached) {
+    return cached.isClosed;
+  }
+  
+  // 2. Check if already in batched cache (recent batch)
+  if (batchedFlightCache.has(cacheKey)) {
+    return batchedFlightCache.get(cacheKey);
+  }
+  
+  // 3. Check if a batch check is already pending for this flight
+  if (pendingFlightChecks.has(cacheKey)) {
+    return pendingFlightChecks.get(cacheKey).promise;
+  }
+  
+  const now = Date.now();
+  const timeSinceLastCheck = now - lastFlightCheckTime;
+  
+  // 4. Check if we should do immediate check or batch
+  if (timeSinceLastCheck > FLIGHT_CHECK_RESET_TIME) {
+    // First check after 5+ minutes - do immediate check
+    console.log(`🔄 Immediate flight status check for ${flightNo}`);
+    return await doSingleFlightStatusCheck(flightNo, date, cacheKey);
+  }
+  
+  // 5. Check if we've reached batch size
+  flightCheckCounter++;
+  if (flightCheckCounter >= FLIGHT_CHECK_BATCH_SIZE) {
+    // Do batch check for all pending flights
+    console.log(`📦 Batch flight status check triggered (counter: ${flightCheckCounter})`);
+    return await doBatchFlightStatusCheck(flightNo, date, cacheKey);
+  }
+  
+  // 6. Add to pending batch
+  console.log(`⏳ Queueing flight ${flightNo} for batch check (counter: ${flightCheckCounter})`);
+  return await addToPendingBatch(flightNo, date, cacheKey);
+}
+
+// Do single flight status check
+async function doSingleFlightStatusCheck(flightNo, date, cacheKey) {
+  resetFlightCheckCounter();
+  
+  try {
+    if (!window.passengerDb) return false;
+    
+    const isClosed = await checkFlightStatusDirect(flightNo, date);
+    
+    // Cache results
+    flightStatusCache.set(cacheKey, {
+      isClosed,
+      timestamp: Date.now()
+    });
+    
+    return isClosed;
+  } catch (error) {
+    console.error('Single flight status check error:', error);
+    return false;
+  }
+}
+
+// Do batch flight status check
+async function doBatchFlightStatusCheck(flightNo, date, cacheKey) {
+  try {
+    // Add current flight to pending if not already
+    if (!pendingFlightChecks.has(cacheKey)) {
+      const { promise, resolve } = createDeferredPromise();
+      pendingFlightChecks.set(cacheKey, {
+        promise,
+        resolve,
+        flightNo,
+        date
+      });
+    }
+    
+    // Get all pending flights
+    const flightsToCheck = Array.from(pendingFlightChecks.entries())
+      .map(([key, data]) => ({
+        cacheKey: key,
+        flightNo: data.flightNo,
+        date: data.date,
+        resolver: data.resolve
+      }));
+    
+    if (flightsToCheck.length === 0) {
+      return false;
+    }
+    
+    console.log(`🚀 Executing batch check for ${flightsToCheck.length} flights`);
+    
+    // Reset counter and timer
+    resetFlightCheckCounter();
+    
+    // Batch query to Firebase
+    if (!window.passengerDb) {
+      // Resolve all as not closed if no Firebase
+      flightsToCheck.forEach(({ cacheKey, resolver }) => {
+        resolver(false);
+        batchedFlightCache.set(cacheKey, false);
+      });
+      pendingFlightChecks.clear();
+      return false;
+    }
+    
+    // Group flights by date for more efficient querying
+    const flightsByDate = {};
+    flightsToCheck.forEach(({ flightNo, date }) => {
+      if (!flightsByDate[date]) {
+        flightsByDate[date] = [];
+      }
+      flightsByDate[date].push(flightNo.toUpperCase());
+    });
+    
+    // Process each date group
+    for (const [checkDate, flightList] of Object.entries(flightsByDate)) {
+      try {
+        // Query for multiple flights at once on the same date
+        const querySnapshot = await window.passengerDb
+          .collection('flightinfo')
+          .where('date', '==', checkDate)
+          .where('flightNo', 'in', flightList.slice(0, 10))
+          .get();
+        
+        // Process results
+        const closedFlights = new Set();
+        querySnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.status === 'Closed' || data.status === 'Completed' || data.status === 'Departed') {
+            closedFlights.add(data.flightNo.toUpperCase());
+          }
+        });
+        
+        // Update cache and resolve promises
+        flightList.forEach(flightNo => {
+          const flightKey = `${checkDate}_${flightNo}`;
+          const isClosed = closedFlights.has(flightNo);
+          
+          // Update long-term cache
+          flightStatusCache.set(flightKey, {
+            isClosed,
+            timestamp: Date.now()
+          });
+          
+          // Update batch cache
+          batchedFlightCache.set(flightKey, isClosed);
+          
+          // Resolve pending promises
+          if (pendingFlightChecks.has(flightKey)) {
+            pendingFlightChecks.get(flightKey).resolve(isClosed);
+            pendingFlightChecks.delete(flightKey);
+          }
+        });
+        
+      } catch (error) {
+        console.error(`Batch check error for date ${checkDate}:`, error);
+        // On error, resolve all flights in this date group as not closed
+        flightList.forEach(flightNo => {
+          const flightKey = `${checkDate}_${flightNo}`;
+          if (pendingFlightChecks.has(flightKey)) {
+            pendingFlightChecks.get(flightKey).resolve(false);
+            pendingFlightChecks.delete(flightKey);
+          }
+        });
+      }
+    }
+    
+    // Get result for current flight
+    const result = await pendingFlightChecks.get(cacheKey)?.promise || false;
+    
+    // Clear pending checks
+    pendingFlightChecks.clear();
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Batch flight status check error:', error);
+    
+    // On error, resolve all pending as not closed
+    pendingFlightChecks.forEach(({ resolve }) => {
+      resolve(false);
+    });
+    pendingFlightChecks.clear();
+    
+    return false;
+  }
+}
+
+// Add flight to pending batch
+async function addToPendingBatch(flightNo, date, cacheKey) {
+  const { promise, resolve } = createDeferredPromise();
+  
+  pendingFlightChecks.set(cacheKey, {
+    promise,
+    resolve,
+    flightNo,
+    date,
+    timeout: null
+  });
+  
+  // Set up timeout for batch execution
+  const batchTimeout = setTimeout(async () => {
+    if (pendingFlightChecks.has(cacheKey)) {
+      console.log(`⏰ Batch timeout triggered for ${flightNo}`);
+      await doBatchFlightStatusCheck(flightNo, date, cacheKey);
+    }
+  }, FLIGHT_CHECK_TIME_WINDOW);
+  
+  // Store timeout for cleanup
+  pendingFlightChecks.get(cacheKey).timeout = batchTimeout;
+  
+  return promise;
+}
+
+// Direct flight status check
+async function checkFlightStatusDirect(flightNo, date) {
+  try {
+    const querySnapshot = await window.passengerDb
+      .collection('flightinfo')
+      .where('flightNo', '==', flightNo.toUpperCase())
+      .where('date', '==', date)
+      .limit(1)
+      .get();
+    
+    return !querySnapshot.empty && 
+      (querySnapshot.docs[0].data().status === 'Closed' || 
+       querySnapshot.docs[0].data().status === 'Completed' || 
+       querySnapshot.docs[0].data().status === 'Departed');
+  } catch (error) {
+    console.error('Direct flight status check error:', error);
+    return false;
+  }
+}
+
+// Reset flight check counter and timer
+function resetFlightCheckCounter() {
+  flightCheckCounter = 0;
+  lastFlightCheckTime = Date.now();
+}
+
+// Create deferred promise
+function createDeferredPromise() {
+  let resolve;
+  const promise = new Promise((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}
+
+// ----- DATE FORMAT FUNCTIONS -----
 function parseDateToYYYYMMDD(dateString) {
   if (!dateString) return formatDateToYYYYMMDD(getMaldivesTime());
   
   try {
-    // Try to parse the date string
     let date = new Date(dateString);
     
-    // If date is invalid, try different formats
     if (isNaN(date.getTime())) {
-      // Try to parse from "Month DD, YYYY" format (e.g., "Dec 19, 2025")
-      const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-      const dateLower = dateString.toLowerCase();
-      
-      for (let i = 0; i < monthNames.length; i++) {
-        if (dateLower.includes(monthNames[i])) {
-          const match = dateString.match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/);
-          if (match) {
-            const [, monthStr, day, year] = match;
-            const monthIndex = monthNames.indexOf(monthStr.toLowerCase());
-            if (monthIndex !== -1) {
-              date = new Date(year, monthIndex, parseInt(day));
-              break;
-            }
-          }
-        }
-      }
-      
-      // If still invalid, try YYYY_MM_DD format
-      if (isNaN(date.getTime())) {
-        const match = dateString.match(/(\d{4})[_\-\/](\d{2})[_\-\/](\d{2})/);
-        if (match) {
-          const [, year, month, day] = match;
-          date = new Date(`${year}-${month}-${day}`);
-        } else {
-          // Default to Maldives today
-          date = getMaldivesTime();
-        }
+      const match = dateString.match(/(\d{4})[_\-\/](\d{2})[_\-\/](\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        date = new Date(`${year}-${month}-${day}`);
+      } else {
+        date = getMaldivesTime();
       }
     }
     
@@ -1061,12 +1282,10 @@ function parseDateToYYYYMMDD(dateString) {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Error parsing date:', error);
     return formatDateToYYYYMMDD(getMaldivesTime());
   }
 }
 
-// Format date for document ID: YYYY_MM_DD (for shift documents)
 function formatDateForDocumentId(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1074,123 +1293,34 @@ function formatDateForDocumentId(date) {
   return `${year}_${month}_${day}`;
 }
 
-// Format date for display: Month Day, Year (using Maldives time)
 function formatDateForDisplay(dateString) {
   if (!dateString) return '-';
   try {
-    // First try to parse as YYYY-MM-DD
     if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateString.split('-').map(Number);
       const date = new Date(year, month - 1, day);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric'
-        });
-      }
-    }
-    
-    // Try parsing as a general date string
-    const date = new Date(dateString);
-    if (!isNaN(date.getTime())) {
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric'
       });
     }
-    
     return dateString;
   } catch (error) {
-    console.error('Error formatting date for display:', error);
     return dateString;
   }
 }
 
-// Get current date in YYYY-MM-DD format (Maldives time)
 function getCurrentDate(){ 
   return formatDateToYYYYMMDD(getMaldivesTime());
 }
 
-// Get current time in HH:MM format (Maldives time)
 function getCurrentTime(){ 
   return getMaldivesTimeString(); 
 }
 
-// ----- Convert existing data to YYYY-MM-DD format -----
-function convertExistingDataToYYYYMMDD() {
-  try {
-    // Convert codesData
-    let codesData = JSON.parse(localStorage.getItem('codesData') || '[]');
-    let updated = false;
-    
-    codesData = codesData.map(entry => {
-      if (entry.date && entry.date.includes(',')) {
-        entry.date = parseDateToYYYYMMDD(entry.date);
-        updated = true;
-      }
-      return entry;
-    });
-    
-    if (updated) {
-      localStorage.setItem('codesData', JSON.stringify(codesData));
-      console.log("Converted codesData to YYYY-MM-DD format");
-    }
-    
-    // Convert approvedLocalData
-    let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-    updated = false;
-    
-    approvedLocalData = approvedLocalData.map(entry => {
-      if (entry.date && entry.date.includes(',')) {
-        entry.date = parseDateToYYYYMMDD(entry.date);
-        updated = true;
-      }
-      return entry;
-    });
-    
-    if (updated) {
-      localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-      console.log("Converted approvedLocalData to YYYY-MM-DD format");
-    }
-    
-    // Convert approvedEntriesCache
-    let approvedEntriesCache = JSON.parse(localStorage.getItem('approvedEntriesCache') || '{}');
-    updated = false;
-    
-    for (const key in approvedEntriesCache) {
-      const entry = approvedEntriesCache[key];
-      if (entry.date && entry.date.includes(',')) {
-        entry.date = parseDateToYYYYMMDD(entry.date);
-        updated = true;
-      }
-    }
-    
-    if (updated) {
-      localStorage.setItem('approvedEntriesCache', JSON.stringify(approvedEntriesCache));
-      console.log("Converted approvedEntriesCache to YYYY-MM-DD format");
-    }
-    
-    // Convert currentShiftInfo
-    const currentShiftInfo = localStorage.getItem('currentShiftInfo');
-    if (currentShiftInfo) {
-      const shiftInfo = JSON.parse(currentShiftInfo);
-      if (shiftInfo.shiftDate && shiftInfo.shiftDate.includes(',')) {
-        shiftInfo.shiftDate = parseDateToYYYYMMDD(shiftInfo.shiftDate);
-        localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
-        console.log("Converted currentShiftInfo to YYYY-MM-DD format");
-      }
-    }
-    
-  } catch (error) {
-    console.error('Error converting data to YYYY-MM-DD:', error);
-  }
-}
-
 // ----- SHIFT MANAGEMENT FUNCTIONS -----
 
-// Initialize Shift Firebase from fireshift.js
 function initializeShiftFirebase() {
   try {
     if (typeof shiftFirebaseConfig === 'undefined') {
@@ -1202,11 +1332,11 @@ function initializeShiftFirebase() {
     if (!firebase.apps.some(app => app.name === 'shiftSystem')) {
       const shiftApp = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
       shiftDb = firebase.firestore(shiftApp);
-      console.log("Shift Firebase initialized successfully from fireshift.js");
     } else {
       shiftDb = firebase.app('shiftSystem').firestore();
     }
     
+    shiftCacheInitialized = true;
     return true;
   } catch (error) {
     console.error("Error initializing shift Firebase:", error);
@@ -1215,7 +1345,6 @@ function initializeShiftFirebase() {
   }
 }
 
-// Check if a shift document has an open shift
 function checkForOpenShift(shiftData) {
   let result = {
     success: false,
@@ -1226,9 +1355,7 @@ function checkForOpenShift(shiftData) {
     details: {}
   };
   
-  if (!shiftData) {
-    return result;
-  }
+  if (!shiftData) return result;
   
   // Check morning shift
   if (shiftData.morning && shiftData.morning.status === 'open') {
@@ -1252,88 +1379,60 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // Check if both shifts are "not_available"
-  if (shiftData.morning && shiftData.morning.status === "not_available" && 
-      shiftData.evening && shiftData.evening.status === "not_available") {
-    result.success = true;
-    result.shiftName = "Shifts Not Started Today";
-    return result;
-  }
-  
-  // Check if both shifts are closed
-  if ((!shiftData.morning || shiftData.morning.status === "closed") && 
-      (!shiftData.evening || shiftData.evening.status === "closed")) {
-    result.success = true;
-    result.shiftName = "All Shifts Closed";
-    return result;
-  }
-  
-  // Default case
   result.success = true;
   return result;
 }
 
-// Check previous day for open shift - OPTIMIZED: Only check yesterday
-async function findOpenShiftInPreviousDay() {
+async function checkPreviousDayForOpenShift() {
   try {
     const todayMaldives = getMaldivesTime();
     const yesterday = new Date(todayMaldives);
     yesterday.setDate(todayMaldives.getDate() - 1);
     
-    // Format for document ID: YYYY_MM_DD
     const yesterdayForDocId = formatDateForDocumentId(yesterday);
     const yesterdayDocId = `shift_${yesterdayForDocId}`;
     
-    // Format for YYYY-MM-DD
-    const yesterdayForYYYYMMDD = formatDateToYYYYMMDD(yesterday);
-    
-    console.log(`📅 Checking previous day (yesterday): ${yesterdayForDocId}`);
+    console.log(`Checking previous day: ${yesterdayForDocId}`);
     
     try {
       const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
-      readCounter.shift++;
-      readCounter.total++;
       
       if (yesterdayDoc.exists) {
         const shiftData = yesterdayDoc.data();
-        console.log(`✅ Found document for ${yesterdayDocId}`);
+        console.log(`Found document for ${yesterdayDocId}`);
         
-        // Check if this document has an open shift
         const shiftCheck = checkForOpenShift(shiftData);
         
         if (shiftCheck.isActive) {
-          console.log(`🎉 Found open shift in previous day: ${yesterdayForYYYYMMDD}`);
+          const yesterdayDate = formatDateToYYYYMMDD(yesterday);
           
-          // Update cache
           shiftCache.data = shiftData;
           shiftCache.timestamp = Date.now();
-          shiftCache.dateKey = yesterdayForYYYYMMDD;
+          shiftCache.dateKey = yesterdayDate;
+          shiftCache.shiftType = shiftCheck.shiftType;
+          shiftCache.openTime = shiftCheck.openTime;
           
           return {
             success: true,
             shiftData: shiftData,
-            foundDate: yesterdayForYYYYMMDD,
+            foundDate: yesterdayDate,
             foundDateForDocId: yesterdayForDocId,
-            shiftCheck: shiftCheck
+            shiftCheck: shiftCheck,
+            isFromPreviousDay: true
           };
-        } else {
-          console.log(`➡️ No open shift in ${yesterdayForYYYYMMDD}`);
         }
-      } else {
-        console.log(`➡️ No document for ${yesterdayForYYYYMMDD}`);
       }
     } catch (error) {
-      console.error(`❌ Error checking ${yesterdayForYYYYMMDD}:`, error);
+      console.error(`Error checking ${yesterdayForDocId}:`, error);
     }
     
-    console.log("🔍 No open shift found in previous day");
     return {
       success: false,
       message: "No open shift found in previous day"
     };
     
   } catch (error) {
-    console.error("❌ Error searching previous day:", error);
+    console.error("Error searching previous day:", error);
     return {
       success: false,
       message: "Error: " + error.message
@@ -1341,65 +1440,16 @@ async function findOpenShiftInPreviousDay() {
   }
 }
 
-// OPTIMIZED: Check flight status with aggressive caching
-async function isFlightClosedOptimized(flightNo, date) {
-  const cacheKey = `${date}_${flightNo.toUpperCase()}`;
-  const cached = flightStatusCache.get(cacheKey);
-  
-  // Return cached result if available and fresh
-  if (cached && (Date.now() - cached.timestamp < FLIGHT_CACHE_TTL)) {
-    return cached.isClosed;
-  }
-  
-  // If Firebase not available, return false (allow approval)
-  if (!window.passengerDb) {
-    return false;
-  }
-  
-  try {
-    const querySnapshot = await window.passengerDb
-      .collection('flightinfo')
-      .where('flightNo', '==', flightNo.toUpperCase())
-      .where('date', '==', date)
-      .limit(1)
-      .get();
-    
-    readCounter.flight++;
-    readCounter.total++;
-    
-    const isClosed = !querySnapshot.empty && 
-      (querySnapshot.docs[0].data().status === 'Closed' || 
-       querySnapshot.docs[0].data().status === 'Completed' || 
-       querySnapshot.docs[0].data().status === 'Departed');
-    
-    // Cache result
-    flightStatusCache.set(cacheKey, {
-      isClosed,
-      timestamp: Date.now()
-    });
-    
-    // Log warning if read count is getting high
-    if (readCounter.total % 20 === 0) {
-      console.warn(`High Firebase read count: ${readCounter.total} reads total`);
-    }
-    
-    return isClosed;
-  } catch (error) {
-    console.error('Flight status check error:', error);
-    return false; // Default to false if check fails
-  }
-}
-
-// Fetch current open shift with caching - OPTIMIZED: Minimal reads
 async function fetchCurrentOpenShift() {
   try {
     refreshShiftBtn.innerHTML = '<div class="spinner"></div>';
     refreshShiftBtn.disabled = true;
     
-    // Check cache first (reduced TTL)
+    // Check cache first
     const now = Date.now();
     if (shiftCache.data && 
-        (now - shiftCache.timestamp < shiftCache.ttl)) {
+        (now - shiftCache.timestamp < shiftCache.ttl) &&
+        shiftCache.dateKey) {
       console.log('Using cached shift data');
       
       const shiftCheck = checkForOpenShift(shiftCache.data);
@@ -1411,7 +1461,7 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    if (!shiftDb) {
+    if (!shiftCacheInitialized) {
       if (!initializeShiftFirebase()) {
         showNoShiftMessage();
         refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
@@ -1422,90 +1472,63 @@ async function fetchCurrentOpenShift() {
     
     // Get Maldives time
     const todayMaldives = getMaldivesTime();
-    
-    // Format for document ID: YYYY_MM_DD
-    const todayDateForDocId = formatDateForDocumentId(todayMaldives);
-    
-    // Format for YYYY-MM-DD
     const todayDateForYYYYMMDD = formatDateToYYYYMMDD(todayMaldives);
-    
-    console.log("📅 Today's date for document ID:", todayDateForDocId);
-    console.log("📅 Today's date for YYYY-MM-DD:", todayDateForYYYYMMDD);
-    
-    // Use document ID format: shift_YYYY_MM_DD
+    const todayDateForDocId = formatDateForDocumentId(todayMaldives);
     const todayDocId = `shift_${todayDateForDocId}`;
-    console.log("🔍 Looking for today's shift document:", todayDocId);
     
-    // Get today's shift document - ONLY 1 READ
+    console.log("Checking today's shift:", todayDocId);
+    
+    // 1. Check today's shift
     const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
-    readCounter.shift++;
-    readCounter.total++;
     
     let shiftData = null;
     let foundDate = todayDateForYYYYMMDD;
-    let foundDateForDocId = todayDateForDocId;
     let shiftCheck = null;
+    let isFromPreviousDay = false;
     
-    // Check if today's shift exists
     if (todayShiftDoc.exists) {
       shiftData = todayShiftDoc.data();
-      const documentDate = shiftData.date ? parseDateToYYYYMMDD(shiftData.date) : todayDateForYYYYMMDD;
+      console.log("Today's shift data found");
       
-      console.log("✅ Today's shift data retrieved:", shiftData);
-      
-      // Update cache
-      shiftCache.data = shiftData;
-      shiftCache.timestamp = now;
-      shiftCache.dateKey = documentDate;
-      
-      // Check if today has any open shift
       shiftCheck = checkForOpenShift(shiftData);
       
       if (shiftCheck.isActive) {
-        console.log("✓ Found open shift in today's document");
-        foundDate = documentDate;
-        foundDateForDocId = todayDateForDocId;
+        console.log("Active shift found in today's document");
       } else {
-        console.log("⚠️ No open shift found in today's document. Checking previous day...");
+        console.log("No active shift in today's document, checking previous day...");
         
-        // Check previous day - ONLY 1 MORE READ (if needed)
-        const previousOpenShift = await findOpenShiftInPreviousDay();
+        // 2. Check previous day
+        const previousOpenShift = await checkPreviousDayForOpenShift();
         
-        if (previousOpenShift.success) {
-          console.log(`✓ Found open shift in previous day: ${previousOpenShift.foundDate}`);
+        if (previousOpenShift.success && previousOpenShift.shiftCheck.isActive) {
+          console.log(`Found open shift in previous day: ${previousOpenShift.foundDate}`);
           shiftData = previousOpenShift.shiftData;
           foundDate = previousOpenShift.foundDate;
-          foundDateForDocId = previousOpenShift.foundDateForDocId;
           shiftCheck = previousOpenShift.shiftCheck;
-          
-          // Update cache with previous day's data
-          shiftCache.data = shiftData;
-          shiftCache.timestamp = now;
-          shiftCache.dateKey = foundDate;
+          isFromPreviousDay = true;
         } else {
-          console.log("⚠️ No open shift found in any date, using today's data");
-          // Keep today's data even if no shift is open
+          console.log("No open shift found anywhere");
+          showNoShiftMessage();
+          showAlert("No active shift found. Please open a shift in Shift Management.", true);
+          refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+          refreshShiftBtn.disabled = false;
+          return;
         }
       }
     } else {
-      console.log("❌ No shift document found for today:", todayDocId);
+      console.log("No shift document for today, checking previous day...");
       
-      // Check previous day - ONLY 1 MORE READ
-      const previousOpenShift = await findOpenShiftInPreviousDay();
+      // 2. Check previous day
+      const previousOpenShift = await checkPreviousDayForOpenShift();
       
-      if (previousOpenShift.success) {
-        console.log(`✓ Found open shift in previous day: ${previousOpenShift.foundDate}`);
+      if (previousOpenShift.success && previousOpenShift.shiftCheck.isActive) {
+        console.log(`Found open shift in previous day: ${previousOpenShift.foundDate}`);
         shiftData = previousOpenShift.shiftData;
         foundDate = previousOpenShift.foundDate;
-        foundDateForDocId = previousOpenShift.foundDateForDocId;
         shiftCheck = previousOpenShift.shiftCheck;
-        
-        // Update cache with previous day's data
-        shiftCache.data = shiftData;
-        shiftCache.timestamp = now;
-        shiftCache.dateKey = foundDate;
+        isFromPreviousDay = true;
       } else {
-        console.log("⚠️ No shift data found at all");
+        console.log("No shift data found at all");
         showNoShiftMessage();
         showAlert("No shift data found for today or previous day", true);
         refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
@@ -1515,7 +1538,7 @@ async function fetchCurrentOpenShift() {
     }
     
     if (!shiftCheck || !shiftCheck.isActive) {
-      console.log("⚠️ No active shift found in any date");
+      console.log("No active shift found");
       showNoShiftMessage();
       showAlert("No active shift found. Please open a shift in Shift Management.", true);
       refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
@@ -1523,14 +1546,24 @@ async function fetchCurrentOpenShift() {
       return;
     }
     
-    console.log("📊 Final shift analysis:", shiftCheck);
-    console.log("📈 Firebase reads used:", readCounter);
+    // Update cache
+    shiftCache.data = shiftData;
+    shiftCache.timestamp = now;
+    shiftCache.dateKey = foundDate;
+    shiftCache.shiftType = shiftCheck.shiftType;
+    shiftCache.openTime = shiftCheck.openTime;
+    
+    console.log("✓ Shift loaded successfully:", {
+      date: foundDate,
+      shift: shiftCheck.shiftName,
+      isFromPreviousDay: isFromPreviousDay
+    });
     
     // Update UI
-    updateShiftUI(shiftCheck, foundDate, foundDate !== todayDateForYYYYMMDD);
+    updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
     
   } catch (error) {
-    console.error("❌ Error fetching shift data:", error);
+    console.error("Error fetching shift data:", error);
     showNoShiftMessage();
     showAlert("Error loading shift information", true);
   } finally {
@@ -1539,50 +1572,42 @@ async function fetchCurrentOpenShift() {
   }
 }
 
-// Helper function to update shift UI
 function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay) {
-  // Update global variables with YYYY-MM-DD format
   currentShiftType = shiftCheck.shiftType;
-  currentShiftDate = foundDate; // This is now in YYYY-MM-DD format
+  currentShiftDate = foundDate;
   currentShiftStatus = 'open';
   
-  // Format date for display with indicator if from previous day
   const displayDate = formatDateForDisplay(foundDate);
   
   let dateIndicator = "";
-  
   if (isFromPreviousDay) {
     const foundDateObj = new Date(foundDate);
-    const todayMaldives = getMaldivesTime();
-    const todayDateStr = formatDateToYYYYMMDD(todayMaldives);
+    const todayDateStr = getCurrentDate();
     const todayDateObj = new Date(todayDateStr);
     const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
     
     if (daysDiff === 1) {
       dateIndicator = " (Yesterday)";
-    } else {
+    } else if (daysDiff > 1) {
       dateIndicator = ` (${daysDiff} days ago)`;
     }
   }
   
-  // Update UI
   shiftDisplay.textContent = shiftCheck.shiftName;
   dateDisplay.textContent = displayDate + dateIndicator;
   passengerEntryCard.classList.remove("disabled");
   
-  // Save to localStorage
   saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
-  
   updateExistingEntriesDate();
-  showAlert(`${shiftCheck.shiftName} is OPEN`, false);
+  
+  showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
 }
 
-// Save Current Shift to Local Storage
 function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFromPreviousDay = false) {
   const shiftInfo = {
     shiftName: shiftName,
     shiftType: currentShiftType,
-    shiftDate: foundDate, // YYYY-MM-DD format
+    shiftDate: foundDate,
     shiftStatus: shiftStatus,
     isFromPreviousDay: isFromPreviousDay,
     lastUpdated: getMaldivesDateTimeISO(),
@@ -1590,38 +1615,33 @@ function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFro
   };
   
   localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
-  console.log("Current shift saved to localStorage:", shiftInfo);
 }
 
-// Load Current Shift from Local Storage
 function loadCurrentShiftFromLocalStorage() {
   try {
     const savedShift = localStorage.getItem('currentShiftInfo');
     if (savedShift) {
       const shiftInfo = JSON.parse(savedShift);
       
-      // Check if shift is still fresh (less than 5 minutes old)
       const lastUpdated = new Date(shiftInfo.lastUpdated);
       const now = getMaldivesTime();
       const minutesDiff = (now - lastUpdated) / (1000 * 60);
       
-      if (minutesDiff < 5 && shiftInfo.shiftStatus === 'open') {
+      if (minutesDiff < 10 && shiftInfo.shiftStatus === 'open') {
         currentShiftType = shiftInfo.shiftType;
-        currentShiftDate = shiftInfo.shiftDate; // Already in YYYY-MM-DD format
+        currentShiftDate = shiftInfo.shiftDate;
         currentShiftStatus = shiftInfo.shiftStatus;
         
-        // Format display date with indicator if from previous day
         let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
         if (shiftInfo.isFromPreviousDay) {
           const shiftDateObj = new Date(shiftInfo.shiftDate);
-          const todayMaldives = getMaldivesTime();
-          const todayDateStr = formatDateToYYYYMMDD(todayMaldives);
+          const todayDateStr = getCurrentDate();
           const todayDateObj = new Date(todayDateStr);
           const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
           
           if (daysDiff === 1) {
             displayDate += " (Yesterday)";
-          } else {
+          } else if (daysDiff > 1) {
             displayDate += ` (${daysDiff} days ago)`;
           }
         }
@@ -1634,7 +1654,6 @@ function loadCurrentShiftFromLocalStorage() {
         return true;
       } else {
         localStorage.removeItem('currentShiftInfo');
-        console.log("Shift data expired or not open, removed from localStorage");
       }
     }
   } catch (error) {
@@ -1715,10 +1734,8 @@ function processFqtvTier(fqtvNumber, flightCode) {
   let tierMapping;
   if (fqtvAirlineCode && flightAirlineCode && 
       fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-    // Same airline
     tierMapping = fqtvTierMappings.same;
   } else {
-    // Different airline
     tierMapping = fqtvTierMappings.different;
   }
   
@@ -1738,7 +1755,6 @@ if (userData) {
 function addToBackgroundSaveQueue(approvedEntry, docName, localId) {
   backgroundSaveQueue.push({ approvedEntry, docName, localId });
   
-  // Start background saving if not already running
   if (!isBackgroundSaving) {
     processBackgroundSaveQueue();
   }
@@ -1753,27 +1769,17 @@ async function processBackgroundSaveQueue() {
     const item = backgroundSaveQueue[0];
     
     try {
-      // Save to Firebase (fireC1.js) - ONLY ON APPROVAL
       await window.passengerDb.collection('passengers').doc(item.docName).set(item.approvedEntry);
       console.log(`✅ Firebase save completed: ${item.docName}`);
       
-      // Mark as synced in localStorage
       markAsSyncedInLocalStorage(item.localId);
-      
-      // Remove successfully saved item from queue
       backgroundSaveQueue.shift();
       
-      // Small delay to prevent overwhelming Firebase
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
+      await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
       console.error('❌ Firebase save failed:', error);
-      
-      // Retry logic: Move failed item to end of queue
       const failedItem = backgroundSaveQueue.shift();
       backgroundSaveQueue.push(failedItem);
-      
-      // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
@@ -1781,7 +1787,6 @@ async function processBackgroundSaveQueue() {
   isBackgroundSaving = false;
 }
 
-// ----- Mark as synced in localStorage -----
 function markAsSyncedInLocalStorage(localId) {
   try {
     let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
@@ -1797,22 +1802,7 @@ function markAsSyncedInLocalStorage(localId) {
       return item;
     });
     
-    // Remove synced items older than 7 days
-    const sevenDaysAgo = getMaldivesTime();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysAgoStr = formatDateToYYYYMMDD(sevenDaysAgo);
-    
-    approvedLocalData = approvedLocalData.filter(item => {
-      if (item.synced) {
-        const syncedDate = item.syncedAt || item.approvedAt;
-        return syncedDate >= sevenDaysAgoStr;
-      }
-      return true; // Keep unsynced items
-    });
-    
     localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-    console.log(`Marked ${localId} as synced`);
-    
   } catch (error) {
     console.error('Error marking as synced:', error);
   }
@@ -1824,18 +1814,6 @@ function loadApprovedEntriesCache() {
     const cacheData = localStorage.getItem('approvedEntriesCache');
     if (cacheData) {
       approvedEntriesCache = JSON.parse(cacheData);
-      
-      const today = getCurrentDate();
-      const sevenDaysAgo = getMaldivesTime();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const sevenDaysAgoStr = formatDateToYYYYMMDD(sevenDaysAgo);
-      
-      for (const key in approvedEntriesCache) {
-        if (approvedEntriesCache[key].date < sevenDaysAgoStr) {
-          delete approvedEntriesCache[key];
-        }
-      }
-      
       console.log(`Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
     }
   } catch (error) {
@@ -1873,18 +1851,6 @@ function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
       cachedAt: getMaldivesDateTimeISO(),
       docId: docId
     };
-    
-    if (nameUpper) {
-      const exactKey = `${date}_${flightUpper}_${seatUpper}_${nameUpper}`;
-      approvedEntriesCache[exactKey] = {
-        date: date,
-        flight: flightUpper,
-        seat: seatUpper,
-        name: nameUpper,
-        cachedAt: getMaldivesDateTimeISO(),
-        docId: docId
-      };
-    }
   }
   
   localStorage.setItem('approvedEntriesCache', JSON.stringify(approvedEntriesCache));
@@ -1907,8 +1873,6 @@ function checkDuplicateInCache(flight, seat, date, name = null) {
         
         return { 
           isDuplicate: true, 
-          type: 'exact', 
-          key: key,
           message: `${name} is already approved for flight ${flight} today`
         };
       }
@@ -1920,22 +1884,8 @@ function checkDuplicateInCache(flight, seat, date, name = null) {
   if (approvedEntriesCache[seatKey]) {
     return { 
       isDuplicate: true, 
-      type: 'seat', 
-      key: seatKey,
       message: `Seat ${seat} is already approved for flight ${flight}`
     };
-  }
-  
-  if (nameUpper) {
-    const exactKey = `${date}_${flightUpper}_${seatUpper}_${nameUpper}`;
-    if (approvedEntriesCache[exactKey]) {
-      return { 
-        isDuplicate: true, 
-        type: 'exact', 
-        key: exactKey,
-        message: `${name} (${seat}) is already approved for flight ${flight}`
-      };
-    }
   }
   
   return { isDuplicate: false };
@@ -1950,7 +1900,7 @@ function updateExistingEntriesDate() {
   let updated = false;
   data = data.map(entry => {
     if (!entry.approved) {
-      entry.date = currentShiftDate; // YYYY-MM-DD format
+      entry.date = currentShiftDate;
       entry.shift = currentShiftType;
       updated = true;
     }
@@ -1988,7 +1938,7 @@ function isFqtvRequired(classValue, fqtvValue) {
          (!fqtvValue || fqtvValue.trim() === '');
 }
 
-// ----- Optimized Duplicate Entry Check -----
+// ----- Duplicate Entry Check -----
 function isDuplicateEntry(entry) {
   const data = JSON.parse(localStorage.getItem('codesData') || '[]');
   const flightUpper = entry.flight.toUpperCase();
@@ -2013,14 +1963,13 @@ function isDuplicateEntry(entry) {
   );
 }
 
-// ----- FAST Save Entry (Local only, NO Firebase) -----
+// ----- Save Entry -----
 function saveEntry(entry){
   if (!currentShiftType || currentShiftStatus !== 'open') {
     showAlert('No active shift or shift not open!', true);
     return;
   }
   
-  // Ensure date is in YYYY-MM-DD format
   entry.date = currentShiftDate;
   entry.shift = currentShiftType;
   
@@ -2045,7 +1994,6 @@ function saveEntry(entry){
     }, 50);
   }
 
-  // NO Firebase backup here - only save locally
   showAlert(`Entry saved locally!`);
 
   codeInput.value = '';
@@ -2147,7 +2095,6 @@ async function renderEntries() {
   }
 }
 
-// ----- Escape HTML to prevent XSS -----
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
@@ -2193,7 +2140,7 @@ function saveEditedEntry(rowIndex) {
   localStorage.setItem('codesData', JSON.stringify(data));
 }
 
-// ----- ULTRA-FAST Approve Entry (Save to Firebase only when approving) -----
+// ----- Approve Entry with Batched Flight Status Check -----
 async function approveEntry(index) {
   if (!currentShiftType || currentShiftStatus !== 'open') {
     showAlert('No active shift or shift not open!', true);
@@ -2215,7 +2162,6 @@ async function approveEntry(index) {
       return;
     }
 
-    // Check if FQTV is required but not provided
     if (isFqtvRequired(entry.class, entry.fqtv)) {
       showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
       isApproving = false;
@@ -2226,51 +2172,38 @@ async function approveEntry(index) {
     const nameUpper = entry.name.toUpperCase();
     const seatUpper = entry.seat.toUpperCase();
     
-    // 1. FAST LOCAL DUPLICATE CHECK (synchronous)
+    // 1. Local duplicate check
     const duplicateCheck = checkDuplicateInCache(entry.flight, entry.seat, currentShiftDate, entry.name);
     if (duplicateCheck.isDuplicate) {
       showAlert(duplicateCheck.message, true);
       isApproving = false;
       
-      // Mark this entry as duplicate and remove it
       data.splice(index, 1);
       localStorage.setItem('codesData', JSON.stringify(data));
       renderEntries();
       return;
     }
     
-    // ----- Process FQTV with tier level (FIXED VERSION) -----
+    // ----- Process FQTV with tier level -----
     let processedFqtv = '';
     if (entry.fqtv && entry.fqtv.trim() !== '') {
       let fqtvValue = entry.fqtv.trim();
       
-      // Check if FQTV already has a tier level (ends with /Sapphire, /Gold, etc.)
       const tierMatch = fqtvValue.match(/\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S)$/i);
       const hasTier = tierMatch !== null;
       
-      console.log('FQTV Processing Debug - Input:', {
-        input: fqtvValue,
-        hasTier: hasTier,
-        tierFound: tierMatch ? tierMatch[0] : 'none'
-      });
-      
       if (hasTier) {
-        // Keep the tier if it's already there
         processedFqtv = fqtvValue;
-        console.log('FQTV Processing: Keeping existing tier:', processedFqtv);
       } else {
-        // Only remove non-standard tier suffixes if we're going to add the proper one
-        fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
+        fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
         fqtvValue = fqtvValue.replace(/\/[Nn][123]\s*$/, '').trim();
         
         const tierLevel = processFqtvTier(fqtvValue, entry.flight);
         
         if (tierLevel) {
           processedFqtv = `${fqtvValue}/${tierLevel}`;
-          console.log('FQTV Processing: Added tier level:', processedFqtv);
         } else {
           processedFqtv = fqtvValue;
-          console.log('FQTV Processing: No tier level applied:', processedFqtv);
         }
       }
     }
@@ -2279,7 +2212,7 @@ async function approveEntry(index) {
       airline: airlines[entry.airline] || entry.airline,
       approved: true,
       checkinTime: "",
-      date: currentShiftDate, // This is in YYYY-MM-DD format
+      date: currentShiftDate,
       flightNo: flightUpper,
       fqtv: processedFqtv,
       name: entry.name,
@@ -2293,17 +2226,16 @@ async function approveEntry(index) {
       timeAdded: getCurrentTime(),
       approvedBy: userData ? userData.name : 'Unknown',
       approvedAt: getMaldivesDateTimeISO(),
-      localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID for tracking
+      localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    // Ensure date is in YYYY-MM-DD format (double-check)
-    if (approvedEntry.date && approvedEntry.date.includes(',')) {
-      approvedEntry.date = parseDateToYYYYMMDD(approvedEntry.date);
+    // 2. BATCHED flight status check
+    const flightClosed = await checkFlightStatusBatched(entry.flight, approvedEntry.date);
+    if (flightClosed) {
+      showAlert(`Warning: Flight ${entry.flight} appears to be closed`, true, true);
     }
     
-    console.log("Approved entry with date:", approvedEntry.date, "FQTV:", approvedEntry.fqtv);
-
-    // 2. CREATE DOCUMENT NAME
+    // 3. Create document name
     let docName;
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 8);
@@ -2315,20 +2247,9 @@ async function approveEntry(index) {
       docName = `${approvedEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
     }
     
-    // 3. Check flight status in background (non-blocking but with cache)
-    const flightClosed = await isFlightClosedOptimized(entry.flight, approvedEntry.date);
-    if (flightClosed) {
-      console.log(`⚠️ Flight ${entry.flight} is closed`);
-      // You might want to show a warning but still allow approval
-      showAlert(`Warning: Flight ${entry.flight} appears to be closed`, true, true);
-    }
-    
-    // 4. IMMEDIATELY UPDATE LOCAL STORAGE AND UI (NO WAITING)
-    
-    // Save to local cache IMMEDIATELY (use the formatted date)
+    // 4. Update local storage and UI immediately
     saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
     
-    // Store the approved entry in localStorage with sync status
     let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
     approvedLocalData.push({
       ...approvedEntry,
@@ -2338,22 +2259,16 @@ async function approveEntry(index) {
     });
     localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
     
-    // Remove from pending entries IMMEDIATELY
     data.splice(index, 1);
     localStorage.setItem('codesData', JSON.stringify(data));
     
-    // Update UI IMMEDIATELY
     renderEntries();
-    
-    // Show success message IMMEDIATELY
     showAlert(`Entry approved successfully!`);
     
-    // 5. SAVE TO FIREBASE IN BACKGROUND (NON-BLOCKING) - ONLY HERE
+    // 5. Save to Firebase in background
     if (window.passengerDb) {
-      // Queue for background save
       addToBackgroundSaveQueue(approvedEntry, docName, approvedEntry.localId);
     } else {
-      // If Firebase not available, mark for retry later
       showAlert("Approved locally, will sync to server when connection available", true);
     }
     
@@ -2365,7 +2280,7 @@ async function approveEntry(index) {
   }
 }
 
-// ----- Fast Single-Click DELETE Entry -----
+// ----- Delete Entry -----
 function deleteEntry(index) {
   if (isApproving) {
     return;
@@ -2381,33 +2296,11 @@ function deleteEntry(index) {
   }
 }
 
-// ----- Check for unsynced items on page load -----
-function checkAndRetryUnsyncedItems() {
-  try {
-    const approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-    const unsyncedItems = approvedLocalData.filter(item => !item.synced);
-    
-    if (unsyncedItems.length > 0 && window.passengerDb) {
-      console.log(`Found ${unsyncedItems.length} unsynced items, retrying...`);
-      
-      unsyncedItems.forEach(item => {
-        addToBackgroundSaveQueue(item, item.docName, item.localId);
-      });
-      
-      showAlert(`Found ${unsyncedItems.length} pending approvals, syncing...`, false, true);
-    }
-  } catch (error) {
-    console.error('Error checking unsynced items:', error);
-  }
-}
-
-// ----- Parse code (with universal FQTV detection and SQ flight handling) -----
+// ----- Parse code -----
 function parseCode(){
   const code = codeInput.value.trim().toUpperCase();
   if(!code) return;
   const parts = code.split(/\s+/);
-  
-  console.log("DEBUG: Parsing barcode tokens:", parts);
 
   const idxMLE = code.indexOf('MLE');
   let name='', pnr='';
@@ -2452,45 +2345,28 @@ function parseCode(){
     }
   }
 
-  // ----- IMPROVED FQTV DETECTION -----
+  // FQTV detection
   let fqtv = null;
   let fqtvTierCode = '';
   let hasNoFqtv = false;
 
-  // Get ALL possible airline codes (including codes that might not be in airlines dropdown)
   const allPossibleAirlineCodes = [
-    // From airlines object
     ...Object.keys(airlines),
-    // Additional known airline codes
     'LX', 'LH', 'AC', 'NH', 'BR', 'CI', 'NZ', 'VA', 'AF', 'KL', 'DL', 'UA', 'B6', 'WN',
     'WS', 'AS', 'F9', 'G4', 'NK', 'SY', '9W', 'AI', 'ET', 'KE', 'OZ', 'PR', 'TG'
   ];
 
-  // Define tier names to look for
-  const tierNames = ['SAPPHIRE', 'EMERALD', 'RUBY', 'PLATINUM', 'GOLD', 'SILVER'];
-
-  console.log("DEBUG: Parsing barcode for FQTV...");
-
-  // Look for airline code + number pattern ANYWHERE in the barcode
   for (let i = 0; i < parts.length; i++) {
     const currentToken = parts[i].toUpperCase();
     
-    console.log(`DEBUG: Token ${i}: "${currentToken}"`);
-    
-    // Check if token contains airline code followed by numbers
     for (const airlineCode of allPossibleAirlineCodes) {
-      // Pattern 1: Token is exactly airline code (check next token for number)
       if (currentToken === airlineCode) {
         if (i + 1 < parts.length) {
           const nextToken = parts[i + 1];
-          console.log(`DEBUG: Found airline code "${airlineCode}", next token: "${nextToken}"`);
           
-          // Check if next token is a number (FQTV number)
           if (/^\d+$/.test(nextToken)) {
             fqtv = airlineCode + ' ' + nextToken;
-            console.log(`✅ FOUND FQTV: ${fqtv}`);
             
-            // Check for tier level in following tokens
             for (let j = i + 2; j < parts.length && j < i + 5; j++) {
               const tierToken = parts[j].toUpperCase();
               if (tierToken.includes('SAPPHIRE')) {
@@ -2517,14 +2393,11 @@ function parseCode(){
         }
       }
       
-      // Pattern 2: Token starts with airline code and continues with numbers
       if (currentToken.startsWith(airlineCode) && currentToken.length > airlineCode.length) {
         const remainder = currentToken.substring(airlineCode.length);
         if (/^\d+$/.test(remainder)) {
           fqtv = airlineCode + ' ' + remainder;
-          console.log(`✅ FOUND FQTV (combined): ${fqtv}`);
           
-          // Check for tier level in next tokens
           for (let j = i + 1; j < parts.length && j < i + 4; j++) {
             const tierToken = parts[j].toUpperCase();
             if (tierToken.includes('SAPPHIRE')) fqtvTierCode = 'n2';
@@ -2544,83 +2417,60 @@ function parseCode(){
     if (fqtv) break;
   }
 
-  // Pattern 3: Check for specific barcode patterns with LX/LH
   if (!fqtv && !hasNoFqtv) {
-    // Look for LX/LH pattern specifically
     for (let i = 0; i < parts.length - 2; i++) {
       if ((parts[i] === 'LX' || parts[i] === 'LH') && 
           /^\d+$/.test(parts[i + 1])) {
         fqtv = parts[i] + ' ' + parts[i + 1];
-        console.log(`✅ FOUND FQTV (LX/LH pattern): ${fqtv}`);
         break;
       }
     }
   }
 
-  // Apply formatting
   if (!hasNoFqtv && fqtv) {
-    // Clean up the FQTV
     fqtv = fqtv.trim();
     
-    // Apply dash formatting for ANY airline code
     if (fqtv) {
-      // Extract the airline code (first 2 characters)
       const airlineCode = fqtv.substring(0, 2).toUpperCase();
       
-      // Check if it's a valid airline code
       if (allPossibleAirlineCodes.includes(airlineCode)) {
-        // Replace space with dash: "JL 206645985" -> "JL-206645985"
         fqtv = fqtv.replace(/^([A-Z0-9]{2})\s+/, '$1-');
       }
     }
     
-    // Apply tier level if found
     if (fqtv && fqtvTierCode) {
-      // Extract airline code from flight for comparison
       const flightAirlineCode = flightNo.slice(0, 2).toUpperCase();
       let fqtvAirlineCode = '';
       
-      // Try to extract airline code from FQTV
       const fqtvUpper = fqtv.toUpperCase();
       
-      // Pattern 1: Two letters followed by dash/space
       const dashMatch = fqtvUpper.match(/^([A-Z0-9]{2})[- ]/);
       if (dashMatch) {
         fqtvAirlineCode = dashMatch[1];
       } else {
-        // Pattern 2: First two letters
         fqtvAirlineCode = fqtvUpper.substring(0, 2);
       }
       
-      console.log(`DEBUG: Flight=${flightNo}, Flight Airline=${flightAirlineCode}, FQTV=${fqtv}, FQTV Airline=${fqtvAirlineCode}, Tier Code=${fqtvTierCode}`);
-      
-      // Determine which tier mapping to use
       let tierName;
       if (fqtvAirlineCode && flightAirlineCode && 
           fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-        // Same airline
         tierName = fqtvTierMappings.same[fqtvTierCode] || '';
       } else {
-        // Different airline
         tierName = fqtvTierMappings.different[fqtvTierCode] || '';
       }
       
       if (tierName) {
-        // Remove any trailing tier code or tier name before adding the standard tier name
-        // But only remove if it's not already in standard format
         const standardTierRegex = /\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver)$/i;
         if (!standardTierRegex.test(fqtv)) {
           fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
           fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
           fqtv = `${fqtv}/${tierName}`;
         }
-        console.log('DEBUG: Final FQTV with tier:', fqtv);
       }
     }
   }
 
   const lastTwo = code.slice(-2);
-  // Handle Y1/Y2 suffix for BA/MH
   if (!hasNoFqtv && (flightNo.startsWith('BA') || flightNo.startsWith('MH')) && fqtv) {
     if (lastTwo === 'Y1') {
       if (!fqtv.includes('/')) {
@@ -2636,7 +2486,6 @@ function parseCode(){
       }
     }
   } else if (flightNo.startsWith('OS')) {
-    // Special handling for Austrian Airlines
     const lastIndex = parts.length - 1;
     const fourthLast = parts[lastIndex - 3] || '';
     const thirdLast = parts[lastIndex - 2] || '';
@@ -2652,9 +2501,7 @@ function parseCode(){
 
   // SPECIAL HANDLING FOR SQ FLIGHTS
   if (flightNo.startsWith('SQ')) {
-    // Clear seat number for SQ flights
     seatNo = '';
-    // Also clear PNR for SQ flights
     pnr = '';
   }
 
@@ -2663,7 +2510,6 @@ function parseCode(){
   flightInput.value = flightNo;
   seatInput.value = seatNo;
   classInput.value = seatClass;
-  // Set FQTV to empty if n0 was found
   fqtvInput.value = hasNoFqtv ? '' : (fqtv || '');
   serialInput.value = '';
   remarksInput.value = '';
@@ -2714,7 +2560,7 @@ function processScannerInput() {
   
   parseCode();
   const entry = {
-    date: currentShiftDate, // YYYY-MM-DD format
+    date: currentShiftDate,
     user: userDisplay.textContent,
     shift: currentShiftType,
     code: codeInput.value,
@@ -2743,7 +2589,7 @@ function processManualInput() {
   
   parseCode();
   const entry = {
-    date: currentShiftDate, // YYYY-MM-DD format
+    date: currentShiftDate,
     user: userDisplay.textContent,
     shift: currentShiftType,
     code: codeInput.value,
@@ -2775,7 +2621,7 @@ function handleFieldExit() {
     if (nameInput.value && flightInput.value) {
       isProcessing = true;
       const entry = {
-        date: currentShiftDate, // YYYY-MM-DD format
+        date: currentShiftDate,
         user: userDisplay.textContent,
         shift: currentShiftType,
         code: codeInput.value,
@@ -2806,7 +2652,7 @@ manualSaveBtn.addEventListener('click', ()=>{
   
   parseCode();
   const entry = {
-    date: currentShiftDate, // YYYY-MM-DD format
+    date: currentShiftDate,
     user: userDisplay.textContent,
     shift: currentShiftType,
     code: codeInput.value,
@@ -2831,31 +2677,19 @@ manualSaveBtn.addEventListener('click', ()=>{
 
 // ----- Initialize -----
 document.addEventListener('DOMContentLoaded', function() {
-  // Convert existing data to YYYY-MM-DD format
-  convertExistingDataToYYYYMMDD();
-  
-  // Load approved entries cache
   loadApprovedEntriesCache();
   
-  // Try to load shift from localStorage first
   const loadedFromCache = loadCurrentShiftFromLocalStorage();
   
-  // Setup refresh button
   refreshShiftBtn.addEventListener('click', fetchCurrentOpenShift);
   
-  // Check for unsynced items
-  checkAndRetryUnsyncedItems();
-  
-  // If not loaded from cache, fetch from Firebase
   if (!loadedFromCache) {
     showNoShiftMessage();
-    // Automatically try to fetch shift on page load
     setTimeout(() => {
       fetchCurrentOpenShift();
     }, 500);
   }
   
-  // Optimized event listeners
   codeInput.addEventListener('input', handleScannerInput);
   
   codeInput.addEventListener('keydown', function(e) {
@@ -2873,8 +2707,23 @@ document.addEventListener('DOMContentLoaded', function() {
   codeInput.addEventListener('blur', handleFieldExit);
   
   renderEntries();
+  
+  // Clean up pending checks on page unload
+  window.addEventListener('beforeunload', () => {
+    pendingFlightChecks.forEach(({ timeout }) => {
+      if (timeout) clearTimeout(timeout);
+    });
+  });
+  
+  // Reset flight check counter periodically
+  setInterval(() => {
+    const now = Date.now();
+    if (now - lastFlightCheckTime > FLIGHT_CHECK_RESET_TIME) {
+      resetFlightCheckCounter();
+      batchedFlightCache.clear();
+    }
+  }, FLIGHT_CHECK_RESET_TIME);
 });
-
 </script>
 </body>
 </html>
