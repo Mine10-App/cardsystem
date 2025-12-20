@@ -1208,9 +1208,21 @@ function getMaldivesTime() {
 
 function parseMaldivesDate(dateString) {
   // Parse a date string (YYYY-MM-DD) in Maldives timezone
-  if (!dateString) return new Date();
+  if (!dateString) return getMaldivesTime();
+  
+  // Handle different date formats
+  if (dateString.includes('T')) {
+    // ISO format
+    const date = new Date(dateString);
+    return new Date(date.getTime() + (MALDIVES_OFFSET_MINUTES * 60 * 1000));
+  }
   
   const [year, month, day] = dateString.split('-').map(Number);
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day)) {
+    console.error("Invalid date string:", dateString);
+    return getMaldivesTime();
+  }
   
   // Create date in local timezone first
   const localDate = new Date(year, month - 1, day);
@@ -1223,6 +1235,15 @@ function parseMaldivesDate(dateString) {
 }
 
 function formatMaldivesDate(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    console.error("Invalid date passed to formatMaldivesDate:", date);
+    const maldivesNow = getMaldivesTime();
+    const day = String(maldivesNow.getDate()).padStart(2, '0');
+    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
+    const year = maldivesNow.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
@@ -1230,6 +1251,20 @@ function formatMaldivesDate(date) {
 }
 
 function formatMaldivesDateTime(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    console.error("Invalid date passed to formatMaldivesDateTime:", date);
+    const maldivesNow = getMaldivesTime();
+    const day = String(maldivesNow.getDate()).padStart(2, '0');
+    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
+    const year = maldivesNow.getFullYear();
+    const hours = String(maldivesNow.getHours()).padStart(2, '0');
+    const minutes = String(maldivesNow.getMinutes()).padStart(2, '0');
+    const ampm = maldivesNow.getHours() >= 12 ? 'PM' : 'AM';
+    const displayHours = maldivesNow.getHours() % 12 || 12;
+    
+    return `${day}/${month}/${year} ${displayHours}:${minutes} ${ampm}`;
+  }
+  
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
@@ -1242,10 +1277,18 @@ function formatMaldivesDateTime(date) {
 }
 
 function getDateKey(date) {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    console.error("Invalid date passed to getDateKey:", date);
+    const maldivesNow = getMaldivesTime();
+    const year = maldivesNow.getFullYear();
+    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
+    const day = String(maldivesNow.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -1254,81 +1297,165 @@ async function loadCurrentShift() {
   try {
     console.log("Loading current shift...");
     
-    // First, check if fireshift.js is properly loaded
-    if (typeof window.fireShift === 'undefined') {
-      console.error("fireshift.js not loaded!");
-      // Wait and try again
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // First check if we're properly connected to Firebase
+    if (!window.walkinDb) {
+      console.warn("Firebase not connected, using local storage for shift");
     }
     
-    // Try to get shift from fireshift.js
-    if (window.fireShift) {
-      console.log("fireshift.js loaded, checking for shift data...");
+    // Try to get shift from fireShift module
+    if (typeof fireShift !== 'undefined' && fireShift.loadCurrentShiftFromFirebase) {
+      console.log("fireShift module found, attempting to load shift...");
       
-      // If fireShift has data, use it
-      if (window.fireShift.currentShift && window.fireShift.currentShiftDate) {
-        currentShift = window.fireShift.currentShift;
-        // Parse the date string in Maldives timezone
-        currentShiftDate = parseMaldivesDate(window.fireShift.currentShiftDate);
-        console.log("Using shift from fireshift.js:", currentShift, "Date string:", window.fireShift.currentShiftDate, "Parsed Maldives date:", formatMaldivesDate(currentShiftDate));
-        updateShiftDisplay();
+      // Wait for fireShift to initialize if needed
+      if (typeof fireShift.shiftData === 'undefined') {
+        console.log("fireShift data not loaded yet, calling loadCurrentShiftFromFirebase...");
+        const loaded = await fireShift.loadCurrentShiftFromFirebase();
+        
+        if (loaded) {
+          console.log("fireShift loaded successfully from Firebase");
+          console.log("fireShift.currentShift:", fireShift.currentShift);
+          console.log("fireShift.currentShiftDate:", fireShift.currentShiftDate);
+          console.log("fireShift.shiftData:", fireShift.shiftData);
+        } else {
+          console.log("fireShift failed to load from Firebase");
+        }
+      }
+      
+      // Check if we have valid shift data
+      if (fireShift.currentShift && fireShift.currentShiftDate) {
+        currentShift = fireShift.currentShift;
+        
+        // Parse the date - handle both string and Date object
+        if (typeof fireShift.currentShiftDate === 'string') {
+          // If it's a string like "2024-01-15"
+          currentShiftDate = parseMaldivesDate(fireShift.currentShiftDate);
+        } else if (fireShift.currentShiftDate instanceof Date) {
+          // If it's already a Date object
+          currentShiftDate = fireShift.currentShiftDate;
+        } else {
+          // Fallback to today
+          currentShiftDate = getMaldivesTime();
+        }
+        
+        console.log("Using shift from fireShift module:", {
+          shift: currentShift,
+          dateString: fireShift.currentShiftDate,
+          parsedDate: formatMaldivesDate(currentShiftDate),
+          dateKey: getDateKey(currentShiftDate)
+        });
+        
         saveShiftToLocalStorage();
+        updateShiftDisplay();
         return;
       }
       
-      // If no data, try to load it
-      console.log("No shift data in fireShift, loading from Firebase...");
-      const loaded = await window.fireShift.loadCurrentShiftFromFirebase();
-      if (loaded && window.fireShift.currentShift && window.fireShift.currentShiftDate) {
-        currentShift = window.fireShift.currentShift;
-        // Parse the date string in Maldives timezone
-        currentShiftDate = parseMaldivesDate(window.fireShift.currentShiftDate);
-        console.log("Loaded shift via fireShift:", currentShift, "Date string:", window.fireShift.currentShiftDate, "Parsed Maldives date:", formatMaldivesDate(currentShiftDate));
-        updateShiftDisplay();
+      // Try to use shiftData if direct properties aren't set
+      if (fireShift.shiftData) {
+        currentShift = fireShift.shiftData.currentShift || fireShift.currentShift;
+        
+        if (fireShift.shiftData.currentShiftDate) {
+          if (typeof fireShift.shiftData.currentShiftDate === 'string') {
+            currentShiftDate = parseMaldivesDate(fireShift.shiftData.currentShiftDate);
+          } else if (fireShift.shiftData.currentShiftDate instanceof Date) {
+            currentShiftDate = fireShift.shiftData.currentShiftDate;
+          } else {
+            currentShiftDate = getMaldivesTime();
+          }
+        } else if (fireShift.currentShiftDate) {
+          if (typeof fireShift.currentShiftDate === 'string') {
+            currentShiftDate = parseMaldivesDate(fireShift.currentShiftDate);
+          } else {
+            currentShiftDate = getMaldivesTime();
+          }
+        } else {
+          currentShiftDate = getMaldivesTime();
+        }
+        
+        console.log("Using shift from fireShift.shiftData:", {
+          shift: currentShift,
+          date: formatMaldivesDate(currentShiftDate)
+        });
+        
         saveShiftToLocalStorage();
+        updateShiftDisplay();
         return;
       }
     }
     
     // Check localStorage for saved shift
     const savedShift = localStorage.getItem('currentShift');
-    const savedShiftDate = localStorage.getItem('currentShiftDate');
+    const savedShiftDateStr = localStorage.getItem('currentShiftDate');
     
-    if (savedShift && savedShiftDate) {
+    if (savedShift && savedShiftDateStr) {
       currentShift = savedShift;
       // Parse saved date in Maldives timezone
-      currentShiftDate = parseMaldivesDate(savedShiftDate.split('T')[0]);
+      currentShiftDate = parseMaldivesDate(savedShiftDateStr);
+      
+      console.log("Using saved shift from localStorage:", {
+        shift: currentShift,
+        dateString: savedShiftDateStr,
+        parsedDate: formatMaldivesDate(currentShiftDate)
+      });
+      
       updateShiftDisplay();
-      console.log("Using saved shift from localStorage:", currentShift);
       return;
     }
     
     // Default fallback - use today's date in Maldives timezone
-    console.warn("No shift found anywhere, using fallback");
+    console.warn("No shift found, using fallback with today's Maldives date");
     const maldivesNow = getMaldivesTime();
     const todayKey = getDateKey(maldivesNow);
-    currentShift = "Morning";
+    
+    // Try to get shift from fireShift even if other data failed
+    if (typeof fireShift !== 'undefined') {
+      currentShift = fireShift.currentShift || "Morning";
+    } else {
+      currentShift = "Morning";
+    }
+    
     currentShiftDate = parseMaldivesDate(todayKey);
+    
+    console.log("Using fallback shift:", {
+      shift: currentShift,
+      todayKey: todayKey,
+      parsedDate: formatMaldivesDate(currentShiftDate)
+    });
+    
     saveShiftToLocalStorage();
     updateShiftDisplay();
     
   } catch (error) {
     console.error("Error loading shift:", error);
+    console.error("Error details:", error.message);
+    
     // Default to today's date in Maldives timezone
     const maldivesNow = getMaldivesTime();
     const todayKey = getDateKey(maldivesNow);
     currentShift = "Morning";
     currentShiftDate = parseMaldivesDate(todayKey);
+    
+    console.log("Error recovery - using:", {
+      shift: currentShift,
+      todayKey: todayKey,
+      parsedDate: formatMaldivesDate(currentShiftDate)
+    });
+    
     saveShiftToLocalStorage();
     updateShiftDisplay();
   }
 }
 
 function saveShiftToLocalStorage() {
+  if (!currentShift || !currentShiftDate) {
+    console.error("Cannot save shift: data missing");
+    return;
+  }
+  
   // Save the date as YYYY-MM-DD string
   const dateKey = getDateKey(currentShiftDate);
   localStorage.setItem('currentShift', currentShift);
   localStorage.setItem('currentShiftDate', dateKey);
+  console.log("Shift saved to localStorage:", { shift: currentShift, date: dateKey });
 }
 
 function updateShiftDisplay() {
@@ -1373,8 +1500,39 @@ function showShiftInfo() {
   const info = `Current Shift: ${currentShift}\n` +
                `Display Date: ${formattedDate}\n` +
                `Firebase Date: ${firebaseDate}\n` +
-               `Data Source: ${window.fireShift && window.fireShift.shiftData ? 'Firebase' : 'Local/Default'}`;
+               `Data Source: ${window.fireShift && window.fireShift.shiftData ? 'Firebase' : 'Local/Default'}\n\n` +
+               `Maldives Time Now: ${formatMaldivesDateTime(getMaldivesTime())}`;
   alert(info);
+}
+
+// Add this function to allow manual shift refresh
+async function refreshShiftData() {
+  showNotification("Refreshing shift data...", "info");
+  
+  try {
+    if (typeof fireShift !== 'undefined' && fireShift.loadCurrentShiftFromFirebase) {
+      // Clear cached data
+      fireShift.currentShift = null;
+      fireShift.currentShiftDate = null;
+      fireShift.shiftData = null;
+      
+      // Reload from Firebase
+      const loaded = await fireShift.loadCurrentShiftFromFirebase();
+      
+      if (loaded) {
+        // Force reload using the new data
+        await loadCurrentShift();
+        showNotification(`Shift refreshed: ${currentShift} - ${formatMaldivesDate(currentShiftDate)}`, "success");
+      } else {
+        showNotification("Could not refresh shift from Firebase", "warning");
+      }
+    } else {
+      showNotification("Shift module not available", "error");
+    }
+  } catch (error) {
+    console.error("Error refreshing shift:", error);
+    showNotification("Error refreshing shift", "error");
+  }
 }
 
 // ======== NOTIFICATION SYSTEM ========
@@ -1388,7 +1546,9 @@ function showNotification(message, type = 'info', duration = 3000) {
   container.appendChild(notification);
   
   setTimeout(() => {
-    notification.remove();
+    if (notification.parentNode === container) {
+      notification.remove();
+    }
   }, duration);
 }
 
@@ -1449,6 +1609,7 @@ function updatePricing() {
   const kidKey = `Kids${rateType}${currency}`;
   
   if(!window.rates[adultKey] || !window.rates[kidKey]) {
+    console.warn("Rate not found for:", { adultKey, kidKey });
     return;
   }
 
@@ -1494,11 +1655,16 @@ function togglePaymentFields() {
 
 // ======== EXPIRY TIME CALCULATION ========
 function calculateExpiryTime() {
-  // Use shift date as base for expiry calculation in Maldives timezone
-  const baseDate = currentShiftDate || getMaldivesTime();
-  console.log("Calculating expiry based on Maldives shift date:", formatMaldivesDate(baseDate));
+  if (!currentShiftDate) {
+    console.warn("No shift date for expiry calculation");
+    document.getElementById("headerExpiryTime").textContent = "--:--";
+    return null;
+  }
   
-  const expiry = new Date(baseDate.getTime() + 3 * 60 * 60 * 1000);
+  // Use shift date as base for expiry calculation in Maldives timezone
+  console.log("Calculating expiry based on Maldives shift date:", formatMaldivesDate(currentShiftDate));
+  
+  const expiry = new Date(currentShiftDate.getTime() + 3 * 60 * 60 * 1000);
   
   const hours = expiry.getHours();
   const minutes = expiry.getMinutes();
@@ -1592,14 +1758,22 @@ async function saveNow() {
   // Calculate expiry based on shift date
   const expiryData = calculateExpiryTime();
   
+  if (!expiryData) {
+    showNotification("Error calculating expiry time.", "error");
+    return;
+  }
+  
   // Use shift date for transaction date in Maldives timezone
   const transactionDate = currentShiftDate;
   
   console.log("Saving payment with Maldives shift date:", formatMaldivesDate(transactionDate));
   
+  // Get next receipt number
+  const receiptNo = await getNextReceiptNumber();
+  
   // Prepare payment data
   const paymentData = {
-    receiptNo: await getNextReceiptNumber(),
+    receiptNo: receiptNo,
     name: name,
     flightNo: flightNo,
     seatNo: document.getElementById("seatNo").value.trim(),
@@ -1608,13 +1782,13 @@ async function saveNow() {
     shiftDateKey: getDateKey(currentShiftDate),
     transactionDate: transactionDate.toISOString(),
     transactionDateKey: getDateKey(transactionDate),
-    adults: parseInt(document.getElementById("adults").value),
-    kids: parseInt(document.getElementById("kids").value),
+    adults: parseInt(document.getElementById("adults").value) || 0,
+    kids: parseInt(document.getElementById("kids").value) || 0,
     rateType: document.getElementById("rateType").value,
     currency: document.getElementById("currency").value,
     paymentType: paymentType,
-    subtotal: parseFloat(document.getElementById("subtotal").value),
-    gst: parseFloat(document.getElementById("gst").value),
+    subtotal: parseFloat(document.getElementById("subtotal").value) || 0,
+    gst: parseFloat(document.getElementById("gst").value) || 0,
     total: total,
     expiryFormatted: expiryData.formatted,
     expiryTimestamp: expiryData.timestamp,
@@ -1632,6 +1806,7 @@ async function saveNow() {
     const balance = paidAmount - total;
     paymentData.paidAmount = paidAmount;
     paymentData.balance = balance;
+    paymentData.cardDetailsAdded = true;
   }
 
   try {
@@ -1668,13 +1843,17 @@ function saveToLocalStorage(payment) {
     const payments = JSON.parse(localStorage.getItem('payments') || '[]');
     payments.push(payment);
     localStorage.setItem('payments', JSON.stringify(payments));
+    console.log("Payment saved to localStorage:", payment.receiptNo);
   } catch (error) {
     console.error("Error saving to localStorage:", error);
   }
 }
 
 async function saveToFirebase(payment) {
-  if (!window.walkinDb) return;
+  if (!window.walkinDb) {
+    console.warn("Firebase not available, skipping Firebase save");
+    return;
+  }
   
   try {
     // Use receipt number as document ID for easy lookup
@@ -1682,6 +1861,7 @@ async function saveToFirebase(payment) {
       ...payment,
       firebaseTimestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
+    console.log("Payment saved to Firebase:", payment.receiptNo);
   } catch (error) {
     console.error("Error saving to Firebase:", error);
     throw error;
@@ -1718,6 +1898,11 @@ async function loadPayments() {
 }
 
 async function getPaymentsForCurrentShift() {
+  if (!currentShiftDate) {
+    console.error("No shift date available");
+    return [];
+  }
+  
   const shiftDateKey = getDateKey(currentShiftDate);
   
   try {
@@ -1736,16 +1921,20 @@ async function getPaymentsForCurrentShift() {
       });
       
       if (firebasePayments.length > 0) {
+        console.log(`Found ${firebasePayments.length} payments in Firebase for shift ${currentShift} on ${shiftDateKey}`);
         return firebasePayments;
       }
     }
     
     // Fallback to localStorage
     const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    return payments.filter(p => 
+    const filteredPayments = payments.filter(p => 
       p.shiftDateKey === shiftDateKey && 
       p.shift === currentShift
     ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    console.log(`Found ${filteredPayments.length} payments in localStorage for shift ${currentShift} on ${shiftDateKey}`);
+    return filteredPayments;
     
   } catch (error) {
     console.error("Error fetching payments:", error);
@@ -1830,6 +2019,16 @@ async function addCardDetails(receiptNo) {
     return;
   }
   
+  if (payment.paymentType === 'Cash') {
+    showNotification("Cash payments don't require card details", "info");
+    return;
+  }
+  
+  if (payment.cardDetailsAdded) {
+    showNotification("Card details already added for this receipt", "info");
+    return;
+  }
+  
   document.getElementById("modalPaymentId").value = receiptNo;
   document.getElementById("modalReceiptNo").value = receiptNo;
   document.getElementById("modalPassengerName").value = payment.name;
@@ -1897,6 +2096,7 @@ function updateLocalPayment(receiptNo, updates) {
     return p;
   });
   localStorage.setItem('payments', JSON.stringify(updatedPayments));
+  console.log("Updated payment in localStorage:", receiptNo);
 }
 
 function closeModal() {
@@ -1932,13 +2132,20 @@ async function findPaymentByReceiptNo(receiptNo) {
     if (window.walkinDb) {
       const doc = await window.walkinDb.collection("payments").doc(receiptNo).get();
       if (doc.exists) {
+        console.log("Found payment in Firebase:", receiptNo);
         return doc.data();
       }
     }
     
     // Try localStorage
     const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    return payments.find(p => p.receiptNo === receiptNo);
+    const payment = payments.find(p => p.receiptNo === receiptNo);
+    
+    if (payment) {
+      console.log("Found payment in localStorage:", receiptNo);
+    }
+    
+    return payment;
     
   } catch (error) {
     console.error("Error searching payment:", error);
@@ -2081,7 +2288,10 @@ async function reprintPayment(receiptNo) {
 // ======== PRINT RECEIPT ========
 function printReceipt(type = 'first', paymentData = null) {
   let payment = paymentData || currentPaymentData;
-  if (!payment) return;
+  if (!payment) {
+    showNotification("No payment data to print", "error");
+    return;
+  }
   
   // Update receipt content
   const receiptNo = payment.receiptNo;
@@ -2206,7 +2416,7 @@ function printThermalReceipt() {
 }
 
 // ======== INITIALIZATION ========
-window.onload = async function() {
+async function initializeSystem() {
   console.log("Initializing Passenger Payment POS...");
   
   // Initialize company info
@@ -2221,41 +2431,105 @@ window.onload = async function() {
   // Get current user
   getCurrentUser();
   
-  // Wait for fireshift.js to load
-  console.log("Waiting for fireshift.js to load...");
-  let attempts = 0;
-  while (typeof window.fireShift === 'undefined' && attempts < 10) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    attempts++;
-    console.log(`Waiting for fireshift.js... attempt ${attempts}`);
+  // Initialize fireshift.js first
+  console.log("Initializing fireShift...");
+  
+  // Check if fireShift is available
+  if (typeof fireShift === 'undefined') {
+    console.error("fireShift module not found! Check if fireshift.js is loaded.");
+    // Try to load it dynamically
+    try {
+      const script = document.createElement('script');
+      script.src = 'fireshift.js';
+      script.onload = async function() {
+        console.log("fireshift.js loaded dynamically");
+        await initializeAfterShiftLoaded();
+      };
+      document.head.appendChild(script);
+    } catch (e) {
+      console.error("Failed to load fireshift.js:", e);
+      await initializeWithDefaultShift();
+    }
+  } else {
+    // fireShift is already loaded
+    await initializeAfterShiftLoaded();
   }
+}
+
+async function initializeAfterShiftLoaded() {
+  try {
+    // Wait a bit for fireShift to be ready
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Load current shift from fireshift.js
+    console.log("Loading shift from fireShift...");
+    await loadCurrentShift();
+    
+    // Debug: Check what shift was loaded
+    console.log("Final shift loaded:", currentShift);
+    console.log("Final shift Maldives date:", currentShiftDate ? formatMaldivesDate(currentShiftDate) : "No date");
+    console.log("Shift date key:", currentShiftDate ? getDateKey(currentShiftDate) : "No date key");
+    
+    // Initialize the rest of the system
+    initializeRestOfSystem();
+    
+  } catch (error) {
+    console.error("Error in initializeAfterShiftLoaded:", error);
+    await initializeWithDefaultShift();
+  }
+}
+
+async function initializeWithDefaultShift() {
+  console.log("Initializing with default shift...");
+  // Default to today's date in Maldives timezone
+  const maldivesNow = getMaldivesTime();
+  const todayKey = getDateKey(maldivesNow);
+  currentShift = "Morning";
+  currentShiftDate = parseMaldivesDate(todayKey);
   
-  // Load current shift from fireshift.js
-  console.log("Loading shift from fireshift.js...");
-  await loadCurrentShift();
+  console.log("Using default shift:", {
+    shift: currentShift,
+    todayKey: todayKey,
+    parsedDate: formatMaldivesDate(currentShiftDate)
+  });
   
-  // Debug: Check what shift was loaded
-  console.log("Final shift loaded:", currentShift);
-  console.log("Final shift Maldives date:", currentShiftDate ? formatMaldivesDate(currentShiftDate) : "No date");
-  console.log("Shift date key:", currentShiftDate ? getDateKey(currentShiftDate) : "No date key");
+  saveShiftToLocalStorage();
+  updateShiftDisplay();
   
+  // Initialize the rest of the system
+  initializeRestOfSystem();
+}
+
+function initializeRestOfSystem() {
   // Initialize pricing
   updatePricing();
   togglePaymentFields();
   
   // Set up event listeners
   ['adults', 'kids', 'rateType', 'currency'].forEach(id => {
-    document.getElementById(id).addEventListener('input', updatePricing);
-    document.getElementById(id).addEventListener('change', updatePricing);
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener('input', updatePricing);
+      element.addEventListener('change', updatePricing);
+    }
   });
   
-  document.getElementById("paidAmount").addEventListener('input', updateCashFields);
+  const paidAmountEl = document.getElementById("paidAmount");
+  if (paidAmountEl) {
+    paidAmountEl.addEventListener('input', updateCashFields);
+  }
   
-  document.getElementById("paymentType").addEventListener('change', function() {
-    togglePaymentFields();
-  });
+  const paymentTypeEl = document.getElementById("paymentType");
+  if (paymentTypeEl) {
+    paymentTypeEl.addEventListener('change', function() {
+      togglePaymentFields();
+    });
+  }
   
-  document.getElementById("codeInput").addEventListener('input', parseCode);
+  const codeInputEl = document.getElementById("codeInput");
+  if (codeInputEl) {
+    codeInputEl.addEventListener('input', parseCode);
+  }
   
   // Prevent focus on readonly fields
   ['subtotal', 'gst', 'total', 'balance'].forEach(id => {
@@ -2266,18 +2540,27 @@ window.onload = async function() {
   });
   
   // Close modals when clicking outside
-  document.getElementById("cardDetailsModal").addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
+  const cardModal = document.getElementById("cardDetailsModal");
+  if (cardModal) {
+    cardModal.addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  }
   
-  document.getElementById("searchResultModal").addEventListener('click', function(e) {
-    if (e.target === this) closeSearchModal();
-  });
+  const searchModal = document.getElementById("searchResultModal");
+  if (searchModal) {
+    searchModal.addEventListener('click', function(e) {
+      if (e.target === this) closeSearchModal();
+    });
+  }
   
   // Search on Enter key
-  document.getElementById("receiptSearch").addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') searchReceipt();
-  });
+  const receiptSearchEl = document.getElementById("receiptSearch");
+  if (receiptSearchEl) {
+    receiptSearchEl.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') searchReceipt();
+    });
+  }
   
   // Initialize expiry time (based on shift date)
   calculateExpiryTime();
@@ -2291,6 +2574,14 @@ window.onload = async function() {
   const shiftDateDisplay = currentShiftDate ? formatMaldivesDate(currentShiftDate) : 'Unknown';
   showNotification(`System ready. Shift: ${currentShift} | Date: ${shiftDateDisplay}`, "success");
   console.log("System initialization complete. Shift:", currentShift, "Maldives Date:", shiftDateDisplay);
+}
+
+// Initialize on window load
+window.onload = function() {
+  console.log("Window loaded, starting initialization...");
+  setTimeout(() => {
+    initializeSystem();
+  }, 100);
 };
 </script>
 </body>
