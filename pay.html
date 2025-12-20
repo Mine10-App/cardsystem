@@ -2723,6 +2723,1124 @@ function resetFormForNextEntry() {
   document.getElementById("codeInput").focus();
 }
 
+// ======== CLEANUP OLD LOCAL PAYMENTS ========
+function cleanupOldLocalPayments() {
+  try {
+    const pendingPayments = getPendingPayments();
+    const { start } = getMaldivesTodayRange();
+    
+    // Filter to keep only today's payments AND any payments with receipt numbers >= 1564
+    const recentPayments = pendingPayments.filter(payment => {
+      // Parse payment date
+      const paymentDate = parsePaymentDate(payment);
+      
+      if (isNaN(paymentDate.getTime())) {
+        // Invalid date, check receipt number
+        if (payment.receiptNo) {
+          const receiptNum = parseInt(payment.receiptNo);
+          return receiptNum >= 1564;
+        }
+        return false;
+      }
+      
+      // Check if payment is from today in Maldives timezone
+      const isToday = isTodayInMaldives(paymentDate);
+      
+      // Also check receipt number if available
+      if (payment.receiptNo) {
+        const receiptNum = parseInt(payment.receiptNo);
+        if (receiptNum >= 1564) {
+          // Keep payments with valid receipt numbers even if date is ambiguous
+          return true;
+        }
+      }
+      
+      return isToday;
+    });
+    
+    // Also filter sync queue
+    pendingSyncQueue = pendingSyncQueue.filter(payment => {
+      const paymentDate = parsePaymentDate(payment);
+      
+      if (isNaN(paymentDate.getTime())) {
+        return false;
+      }
+      
+      const isToday = isTodayInMaldives(paymentDate);
+      
+      // Check receipt number
+      if (payment.receiptNo) {
+        const receiptNum = parseInt(payment.receiptNo);
+        if (receiptNum >= 1564) {
+          return true;
+        }
+      }
+      
+      return isToday;
+    });
+    
+    // Update localStorage with filtered payments
+    localStorage.setItem('pendingPayments', JSON.stringify(recentPayments));
+    
+    // Count how many were removed
+    const removedCount = pendingPayments.length - recentPayments.length;
+    if (removedCount > 0) {
+      console.log(`Cleaned up ${removedCount} old local payments`);
+      showNotification(`Cleaned up ${removedCount} old payments from local storage`, 'info');
+    }
+    
+    return recentPayments;
+  } catch (error) {
+    console.error("Error cleaning up old payments:", error);
+    return [];
+  }
+}
+
+// ======== FIREBASE SYNC FUNCTIONS ========
+function markPaymentAsSynced(paymentId) {
+  try {
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === paymentId) {
+        return { 
+          ...payment, 
+          synced: true,
+          syncAttempts: 0,
+          lastSynced: new Date().toISOString()
+        };
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Also update in sync queue
+    const queueIndex = pendingSyncQueue.findIndex(p => p.id === paymentId);
+    if (queueIndex !== -1) {
+      pendingSyncQueue[queueIndex] = { 
+        ...pendingSyncQueue[queueIndex], 
+        synced: true,
+        syncAttempts: 0
+      };
+    }
+    
+  } catch (error) {
+    console.error("Error marking payment as synced:", error);
+  }
+}
+
+function incrementSyncAttempts(paymentId) {
+  try {
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === paymentId) {
+        return { 
+          ...payment, 
+          syncAttempts: (payment.syncAttempts || 0) + 1,
+          lastSyncAttempt: new Date().toISOString()
+        };
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+  } catch (error) {
+    console.error("Error incrementing sync attempts:", error);
+  }
+}
+
+async function syncPendingPayments() {
+  if (!checkFirebase() || isSyncing || pendingSyncQueue.length === 0) {
+    return;
+  }
+  
+  isSyncing = true;
+  
+  try {
+    const payment = pendingSyncQueue[0]; // Get first pending payment
+    
+    if (payment.syncAttempts > 3) {
+      // Too many attempts, skip for now
+      console.warn(`Skipping payment ${payment.id} after ${payment.syncAttempts} attempts`);
+      pendingSyncQueue.shift();
+      isSyncing = false;
+      if (pendingSyncQueue.length > 0) {
+        setTimeout(syncPendingPayments, 1000);
+      }
+      return;
+    }
+    
+    console.log("Syncing payment to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
+    
+    // Get current shift for Firebase data
+    const currentShift = getCurrentShiftInfo();
+    
+    // Prepare Firebase data
+    const firebaseData = {
+      receiptNo: payment.receiptNo,
+      name: payment.name || '',
+      flightNo: payment.flightNo || '',
+      seatNo: payment.seatNo || '',
+      shiftDate: currentShift.shiftDate, // Use date from shift data
+      shiftName: currentShift.shiftName, // Use shift name from shift data
+      shiftType: currentShift.shift, // Use shift type
+      adults: payment.adults || 0,
+      kids: payment.kids || 0,
+      currency: payment.currency || 'USD',
+      paymentType: payment.paymentType || 'Cash',
+      total: payment.total || 0,
+      expiryFormatted: payment.expiryFormatted || '',
+      expiryTimestamp: payment.expiryTimestamp || Date.now(),
+      staff: payment.staff || currentUser || 'Unknown',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      localSaved: true,
+      syncStatus: 'synced',
+      lastUpdated: new Date().toISOString(),
+      maldivesDate: payment.maldivesTimestamp || getMaldivesTime().toISOString()
+    };
+    
+    // Add payment-specific fields
+    if (payment.paymentType === 'Cash') {
+      firebaseData.paidAmount = payment.paidAmount || 0;
+      firebaseData.balance = payment.balance || 0;
+      firebaseData.finalReceiptPrinted = payment.finalReceiptPrinted || false;
+    } else {
+      // For card/QR payments
+      firebaseData.cardDetailsAdded = payment.cardDetailsAdded || false;
+      if (payment.cardDetailsAdded) {
+        firebaseData.batchNo = payment.batchNo || '';
+        firebaseData.approvalCode = payment.approvalCode || '';
+      }
+    }
+    
+    // Add void information if available
+    if (payment.voided) {
+      firebaseData.voided = true;
+      firebaseData.voidedAt = payment.voidedAt || new Date().toISOString();
+      firebaseData.voidedBy = payment.voidedBy || currentUser || 'Unknown';
+      firebaseData.voidReason = payment.voidReason || 'No reason provided';
+      firebaseData.voidMaldivesDate = getMaldivesTime().toISOString();
+    }
+    
+    // Try to sync to Firebase - Document ID is the receipt number
+    const docRef = window.walkinDb.collection("payments").doc(payment.id);
+    await docRef.set(firebaseData, { merge: true });
+    
+    console.log("Successfully synced to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
+    
+    // Mark as synced in localStorage
+    markPaymentAsSynced(payment.id);
+    
+    // Remove from queue
+    pendingSyncQueue.shift();
+    
+    // Show notification
+    showNotification(`Synced to cloud: ${payment.receiptNo}`, 'success');
+    
+  } catch (error) {
+    console.error("Error syncing payment to Firebase:", error);
+    
+    // Increment sync attempts
+    incrementSyncAttempts(payment.id);
+    
+    // Retry after delay
+    setTimeout(syncPendingPayments, 5000);
+    return;
+  }
+  
+  isSyncing = false;
+  
+  // Process next payment if any
+  if (pendingSyncQueue.length > 0) {
+    setTimeout(syncPendingPayments, 1000);
+  }
+}
+
+// ======== GET PAYMENTS ========
+async function getPayments() {
+  try {
+    // Get local payments first
+    const localPayments = getPendingPayments();
+    
+    if (!checkFirebase()) {
+      return localPayments;
+    }
+    
+    try {
+      // Get Firebase payments - limit to reasonable number
+      const snapshot = await window.walkinDb.collection("payments")
+        .orderBy("timestamp", "desc")
+        .limit(200)
+        .get();
+      
+      const firebasePayments = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        firebasePayments.push({
+          id: doc.id, // This is the document ID (should be receipt number)
+          ...data,
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          synced: true // Mark as synced since it's from Firebase
+        });
+      });
+      
+      console.log(`Loaded ${firebasePayments.length} payments from Firebase`);
+      
+      // Create a map of Firebase payments for quick lookup
+      const firebaseMap = new Map();
+      firebasePayments.forEach(p => firebaseMap.set(p.id, p));
+      
+      // Merge: Start with Firebase payments, then add local unsynced payments
+      const mergedPayments = [...firebasePayments];
+      
+      localPayments.forEach(localPayment => {
+        if (!localPayment.synced && !firebaseMap.has(localPayment.id)) {
+          // Add unsynced local payments not already in Firebase
+          mergedPayments.push(localPayment);
+        }
+      });
+      
+      // Sort by timestamp (most recent first)
+      return mergedPayments.sort((a, b) => {
+        const timeA = parsePaymentDate(a).getTime();
+        const timeB = parsePaymentDate(b).getTime();
+        return timeB - timeA;
+      });
+      
+    } catch (firebaseError) {
+      console.error("Error fetching from Firebase, using local only:", firebaseError);
+      return localPayments;
+    }
+    
+  } catch (error) {
+    console.error("Error loading payments:", error);
+    return [];
+  }
+}
+
+// ======== DELETE PAYMENT ========
+async function deletePayment(id) {
+  try {
+    console.log("Deleting payment with ID:", id);
+    
+    // Delete from local storage first
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.filter(p => p.id !== id);
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Remove from sync queue
+    pendingSyncQueue = pendingSyncQueue.filter(p => p.id !== id);
+    
+    // Try to delete from Firebase if available
+    if (checkFirebase()) {
+      await window.walkinDb.collection("payments").doc(id).delete();
+      console.log("Deleted from Firebase:", id);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error deleting payment:", error);
+    return false;
+  }
+}
+
+// ======== UPDATE PAYMENT ========
+async function updatePayment(id, updates) {
+  try {
+    console.log("Updating payment ID:", id, "Updates:", updates);
+    
+    // Update in local storage first
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === id) {
+        const updatedPayment = { ...payment, ...updates };
+        // Mark as unsynced when updated
+        updatedPayment.synced = false;
+        updatedPayment.syncAttempts = 0;
+        updatedPayment.lastUpdated = new Date().toISOString();
+        return updatedPayment;
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Update in sync queue
+    const queueIndex = pendingSyncQueue.findIndex(p => p.id === id);
+    if (queueIndex !== -1) {
+      pendingSyncQueue[queueIndex] = { 
+        ...pendingSyncQueue[queueIndex], 
+        ...updates,
+        synced: false,
+        syncAttempts: 0,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+    
+    // Force immediate Firebase update (not background sync)
+    if (checkFirebase()) {
+      try {
+        const docRef = window.walkinDb.collection("payments").doc(id);
+        await docRef.update({
+          ...updates,
+          lastUpdated: new Date().toISOString(),
+          syncStatus: 'synced',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log("Immediately updated Firebase for ID:", id);
+      } catch (firebaseError) {
+        console.error("Immediate Firebase update failed:", firebaseError);
+        // It will be synced via background sync later
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating payment:", error);
+    return false;
+  }
+}
+
+// ======== SEARCH RECEIPT ========
+async function searchPaymentByReceiptNo(receiptNo) {
+  try {
+    console.log("Searching for receipt:", receiptNo);
+    
+    // Clean the receipt number - ensure it's a string
+    const cleanReceiptNo = receiptNo.toString().trim();
+    
+    // Always try Firebase first for fresh data
+    if (checkFirebase()) {
+      try {
+        console.log("Trying Firebase search with receipt number:", cleanReceiptNo);
+        
+        // FIRST: Try direct document ID (receipt number)
+        const doc = await window.walkinDb.collection("payments").doc(cleanReceiptNo).get();
+        if (doc.exists) {
+          console.log("Found by document ID (receipt number):", cleanReceiptNo);
+          const data = doc.data();
+          // Convert Firebase timestamp to Date
+          const timestamp = data.timestamp ? 
+            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
+            new Date();
+          
+          return {
+            id: doc.id, // This should be the receipt number
+            ...data,
+            timestamp: timestamp,
+            synced: true,
+            isFreshFromFirebase: true
+          };
+        }
+        
+        console.log("Not found by document ID, trying receiptNo field...");
+        
+        // SECOND: If not found by document ID, search by receiptNo field
+        const snapshot = await window.walkinDb.collection("payments")
+          .where("receiptNo", "==", cleanReceiptNo)
+          .limit(1)
+          .get();
+        
+        if (!snapshot.empty) {
+          console.log("Found by receiptNo field:", cleanReceiptNo);
+          const doc = snapshot.docs[0];
+          const data = doc.data();
+          const timestamp = data.timestamp ? 
+            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
+            new Date();
+          
+          return {
+            id: doc.id,
+            ...data,
+            timestamp: timestamp,
+            synced: true,
+            isFreshFromFirebase: true
+          };
+        }
+        
+        console.log("Receipt not found in Firebase:", cleanReceiptNo);
+        
+      } catch (firebaseError) {
+        console.warn("Firebase search failed, falling back to local:", firebaseError);
+      }
+    }
+    
+    // Fallback: Search in local storage
+    console.log("Searching in local storage for:", cleanReceiptNo);
+    const pendingPayments = getPendingPayments();
+    const localPayment = pendingPayments.find(p => p.receiptNo === cleanReceiptNo || p.id === cleanReceiptNo);
+    if (localPayment) {
+      console.log("Found in local storage:", cleanReceiptNo);
+      return {
+        ...localPayment,
+        isFreshFromFirebase: false
+      };
+    }
+    
+    console.log("Receipt not found anywhere:", cleanReceiptNo);
+    return null;
+    
+  } catch (error) {
+    console.error("Error searching payment:", error);
+    return null;
+  }
+}
+
+// ======== LOAD PAYMENTS ========
+async function loadPayments(){
+  try {
+    showNotification("Loading today's payments...", "info", 2000);
+    const allPayments = await getPayments();
+    
+    // Filter payments by current day in Maldives timezone
+    const todayPayments = filterByCurrentDay(allPayments);
+    
+    // Load ONLY pending payments for today (excluding voided)
+    loadPendingCardPayments(todayPayments);
+    
+  } catch (error) {
+    showNotification("Error loading payments", "error");
+    console.error("Error loading payments:", error);
+  }
+}
+
+// ======== LOAD PENDING CARD PAYMENTS ========
+function loadPendingCardPayments(payments) {
+  // First, deduplicate payments by receipt number or ID
+  const uniquePayments = deduplicatePayments(payments);
+  
+  // Filter out voided payments and only show non-cash payments that need card details
+  const pendingPayments = uniquePayments.filter(p => 
+    p.paymentType !== "Cash" && 
+    !p.cardDetailsAdded &&
+    !p.voided // Exclude voided payments
+  );
+  
+  let html = '';
+  
+  if (pendingPayments.length === 0) {
+    html = `<p style="text-align: center; color: var(--text-light); padding: 20px;">No pending non-cash payments found for today.</p>`;
+  } else {
+    html = `<table><tr>
+    <th>Receipt No</th><th>Name</th><th>Payment Method</th><th>Shift Date</th><th>Staff</th><th>Total</th>
+    <th>Expiry</th><th>Action</th></tr>`;
+    
+    pendingPayments.forEach(p=>{
+      const receiptBadge = p.receiptNo ? 
+        `<span class="receipt-badge">${p.receiptNo}</span>` : 
+        `<span class="receipt-badge">N/A</span>`;
+      
+      const currencyBadge = p.currency === 'USD' ? '<span class="currency-badge">USD</span>' : '<span class="currency-badge">MVR</span>';
+      
+      // Payment method badge
+      const paymentBadge = `<span class="payment-method-badge payment-method-${p.paymentType ? p.paymentType.toLowerCase().replace('card', '').replace(' ', '') : 'card'}">${p.paymentType || 'Card'}</span>`;
+      
+      // Shift date display
+      const shiftDate = p.shiftDate || 'N/A';
+      
+      // Staff info
+      const staffInfo = p.staff || 'Unknown';
+      
+      // Format expiry time
+      let expiryTime = 'N/A';
+      if (p.expiryFormatted) {
+        expiryTime = p.expiryFormatted;
+      } else if (p.expiryTime) {
+        const expiryDate = new Date(p.expiryTime);
+        expiryTime = expiryDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      }
+      
+      // Format date for display (Maldives timezone)
+      const paymentDate = parsePaymentDate(p);
+      const displayDate = formatDateForDisplay(paymentDate);
+      
+      // DELETE BUTTON - Only for supervisors
+      const deleteButton = isSupervisor ? 
+        `<button class="action-btn" onclick="deleteEntry('${p.id}')">Delete</button>` : '';
+      
+      html+=`<tr>
+        <td>${receiptBadge}</td>
+        <td>${p.name || 'N/A'}</td>
+        <td>${paymentBadge}</td>
+        <td>${shiftDate}</td>
+        <td>${staffInfo}</td>
+        <td><strong>${(p.total || 0).toFixed(2)}</strong> ${currencyBadge}</td>
+        <td>${expiryTime}</td>
+        <td>
+          <button class="complete-btn" onclick="addCardDetails('${p.id}')">Add Details</button>
+          <button class="print-btn" onclick="reprintPayment('${p.id}')">Print</button>
+          ${deleteButton}
+        </td>
+      </tr>`;
+    });
+    html+="</table>";
+  }
+  
+  document.getElementById("pendingLog").innerHTML = html;
+}
+
+// ======== DEDUPLICATE PAYMENTS ========
+function deduplicatePayments(payments) {
+  const uniqueMap = new Map();
+  
+  payments.forEach(payment => {
+    // Use receipt number as primary key, fallback to ID
+    const key = payment.receiptNo || payment.id;
+    
+    if (key) {
+      // If we already have this payment, keep the most recent one
+      const existing = uniqueMap.get(key);
+      if (!existing) {
+        uniqueMap.set(key, payment);
+      } else {
+        // Compare timestamps to keep the most recent
+        const existingTime = parsePaymentDate(existing).getTime();
+        const currentTime = parsePaymentDate(payment).getTime();
+        
+        if (currentTime > existingTime) {
+          uniqueMap.set(key, payment);
+        }
+      }
+    }
+  });
+  
+  return Array.from(uniqueMap.values());
+}
+
+// ======== FORMAT DATE FOR DISPLAY ========
+function formatDateForDisplay(date) {
+  // Format date in Maldives timezone
+  const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
+  return maldivesDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// ======== DELETE ENTRY ========
+async function deleteEntry(id){ 
+  // Check if user is supervisor
+  if (!isSupervisor) {
+    showNotification("Only supervisors can delete payment records", "warning");
+    return;
+  }
+  
+  if(confirm("Are you sure you want to delete this payment record?")) {
+    await deletePayment(id); 
+    loadPayments(); 
+    showNotification("Payment deleted", "success");
+  }
+}
+
+// ======== ADD CARD DETAILS ========
+async function addCardDetails(paymentId) {
+  // Find the payment
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === paymentId);
+  if (payment) {
+    // Check if payment is voided
+    if (payment.voided) {
+      showNotification("Cannot add card details to a voided receipt", "error");
+      return;
+    }
+    
+    // Show modal with payment details
+    document.getElementById("modalPaymentId").value = paymentId;
+    document.getElementById("modalReceiptNo").value = payment.receiptNo || 'N/A';
+    document.getElementById("modalPassengerName").value = payment.name || 'N/A';
+    document.getElementById("modalTotalAmount").value = (payment.total || 0).toFixed(2);
+    
+    // Set existing values if available
+    document.getElementById("modalPaymentMethod").value = payment.paymentType || '';
+    document.getElementById("modalBatchNo").value = payment.batchNo || '';
+    document.getElementById("modalApprovalCode").value = payment.approvalCode || '';
+    
+    // Show modal
+    document.getElementById("cardDetailsModal").style.display = "flex";
+  }
+}
+
+// ======== SAVE CARD DETAILS ========
+async function saveCardDetails() {
+  const paymentId = document.getElementById("modalPaymentId").value;
+  const paymentMethod = document.getElementById("modalPaymentMethod").value;
+  const batchNo = document.getElementById("modalBatchNo").value;
+  const approvalCode = document.getElementById("modalApprovalCode").value;
+  
+  if (!paymentMethod || !batchNo || !approvalCode) {
+    showNotification("Please enter payment method, batch number and approval code", "warning");
+    return;
+  }
+  
+  const success = await updatePayment(paymentId, {
+    paymentType: paymentMethod,
+    batchNo: batchNo,
+    approvalCode: approvalCode,
+    cardDetailsAdded: true,
+    finalReceiptPrinted: false,
+    lastUpdated: new Date().toISOString() // Add timestamp
+  });
+  
+  if (success) {
+    showNotification("Payment details saved successfully!", "success");
+    closeModal();
+    loadPayments();
+    
+    // If we have a found receipt from search, update it immediately
+    if (foundReceiptData && foundReceiptData.id === paymentId) {
+      // Force re-fetch from Firebase to get latest data
+      const freshData = await searchPaymentByReceiptNo(foundReceiptData.receiptNo);
+      if (freshData) {
+        foundReceiptData = freshData;
+        displaySearchResult(freshData);
+      }
+    }
+    
+    // Print final receipt
+    const payments = await getPayments();
+    const payment = payments.find(p => p.id === paymentId);
+    if (payment) {
+      printReceipt('final', payment);
+    }
+  } else {
+    showNotification("Error saving payment details", "error");
+  }
+}
+
+// ======== MODAL FUNCTIONS ========
+function closeModal() {
+  document.getElementById("cardDetailsModal").style.display = "none";
+  document.getElementById("modalPaymentMethod").value = "";
+  document.getElementById("modalBatchNo").value = "";
+  document.getElementById("modalApprovalCode").value = "";
+}
+
+function closeSearchModal() {
+  document.getElementById("searchResultModal").style.display = "none";
+  foundReceiptData = null;
+}
+
+// ======== SEARCH RECEIPT ========
+async function searchReceipt() {
+  const receiptNo = document.getElementById("receiptSearch").value.trim();
+  if (!receiptNo) {
+    showNotification("Please enter a receipt number to search", "warning");
+    return;
+  }
+  
+  showNotification("Searching for receipt...", "info", 2000);
+  
+  // Clear any cached data for this receipt
+  foundReceiptData = null;
+  
+  const payment = await searchPaymentByReceiptNo(receiptNo);
+  if (payment) {
+    foundReceiptData = payment;
+    displaySearchResult(payment);
+    
+    // Show source of data
+    if (payment.isFreshFromFirebase) {
+      showNotification(`Found receipt ${receiptNo} (Fresh from cloud)`, "success");
+    } else {
+      showNotification(`Found receipt ${receiptNo} (Local cache)`, "warning");
+    }
+  } else {
+    showNotification(`Receipt number "${receiptNo}" not found.`, "error");
+  }
+}
+
+// ======== DISPLAY SEARCH RESULT ========
+function displaySearchResult(payment) {
+  const contentDiv = document.getElementById("searchResultContent");
+  const actionsDiv = document.getElementById("searchResultActions");
+  
+  // Format dates for display
+  const paymentDate = parsePaymentDate(payment);
+  const displayDate = formatDateForDisplay(paymentDate);
+  
+  let html = `
+    <div style="margin-bottom: 15px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4 style="margin: 0;">Receipt Details</h4>
+        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" 
+                onclick="refreshReceiptData('${payment.receiptNo}')">
+          🔄 Refresh
+        </button>
+      </div>
+  `;
+  
+  // Add VOID warning banner if receipt is voided
+  if (payment.voided) {
+    html += `
+      <div class="void-warning">
+        ⚠️ VOID RECEIPT ⚠️
+      </div>
+      <div class="void-info">
+        <div><b>Voided By:</b> ${payment.voidedBy || 'Unknown'}</div>
+        <div><b>Voided At:</b> ${payment.voidedAt ? formatDateForDisplay(new Date(payment.voidedAt)) : 'Unknown'}</div>
+        <div><b>Reason:</b> ${payment.voidReason || 'No reason provided'}</div>
+      </div>
+    `;
+  }
+  
+  html += `
+      <div class="input-group">
+        <label>Receipt Number</label>
+        <input type="text" readonly value="${payment.receiptNo || 'N/A'}" style="background: var(--gold-light);">
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Transaction Date</label>
+          <input type="text" readonly value="${displayDate}">
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Passenger Name</label>
+          <input type="text" readonly value="${payment.name || 'N/A'}">
+        </div>
+        <div class="input-group">
+          <label>Flight Number</label>
+          <input type="text" readonly value="${payment.flightNo || 'N/A'}">
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Payment Method</label>
+          <input type="text" readonly value="${payment.paymentType}">
+        </div>
+        <div class="input-group">
+          <label>Currency</label>
+          <input type="text" readonly value="${payment.currency}">
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Total Amount</label>
+          <input type="text" readonly value="${(payment.total || 0).toFixed(2)}" class="summary-value">
+        </div>
+        <div class="input-group">
+          <label>Expiry Time</label>
+          <input type="text" readonly value="${payment.expiryFormatted || 'N/A'}">
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Processed By</label>
+          <input type="text" readonly value="${payment.staff || 'Unknown'}">
+        </div>
+        <div class="input-group">
+          <label>Status</label>
+          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.paymentType === 'Cash' ? (payment.finalReceiptPrinted ? 'Complete' : 'Pending Final') : (payment.cardDetailsAdded ? 'Completed' : 'Pending Details'))}">
+        </div>
+      </div>
+  `;
+  
+  if (payment.paymentType !== 'Cash' && !payment.voided) {
+    html += `
+      <div class="row">
+        <div class="input-group">
+          <label>Batch Number</label>
+          <input type="text" readonly value="${payment.batchNo || 'Not Entered'}">
+        </div>
+        <div class="input-group">
+          <label>Approval Code</label>
+          <input type="text" readonly value="${payment.approvalCode || 'Not Entered'}">
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `</div>`;
+  
+  contentDiv.innerHTML = html;
+  actionsDiv.style.display = "flex";
+  document.getElementById("searchResultModal").style.display = "flex";
+}
+
+// ======== REFRESH RECEIPT DATA ========
+async function refreshReceiptData(receiptNo) {
+  showNotification("Refreshing receipt data...", "info", 1500);
+  
+  // Clear cached data
+  foundReceiptData = null;
+  
+  // Force fetch from Firebase
+  const payment = await searchPaymentByReceiptNo(receiptNo);
+  if (payment) {
+    foundReceiptData = payment;
+    displaySearchResult(payment);
+    
+    if (payment.isFreshFromFirebase) {
+      showNotification("Data refreshed from cloud", "success");
+    } else {
+      showNotification("Using local data (cloud unavailable)", "warning");
+    }
+  } else {
+    showNotification("Receipt not found after refresh", "error");
+  }
+}
+
+// ======== REPRINT PAYMENT ========
+async function reprintPayment(paymentId) {
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === paymentId);
+  if (payment) {
+    if (payment.voided) {
+      printReceipt('void', payment);
+    } else if (payment.paymentType !== 'Cash' && payment.cardDetailsAdded) {
+      printReceipt('final', payment);
+    } else if (payment.paymentType === 'Cash' && payment.finalReceiptPrinted) {
+      printReceipt('final', payment);
+    } else {
+      printReceipt('first', payment);
+    }
+  }
+}
+
+// ======== TAB FUNCTIONALITY ========
+function showTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab content
+  document.getElementById(tabName).classList.add('active');
+  
+  // Activate selected tab button
+  event.target.classList.add('active');
+  
+  // Load appropriate data based on tab
+  if (tabName === 'pendingCards') {
+    loadPayments(); // This now only loads pending payments
+  }
+}
+
+// ======== PRINT RECEIPT ========
+async function printReceipt(type = 'first', paymentData = null) {
+  let payment = paymentData;
+  
+  if (!payment && currentPaymentData) {
+    payment = currentPaymentData;
+  }
+  
+  if (!payment) {
+    showNotification("No payment data available. Please save a payment first.", "warning");
+    return;
+  }
+  
+  // Check company info
+  checkCompanyInfo();
+  
+  const receiptNo = payment.receiptNo;
+  const paymentType = payment.paymentType;
+  const isVoided = payment.voided || false;
+  
+  // Update receipt printed status (only if not voided)
+  if (!isVoided) {
+    if (type === 'first') {
+      if (paymentType !== "Cash") {
+        await updatePayment(payment.id, { firstReceiptPrinted: true });
+      } else if (paymentType === "Cash") {
+        await updatePayment(payment.id, { firstReceiptPrinted: true });
+      }
+    } else if (type === 'final') {
+      if (paymentType !== "Cash") {
+        await updatePayment(payment.id, { finalReceiptPrinted: true });
+      } else if (paymentType === "Cash") {
+        await updatePayment(payment.id, { finalReceiptPrinted: true });
+      }
+    }
+  }
+  
+  // Set receipt content
+  const receiptHeader = document.getElementById("r_header");
+  const voidBanner = document.getElementById("r_void_banner");
+  const voidInfo = document.getElementById("r_void_info");
+  const expirySection = document.getElementById("r_expiry_section");
+  
+  if (isVoided) {
+    receiptHeader.innerText = "VOID RECEIPT";
+    voidBanner.style.display = "block";
+    voidInfo.style.display = "block";
+    expirySection.style.display = "none";
+    
+    // Set void information
+    document.getElementById("r_voided_by").innerText = payment.voidedBy || 'Unknown';
+    document.getElementById("r_voided_at").innerText = payment.voidedAt ? 
+      formatDateForDisplay(new Date(payment.voidedAt)) : 
+      'Unknown';
+    document.getElementById("r_void_reason").innerText = payment.voidReason || 'No reason provided';
+  } else {
+    receiptHeader.innerText = "PASSENGER PAYMENT RECEIPT" + (type === 'final' ? ' (FINAL)' : '');
+    voidBanner.style.display = "none";
+    voidInfo.style.display = "none";
+    expirySection.style.display = "block";
+  }
+  
+  document.getElementById("r_receiptNo").innerText = receiptNo + (isVoided ? ' (VOID)' : (type === 'final' ? ' (FINAL)' : ''));
+  document.getElementById("r_date").innerText = formatDateForDisplay(new Date());
+  
+  // Use shift data from payment
+  const shiftInfo = payment.shiftName || payment.shift || 'N/A';
+  const shiftDate = payment.shiftDate || new Date().toISOString().split('T')[0];
+  document.getElementById("r_shift").innerText = `${shiftDate} - ${shiftInfo}`;
+  
+  document.getElementById("r_staff").innerText = payment.staff || currentUser || 'Unknown';
+  document.getElementById("r_name").innerText = payment.name || 'N/A';
+  document.getElementById("r_flight").innerText = payment.flightNo || 'N/A';
+  document.getElementById("r_seat").innerText = payment.seatNo || 'N/A';
+  document.getElementById("r_adults").innerText = payment.adults || 0;
+  document.getElementById("r_kids").innerText = payment.kids || 0;
+  document.getElementById("r_payment_method").innerText = paymentType;
+  document.getElementById("r_currency").innerText = payment.currency || 'N/A';
+  
+  // Calculate subtotal and GST for display
+  const subtotal = payment.total ? (payment.total / 1.08).toFixed(2) : '0.00';
+  const gst = payment.total ? (payment.total - (payment.total / 1.08)).toFixed(2) : '0.00';
+  
+  document.getElementById("r_subtotal").innerText = subtotal;
+  document.getElementById("r_gst").innerText = gst;
+  document.getElementById("r_total").innerText = (payment.total || 0).toFixed(2);
+  document.getElementById("r_expiry").innerText = payment.expiryFormatted || calculateExpiryTime().formatted;
+  
+  // Show/hide receipt sections based on payment type
+  if (paymentType !== "Cash") {
+    document.getElementById("r_card_details").style.display = "block";
+    document.getElementById("r_cash_details").style.display = "none";
+    
+    // Only show payment details if they exist
+    if (payment.cardDetailsAdded && payment.batchNo && payment.approvalCode) {
+      document.getElementById("r_batch").innerText = payment.batchNo;
+      document.getElementById("r_approval").innerText = payment.approvalCode;
+    } else {
+      // Hide payment details section if no details available
+      document.getElementById("r_card_details").style.display = "none";
+    }
+  } else {
+    document.getElementById("r_card_details").style.display = "none";
+    document.getElementById("r_cash_details").style.display = "block";
+    document.getElementById("r_paid").innerText = (payment.paidAmount || 0).toFixed(2);
+    document.getElementById("r_balance").innerText = (payment.balance || 0).toFixed(2);
+  }
+  
+  // Print receipt for 76mm thermal printer
+  printThermalReceipt();
+  
+  // Show notification
+  const receiptType = isVoided ? 'Void' : (type === 'final' ? 'Final' : 'First');
+  showNotification(`Printed ${receiptType} Receipt: ${receiptNo}`, "success");
+}
+
+function printThermalReceipt() {
+  const content = document.getElementById("receiptContent").innerHTML;
+  
+  // Create a print-friendly window with 76mm width
+  const printWindow = window.open('', '_blank', 'width=300,height=600');
+  
+  // Thermal printer friendly CSS with void styling
+  const thermalCSS = `
+    <style>
+      @media print {
+        body {
+          width: 70mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          font-family: 'Courier New', monospace !important;
+          font-size: 12px !important;
+        }
+        * {
+          font-size: 12px !important;
+          line-height: 1.2 !important;
+        }
+        .no-print { display: none !important; }
+        @page {
+          margin: 0;
+          size: 70mm auto;
+        }
+        #r_void_banner {
+          background: #e74c3c !important;
+          color: white !important;
+          font-weight: bold !important;
+          border: 2px solid #000 !important;
+        }
+        #r_void_info {
+          background: #f8d7da !important;
+          border: 1px solid #f5c6cb !important;
+        }
+      }
+      body {
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+        width: 70mm;
+        margin: 0 auto;
+        padding: 5px;
+      }
+      h1, h2, h3 {
+        font-size: 14px;
+        margin: 5px 0;
+      }
+      hr {
+        border: none;
+        border-top: 1px dashed #000;
+        margin: 5px 0;
+      }
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .text-bold { font-weight: bold; }
+      .text-large { font-size: 16px; }
+      .text-small { font-size: 10px; }
+      .border-dashed { border: 1px dashed #000; }
+      .receipt-container {
+        width: 100%;
+        max-width: 70mm;
+        margin: 0 auto;
+      }
+      #r_void_banner {
+        background: #e74c3c;
+        color: white;
+        font-weight: bold;
+        border: 2px solid #000;
+      }
+      #r_void_info {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  `;
+  
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Koveli Lounge Receipt</title>
+        ${thermalCSS}
+      </head>
+      <body onload="window.print(); setTimeout(() => window.close(), 500);">
+        <div class="receipt-container">
+          ${content}
+        </div>
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+}
+
 // ======== AUTO EVENT LISTENERS ========
 window.onload = async function(){
   // Initialize company info
