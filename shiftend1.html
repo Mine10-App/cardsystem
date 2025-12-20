@@ -65,7 +65,7 @@
         header {
             background: linear-gradient(135deg, var(--gold-light) 0%, rgba(212, 175, 55, 0.9) 100%);
             color: var(--gold-darker);
-            padding: 25px 30px;
+            padding: 20px 30px;
             text-align: center;
             border-bottom: 3px solid var(--gold);
             position: relative;
@@ -88,9 +88,35 @@
             100% { transform: translateX(100%); }
         }
         
+        .company-info {
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        
+        .company-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gold-darker);
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        
+        .company-address {
+            font-size: 1rem;
+            color: var(--gold-dark);
+            margin-bottom: 3px;
+            font-weight: 500;
+        }
+        
+        .company-phone {
+            font-size: 0.9rem;
+            color: var(--gold-darker);
+            font-weight: 600;
+        }
+        
         h1 {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin: 10px 0 5px 0;
             font-weight: 700;
             color: var(--gold-darker);
             text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
@@ -99,9 +125,9 @@
         }
         
         .subtitle {
-            font-size: 1rem;
+            font-size: 0.9rem;
             opacity: 0.9;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             font-weight: 500;
             color: var(--gold-dark);
             position: relative;
@@ -109,7 +135,7 @@
         }
         
         .filter-section {
-            padding: 25px 30px;
+            padding: 20px 30px;
             background-color: var(--off-white);
             border-bottom: 2px solid var(--gold-light);
             position: relative;
@@ -174,11 +200,11 @@
         .action-buttons {
             display: flex;
             gap: 15px;
-            margin-top: 25px;
+            margin-top: 20px;
         }
         
         .btn {
-            padding: 14px 28px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
             font-size: 15px;
@@ -248,7 +274,7 @@
         }
         
         .report-container {
-            padding: 25px;
+            padding: 20px;
             min-height: 300px;
             background: linear-gradient(to bottom, var(--off-white), var(--white));
         }
@@ -300,7 +326,7 @@
             margin: 0 auto;
             background: var(--white);
             box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
-            padding: 2cm;
+            padding: 1.5cm;
             font-size: 12px;
             line-height: 1.4;
             border: 1px solid var(--gold-light);
@@ -319,8 +345,8 @@
         
         .report-header {
             text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
             border-bottom: 3px solid var(--gold);
             position: relative;
         }
@@ -335,11 +361,34 @@
             background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
         }
         
-        .report-title {
-            font-size: 22px;
+        .report-company {
+            margin-bottom: 10px;
+        }
+        
+        .report-company-name {
+            font-size: 18px;
             font-weight: bold;
             color: var(--gold-darker);
-            margin-bottom: 8px;
+            margin-bottom: 3px;
+        }
+        
+        .report-company-address {
+            font-size: 11px;
+            color: var(--gold-dark);
+            margin-bottom: 2px;
+        }
+        
+        .report-company-phone {
+            font-size: 10px;
+            color: var(--gold-darker);
+            font-weight: 600;
+        }
+        
+        .report-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--gold-darker);
+            margin: 10px 0 5px 0;
             letter-spacing: 1px;
         }
         
@@ -351,20 +400,20 @@
         }
         
         .report-date {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--gold-darker);
             font-weight: 600;
             background: var(--gold-light);
             display: inline-block;
-            padding: 5px 15px;
+            padding: 4px 12px;
             border-radius: 20px;
-            margin-top: 10px;
+            margin-top: 8px;
         }
         
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 25px 0;
+            margin: 20px 0;
             font-size: 11px;
             border: 1px solid var(--gold-light);
             box-shadow: 0 4px 15px rgba(212, 175, 55, 0.08);
@@ -373,14 +422,14 @@
         .summary-table th {
             background: linear-gradient(to bottom, var(--gold-light), rgba(212, 175, 55, 0.9));
             color: var(--gold-darker);
-            padding: 12px 8px;
+            padding: 10px 8px;
             text-align: left;
             font-weight: 600;
             border: 1px solid var(--gold);
         }
         
         .summary-table td {
-            padding: 10px 8px;
+            padding: 8px 8px;
             border: 1px solid var(--gold-light);
         }
         
@@ -414,8 +463,8 @@
         }
         
         .report-footer {
-            margin-top: 30px;
-            padding-top: 15px;
+            margin-top: 25px;
+            padding-top: 12px;
             border-top: 2px solid var(--gold-light);
             text-align: center;
             color: var(--gold-dark);
@@ -493,7 +542,7 @@
         .status-message {
             padding: 15px 20px;
             border-radius: 8px;
-            margin: 20px 30px;
+            margin: 15px 30px;
             text-align: center;
             font-weight: 600;
             display: none;
@@ -519,7 +568,7 @@
         
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             color: var(--gold-dark);
             font-size: 0.9rem;
             border-top: 2px solid var(--gold-light);
@@ -529,7 +578,7 @@
         @media screen and (max-width: 1200px) {
             .a4-report {
                 width: 100%;
-                padding: 1.5cm;
+                padding: 1cm;
             }
             
             .filter-container {
@@ -578,14 +627,21 @@
             .report-title {
                 font-size: 18px;
             }
+            
+            .report-company-name {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <div class="company-info" id="companyInfo">
+                <!-- Company info will be loaded from Co.js -->
+            </div>
             <h1><i class="fas fa-chart-line"></i> Shift Transactions Report</h1>
-            <p class="subtitle">Flight-wise Transactions and Pax Summary</p>
+            <p class="subtitle">Daily transactions summary report</p>
         </header>
         
         <div class="status-message" id="statusMessage"></div>
@@ -642,6 +698,8 @@
         </button>
     </div>
 
+    <!-- Include Co.js for company information -->
+    <script src="./Co.js"></script>
     <script src="./fireC1.js"></script>
     <script>
         // ==================== DOM ELEMENTS ====================
@@ -656,12 +714,26 @@
         const noDataMessage = document.getElementById('noDataMessage');
         const statusMessage = document.getElementById('statusMessage');
         const printControls = document.getElementById('printControls');
+        const companyInfoElement = document.getElementById('companyInfo');
 
         // ==================== GLOBAL VARIABLES ====================
         let currentReportData = null;
+        let companyInfo = {
+            name: "Koveli Lounge",
+            address: "Velana International Airport",
+            phone: "+960 304 6677"
+        };
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', function() {
+            // Load company info from Co.js if available
+            if (typeof window.companyInfo !== 'undefined') {
+                companyInfo = window.companyInfo;
+            }
+            
+            // Display company info
+            displayCompanyInfo();
+            
             // Set default date to today
             const today = new Date();
             const todayString = today.toISOString().split('T')[0];
@@ -670,6 +742,15 @@
             // Setup event listeners
             setupEventListeners();
         });
+
+        // ==================== DISPLAY COMPANY INFO ====================
+        function displayCompanyInfo() {
+            companyInfoElement.innerHTML = `
+                <div class="company-name">${companyInfo.name}</div>
+                <div class="company-address">${companyInfo.address}</div>
+                <div class="company-phone">${companyInfo.phone}</div>
+            `;
+        }
 
         // ==================== EVENT LISTENERS ====================
         function setupEventListeners() {
@@ -833,8 +914,12 @@
             let reportHTML = `
                 <div class="a4-report">
                     <div class="report-header">
+                        <div class="report-company">
+                            <div class="report-company-name">${companyInfo.name}</div>
+                            <div class="report-company-address">${companyInfo.address}</div>
+                            <div class="report-company-phone">${companyInfo.phone}</div>
+                        </div>
                         <div class="report-title">SHIFT TRANSACTIONS SUMMARY</div>
-                        <div class="report-subtitle">Flight-wise Transactions and Pax Count</div>
                         <div class="report-date">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)} Shift</div>
                     </div>
                     
@@ -905,7 +990,7 @@
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `transactions_${date}_${shift}.csv`);
+                link.setAttribute("download", `${companyInfo.name.replace(/\s+/g, '_')}_transactions_${date}_${shift}.csv`);
                 document.body.appendChild(link);
                 
                 // Download file
