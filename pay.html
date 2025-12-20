@@ -1504,79 +1504,151 @@ const MALDIVES_OFFSET = 5 * 60 * 60 * 1000;
 
 // ======== SHIFT SYSTEM FUNCTIONS ========
 
-// Initialize Shift Firebase
+// Initialize Shift Firebase (SEPARATE from transaction Firebase)
 function initializeShiftFirebase() {
     try {
-        // Check if Firebase is already initialized
-        if (!firebase.apps.length) {
-            console.error("Main Firebase not initialized");
+        // Check if Firebase SDK is loaded
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase SDK not loaded");
             return false;
         }
         
         // Check if shift config is available
         if (!window.shiftFirebaseConfig) {
-            console.warn("Shift Firebase config not found in fireshift.js");
+            console.warn("Shift Firebase config not found. Check fireshift.js");
+            console.log("Checking window.shiftFirebaseConfig:", window.shiftFirebaseConfig);
             return false;
         }
         
-        // Initialize a separate Firebase app for shift system
-        const shiftApp = firebase.initializeApp(shiftFirebaseConfig, "shiftApp");
-        shiftFirebase = firebase.firestore(shiftApp);
-        console.log("Shift Firebase initialized successfully");
-        return true;
+        console.log("Initializing Shift Firebase with config:", window.shiftFirebaseConfig.projectId);
+        
+        try {
+            // Try to initialize shift Firebase app
+            const shiftApp = firebase.initializeApp(window.shiftFirebaseConfig, "shiftApp");
+            shiftFirebase = firebase.firestore(shiftApp);
+            console.log("Shift Firebase (cardsystem-21773) initialized successfully");
+            return true;
+        } catch (error) {
+            // If app already exists, get it
+            if (error.code === 'app/duplicate-app') {
+                console.log("Shift app already exists, getting existing");
+                shiftFirebase = firebase.firestore(firebase.app("shiftApp"));
+                return true;
+            }
+            console.error("Error initializing Shift Firebase:", error);
+            return false;
+        }
     } catch (error) {
-        console.error("Error initializing Shift Firebase:", error);
+        console.error("Error in initializeShiftFirebase:", error);
         return false;
     }
 }
 
-// Fetch shift data from Firebase
+// Fetch shift data from Shift Firebase
 async function fetchShiftData() {
     try {
+        // Initialize shift Firebase if not already
         if (!shiftFirebase) {
             if (!initializeShiftFirebase()) {
-                console.warn("Shift Firebase not initialized");
+                console.warn("Shift Firebase initialization failed");
+                setDefaultShiftData();
                 return null;
             }
         }
         
         // Get today's date in YYYY-MM-DD format (Maldives time)
         const todayMaldives = getMaldivesDate();
-        const todayStr = todayMaldives.toISOString().split('T')[0]; // "2025-12-20"
+        const todayStr = todayMaldives.toISOString().split('T')[0];
         
-        console.log("Fetching shift data for date:", todayStr);
+        console.log("Fetching shift data for date:", todayStr, "from shift Firebase");
         
-        // Try to get today's shift document
-        const shiftRef = shiftFirebase.collection("shifts").doc(todayStr);
-        const doc = await shiftRef.get();
-        
-        if (doc.exists) {
-            shiftData = doc.data();
-            console.log("Shift data fetched:", shiftData);
+        // Try to get today's shift document from "shifts" collection
+        try {
+            const shiftRef = shiftFirebase.collection("shifts").doc(todayStr);
+            const doc = await shiftRef.get();
             
-            // Determine which shift is currently open
-            determineCurrentShift(shiftData);
-            
-            // Update display
-            updateShiftDisplay();
-            
-            return shiftData;
-        } else {
-            console.log("No shift data found for today:", todayStr);
-            // Use default values
-            shiftData = {
-                date: todayStr,
-                morning: { status: "not_available" },
-                evening: { status: "not_available" }
-            };
-            updateShiftDisplay();
+            if (doc.exists) {
+                shiftData = doc.data();
+                console.log("Shift data fetched from Firebase:", shiftData);
+                
+                // Check if date field exists in document
+                if (!shiftData.date) {
+                    // If no date field in document, add the document ID as date
+                    shiftData.date = todayStr;
+                    console.log("Added date field from document ID:", todayStr);
+                }
+                
+                // Determine which shift is currently open
+                determineCurrentShift(shiftData);
+                
+                // Update display
+                updateShiftDisplay();
+                
+                return shiftData;
+            } else {
+                console.log("No shift data found for today in shift Firebase");
+                
+                // Try to find ANY shift document with an open shift
+                const snapshot = await shiftFirebase.collection("shifts")
+                    .where("morning.status", "==", "open")
+                    .limit(1)
+                    .get();
+                
+                if (!snapshot.empty) {
+                    const doc = snapshot.docs[0];
+                    shiftData = doc.data();
+                    shiftData.date = doc.id; // Use document ID as date
+                    console.log("Found open morning shift for date:", doc.id);
+                } else {
+                    // Try evening shift
+                    const eveningSnapshot = await shiftFirebase.collection("shifts")
+                        .where("evening.status", "==", "open")
+                        .limit(1)
+                        .get();
+                    
+                    if (!eveningSnapshot.empty) {
+                        const doc = eveningSnapshot.docs[0];
+                        shiftData = doc.data();
+                        shiftData.date = doc.id; // Use document ID as date
+                        console.log("Found open evening shift for date:", doc.id);
+                    } else {
+                        console.log("No open shifts found in Firebase");
+                        setDefaultShiftData();
+                        return shiftData;
+                    }
+                }
+                
+                determineCurrentShift(shiftData);
+                updateShiftDisplay();
+                return shiftData;
+            }
+        } catch (firebaseError) {
+            console.warn("Error fetching from shift Firebase:", firebaseError);
+            setDefaultShiftData();
             return shiftData;
         }
+        
     } catch (error) {
-        console.error("Error fetching shift data:", error);
-        showNotification("Error loading shift data", "error");
-        return null;
+        console.error("Error in fetchShiftData:", error);
+        setDefaultShiftData();
+        return shiftData;
     }
+}
+
+// Set default shift data when Firebase is unavailable
+function setDefaultShiftData() {
+    // Don't set a date when we have no Firebase data
+    shiftData = {
+        morning: { status: "not_available" },
+        evening: { status: "not_available" }
+        // No date field - will show --/--/----
+    };
+    
+    // Use time-based shift determination
+    determineCurrentShift(shiftData);
+    updateShiftDisplay();
+    
+    console.log("Using default shift data (no Firebase date available)");
 }
 
 // Determine which shift is currently open
@@ -1588,15 +1660,15 @@ function determineCurrentShift(data) {
     console.log("Morning shift status:", data.morning?.status);
     console.log("Evening shift status:", data.evening?.status);
     
-    // Priority 1: Check status fields
+    // Priority 1: Check status fields from Firebase
     if (data.morning?.status === "open") {
         currentShift = "Morning";
-        console.log("Shift determined by status: Morning (open)");
+        console.log("Shift determined by Firebase status: Morning (open)");
     } else if (data.evening?.status === "open") {
         currentShift = "Evening";
-        console.log("Shift determined by status: Evening (open)");
+        console.log("Shift determined by Firebase status: Evening (open)");
     } 
-    // Priority 2: Use time-based logic if no status
+    // Priority 2: Use time-based logic if no status in Firebase
     else if (currentHour >= 6 && currentHour < 18) {
         currentShift = "Morning";
         console.log("Shift determined by time: Morning (6AM-6PM)");
@@ -1608,20 +1680,23 @@ function determineCurrentShift(data) {
     return currentShift;
 }
 
-// Update shift display on the page
+// Update shift display on the page using date FROM Firebase
 function updateShiftDisplay() {
     if (!shiftData) {
-        document.getElementById("currentShiftDisplay").textContent = "Not Available";
+        document.getElementById("currentShiftDisplay").textContent = "Morning";
+        // Don't show date if no shift data
         document.getElementById("currentDateDisplay").textContent = "--/--/----";
         return;
     }
     
-    // Format date for display (DD/MM/YYYY)
+    // Get date FROM shiftData (from Firebase document)
     let displayDate = "--/--/----";
     if (shiftData.date) {
+        // Format date from Firebase (YYYY-MM-DD) to DD/MM/YYYY
         const dateParts = shiftData.date.split('-');
         if (dateParts.length === 3) {
             displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            console.log("Using date from Firebase shift document:", shiftData.date, "->", displayDate);
         }
     }
     
@@ -1630,11 +1705,11 @@ function updateShiftDisplay() {
     document.getElementById("currentDateDisplay").textContent = displayDate;
     
     // Also update the shift dropdown if supervisor
-    if (isSupervisor) {
+    if (isSupervisor && document.getElementById("shiftTypeSelect")) {
         document.getElementById("shiftTypeSelect").value = currentShift;
     }
     
-    console.log(`Shift display updated: ${currentShift} | Date: ${displayDate}`);
+    console.log(`Shift display updated: ${currentShift} | Date from Firebase: ${displayDate}`);
 }
 
 // Refresh shift data manually
