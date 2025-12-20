@@ -31,9 +31,9 @@
     .containerB {
       max-width: 1200px;
       margin: 0 auto;
-      height: auto;
-      min-height: 0;
-      padding: 1px 0;
+      height: auto; /* Let content determine height */
+      min-height: 0; /* Remove minimum height */
+      padding: 1px 0; /* Reduce vertical padding */
     }
     
     .header {
@@ -63,49 +63,6 @@
       font-weight: 300;
     }
     
-    .shift-display {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 8px 15px;
-      border-radius: 6px;
-      font-weight: 600;
-      font-size: 13px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      min-width: 200px;
-      text-align: center;
-      cursor: pointer;
-    }
-    
-    .shift-display:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-    
-    .shift-indicator {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12px;
-    }
-    
-    .shift-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-    
-    .shift-morning-dot {
-      background-color: #3498db;
-    }
-    
-    .shift-evening-dot {
-      background-color: #9b59b6;
-    }
-    
-    .shift-date {
-      font-size: 11px;
-      opacity: 0.9;
-    }
-    
     .header-right {
       display: flex;
       align-items: center;
@@ -117,32 +74,73 @@
       gap: 10px;
       align-items: center;
     }
-    
-    .home-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 7px 20px;
-      background-color: #f5ede9;
-      color: rgb(0, 0, 0);
-      border: #ffffff;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-      text-decoration: none;
-      transition: background-color 0.3s;
-    }
 
-    .home-btn:hover {
-      background-color: #da7f3e;
-      text-decoration: none;
-      color: white;
-    }
+       /* Option 1: Simple container */
+.button-container {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px;
+}
 
-    .home-btn .icon-home {
-      margin-right: 8px;
-      font-size: 18px;
-    }
+/* Option 2: Container with styling */
+.button-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding: 20px;
+  background-color: #77d8f8;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin: 20px 0;
+}
+
+/* Option 3: Center aligned container */
+.button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+  background: linear-gradient(to right, #a67c00, #c59402);
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Option 4: Vertical button container */
+.button-container.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-width: 200px;
+  padding: 10px;
+}
+
+ .home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 20px;
+  background-color: #f5ede9;
+  color: rgb(0, 0, 0);
+  border: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+}
+
+.home-btn:hover {
+  background-color: #da7f3e;
+  text-decoration: none;
+  color: white;
+}
+
+.home-btn .icon-home {
+  margin-right: 8px;
+  font-size: 18px;
+}
     
     .search-input {
       padding: 8px 12px;
@@ -239,6 +237,21 @@
       border-color: var(--gold-dark);
       padding: 8px 12px;
       font-size: 13px;
+    }
+    
+    .input-group input.positive {
+      color: #27ae60;
+      font-weight: bold;
+    }
+    
+    .input-group input.negative {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    .input-group input.zero {
+      color: var(--gold-deep);
+      font-weight: bold;
     }
     
     .row {
@@ -488,6 +501,36 @@
       margin-left: 6px;
     }
     
+    .rate-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+      color: white;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    
+    .payment-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    
+    .payment-cash {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+    }
+    
+    .payment-card {
+      background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+      color: white;
+    }
+    
     .payment-method-badge {
       display: inline-block;
       padding: 2px 6px;
@@ -522,6 +565,12 @@
       color: white;
     }
     
+    .card-details {
+      font-size: 10px;
+      color: var(--text-light);
+      margin-top: 3px;
+    }
+    
     .status-pending {
       display: inline-block;
       padding: 3px 8px;
@@ -537,6 +586,17 @@
       display: inline-block;
       padding: 3px 8px;
       background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+      color: white;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    
+    .status-void {
+      display: inline-block;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
       color: white;
       border-radius: 3px;
       font-size: 11px;
@@ -573,7 +633,25 @@
       font-weight: 600;
       margin-left: 6px;
     }
+
+    .void-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 6px;
+      animation: pulse 2s infinite;
+    }
     
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
     .compact-info-summary {
       display: flex;
       justify-content: space-between;
@@ -623,6 +701,10 @@
       .header-right {
         flex-direction: column;
         width: 100%;
+      }
+      
+      .compact-info {
+        text-align: center;
       }
       
       .search-container {
@@ -678,8 +760,9 @@
     .icon-print { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>'); }
     .icon-view { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>'); }
     .icon-search { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); }
-    .icon-home { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>'); }
+     .icon-home { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>'); }
     .icon-report { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3s.58-1.3 1.3-1.3 1.3.58 1.3 1.3-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>'); }
+    .icon-void { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'); }
     
     /* Modal styles */
     .modal {
@@ -732,21 +815,89 @@
       color: var(--gold-accent);
     }
     
-    /* Notification Container */
-    #notificationContainer {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1001;
+    /* Modal select styling */
+    .modal select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gold-medium);
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: all 0.3s;
+      background-color: white;
+      color: var(--text-dark);
+      cursor: pointer;
+    }
+    
+    .modal select:focus {
+      outline: none;
+      border-color: var(--gold-accent);
+      box-shadow: 0 0 0 3px rgba(193, 154, 107, 0.2);
+    }
+    
+    .modal select[readonly] {
+      background-color: var(--gold-light);
+      cursor: not-allowed;
+    }
+    
+    /* Tabs for payment logs */
+    .tab-container {
+      margin-bottom: 15px;
+    }
+    
+    .tab-buttons {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    
+    .tab-btn {
+      padding: 8px 16px;
+      background: var(--gold-light);
+      border: 1px solid var(--gold-medium);
+      border-radius: 5px 5px 0 0;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-medium);
+      transition: all 0.3s;
+      font-size: 13px;
+    }
+    
+    .tab-btn.active {
+      background: var(--gold-accent);
+      color: white;
+      border-color: var(--gold-accent);
+    }
+    
+    .tab-btn:hover:not(.active) {
+      background: var(--gold-medium);
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .expiry-note {
+      font-size: 10px;
+      color: #e74c3c;
+      margin-top: 3px;
+      font-weight: 600;
     }
     
     .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
       padding: 12px 20px;
       border-radius: 6px;
       color: white;
       font-weight: 600;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      margin-bottom: 10px;
+      z-index: 1001;
       animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
       max-width: 300px;
     }
@@ -776,37 +927,141 @@
       from { opacity: 1; }
       to { opacity: 0; }
     }
+    
+    /* Login user display */
+    .user-display {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      min-width: 150px;
+      text-align: center;
+      cursor: pointer;
+    }
+    
+    .user-display:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Supervisor specific styles */
+    .supervisor-only {
+      border-left: 4px solid #3498db;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
+    }
+    
+    .shift-select-container {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(52, 152, 219, 0.1);
+      border-radius: 6px;
+      border: 1px solid #3498db;
+      display: none;
+    }
+    
+    .shift-select-container .input-group {
+      margin-bottom: 0;
+    }
+    
+    /* Card separator */
+    .card-separator {
+      border-top: 1px solid var(--gold-medium);
+      margin: 15px 0;
+    }
+    
+    /* Void receipt warning */
+    .void-warning {
+      background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      text-align: center;
+      font-weight: bold;
+      border: 2px dashed white;
+    }
+    
+    .void-info {
+      background: linear-gradient(135deg, #f5b7b1 0%, #f1948a 100%);
+      padding: 8px;
+      border-radius: 6px;
+      margin: 5px 0;
+      border-left: 4px solid #c0392b;
+    }
+    
+    /* Shift display styles */
+    .shift-display {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 5px 10px;
+      border-radius: 4px;
+      margin: 5px 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .shift-info {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .shift-refresh-btn {
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      color: white;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.3s;
+    }
+    
+    .shift-refresh-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+    
+    .shift-date {
+      font-weight: bold;
+      color: #ffd700;
+    }
+    
+    .shift-name {
+      font-weight: bold;
+      color: #87ceeb;
+    }
   </style>
 </head>
 <body>
   <div class="containerB">
     <div class="button-container">
-      <button class="home-btn" onclick="window.location.href='dashP.html'">
-        <span class="icon icon-home"></span> Home
-      </button>
-      <button class="home-btn" onclick="window.location.href='shiftend.html'">
-        <span class="icon icon-report"></span> Report
-      </button>
-      <button class="home-btn" onclick="window.location.href='void.html'">
-        <span class="icon icon-report"></span> Void
-      </button>
-    </div>
-  </div>
-  
+          <button class="home-btn" onclick="window.location.href='dashP.html'">
+            <span class="icon icon-home"></span> Home
+          </button>
+
+          <button class="home-btn" onclick="window.location.href='shiftend.html'">
+            <span class="icon icon-report"></span> Report
+          </button>
+          <button class="home-btn" onclick="window.location.href='void.html'">
+            <span class="icon icon-void"></span> Void
+          </button>
+        </div>
+      </div>
   <div class="container">
-    <!-- HEADER WITH SHIFT DISPLAY -->
+    <!-- COMPACT HEADER WITH SEARCH -->
     <div class="header">
       <div class="header-left">
         <h1>Passenger Payment POS</h1>
         <p>Koveli Lounge - Passenger Payment Processing</p>
+        <!-- Shift Information Display -->
+        <div class="shift-info" id="shiftInfoDisplay">
+          Loading shift info...
+        </div>
       </div>
       <div class="header-right">
-        <div class="shift-display" id="shiftDisplay" onclick="showShiftInfo()">
-          <div class="shift-indicator">
-            <span class="shift-dot" id="shiftDot"></span>
-            <span id="shiftType">Loading...</span>
-          </div>
-          <div class="shift-date" id="shiftDate">--/--/----</div>
+        <div class="user-display" id="userDisplay" onclick="logoutUser()" title="Double-click to logout">
+          <span id="currentUser">Loading...</span>
         </div>
         <div class="search-container">
           <input class="search-input" id="receiptSearch" type="text" placeholder="Receipt No...">
@@ -846,6 +1101,21 @@
             <input id="seatNo" type="text" placeholder="Seat assignment">
           </div>
         </div>
+        
+        <!-- SHIFT INFORMATION DISPLAY -->
+        <div class="shift-display" id="shiftDisplaySection">
+          <div class="input-group">
+            <label>Shift Information</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input id="currentShiftDate" type="text" readonly style="flex: 1; background: var(--gold-light);">
+              <input id="currentShiftName" type="text" readonly style="flex: 1; background: var(--gold-light); font-weight: bold;">
+              <button class="shift-refresh-btn" onclick="fetchShiftFromFirebase(true)">
+                🔄 Refresh
+              </button>
+            </div>
+            <div class="section-note">Date and shift are fetched from Firebase. Press refresh to update.</div>
+          </div>
+        </div>
       </div>
       
       <div class="card">
@@ -881,16 +1151,17 @@
         <div class="input-group">
           <label for="paymentType">Payment Method</label>
           <select id="paymentType">
-            <option value="Cash">Cash</option>
+            <option value="Card">Card Payment</option>
+            <option value="Cash">Cash Payment</option>
             <option value="Visa">Visa</option>
             <option value="MasterCard">MasterCard</option>
-            <option value="Amex">American Express</option>
+            <option value="Amex">American Express (Amex)</option>
             <option value="UnionPay">UnionPay</option>
-            <option value="QR">QR Sales</option>
+            <option value="QRSales">QR Sales</option>
           </select>
         </div>
         
-        <!-- Cash Payment Fields -->
+        <!-- Cash Payment Fields (Hidden by default) -->
         <div id="cashPaymentFields" style="display: none;">
           <div class="input-group">
             <label for="paidAmount">Paid Amount</label>
@@ -916,7 +1187,6 @@
             <span class="info-value-summary" id="headerExpiryTime">--:--</span>
           </div>
         </div>
-        
         <div class="input-group">
           <label>Subtotal Amount</label>
           <input id="subtotal" type="text" readonly class="summary-value" value="0.00">
@@ -948,20 +1218,38 @@
       </div>
     </div>
     
-    <!-- PENDING PAYMENTS SECTION -->
     <div class="logs-section">
       <div class="card">
         <h3>Today's Pending Payments</h3>
-        <div id="pendingLog">
-          <p style="text-align: center; color: var(--text-light); padding: 20px;">
-            Click "View Logs" to display today's pending transaction history
-          </p>
+        
+        <!-- Tabs for Pending Payments Only -->
+        <div class="tab-container">
+          <div class="tab-buttons">
+            <button class="tab-btn active" onclick="showTab('pendingCards')">Today's Pending</button>
+            <button class="tab-btn" onclick="cleanupOldLocalPayments(); loadPayments();">Cleanup Old Data</button>
+          </div>
+          
+          <div id="pendingCards" class="tab-content active">
+            <div id="pendingLog">
+              <p style="text-align: center; color: var(--text-light); padding: 20px;">
+                Click "View Logs" to display today's pending transaction history
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Supervisor Cleanup Section -->
+        <div id="supervisorCleanupSection" style="display: none; margin-top: 10px;">
+          <button class="btn btn-secondary" onclick="manualCleanupAllOldData()" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+            🗑️ Supervisor Cleanup
+          </button>
+          <div class="section-note">Deletes all local data except today's entries</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODAL FOR PAYMENT DETAILS -->
+  <!-- Modal for entering card details -->
   <div id="cardDetailsModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -990,7 +1278,7 @@
           <option value="">Select Payment Method</option>
           <option value="Visa">Visa</option>
           <option value="MasterCard">MasterCard</option>
-          <option value="Amex">American Express</option>
+          <option value="Amex">American Express (Amex)</option>
           <option value="UnionPay">UnionPay</option>
           <option value="QR">QR Sales</option>
         </select>
@@ -1023,7 +1311,7 @@
     </div>
   </div>
 
-  <!-- SEARCH MODAL -->
+  <!-- Search Result Modal -->
   <div id="searchResultModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -1049,12 +1337,13 @@
     </div>
   </div>
 
-  <!-- NOTIFICATION CONTAINER -->
+  <!-- Notification Container -->
   <div id="notificationContainer"></div>
 
-  <!-- HIDDEN RECEIPT TEMPLATE -->
+  <!-- Hidden Receipt for 76mm Printer - PROFESSIONAL DESIGN with VOID support -->
   <div id="receiptArea" style="display:none;">
     <div id="receiptContent" style="width:280px;font-family:'Courier New', monospace;font-size:12px;line-height:1.2;">
+      <!-- Company Header -->
       <div style="text-align:center;font-weight:bold;font-size:14px;margin-bottom:3px;letter-spacing:1px;">
         KOVELI LOUNGE
       </div>
@@ -1065,10 +1354,17 @@
         +960 304 6677
       </div>
       
+      <!-- Receipt Header -->
       <div style="text-align:center;font-weight:bold;font-size:11px;margin-bottom:5px;border-top:1px dashed #000;border-bottom:1px dashed #000;padding:3px 0;" id="r_header">
         PASSENGER PAYMENT RECEIPT
       </div>
       
+      <!-- VOID WARNING BANNER -->
+      <div id="r_void_banner" style="display:none;text-align:center;background:#e74c3c;color:white;font-weight:bold;margin-bottom:5px;padding:3px;font-size:12px;border:2px solid #000;">
+        ⚠️ VOID RECEIPT ⚠️
+      </div>
+      
+      <!-- Receipt Info -->
       <div style="margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span><b>Receipt:</b></span>
@@ -1088,8 +1384,27 @@
         </div>
       </div>
       
+      <!-- VOID Information -->
+      <div id="r_void_info" style="display:none;margin-bottom:5px;background:#f8d7da;border:1px solid #f5c6cb;padding:3px;">
+        <div style="text-align:center;font-weight:bold;color:#721c24;font-size:10px;margin-bottom:2px;">VOID INFORMATION</div>
+        <div style="display:flex;justify-content:space-between;">
+          <span><b>Voided By:</b></span>
+          <span id="r_voided_by"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span><b>Voided At:</b></span>
+          <span id="r_voided_at"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;">
+          <span><b>Reason:</b></span>
+          <span id="r_void_reason"></span>
+        </div>
+      </div>
+      
+      <!-- Separator -->
       <div style="border-bottom:1px dashed #000;margin:5px 0;"></div>
       
+      <!-- Passenger Details -->
       <div style="margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span><b>Name:</b></span>
@@ -1105,6 +1420,7 @@
         </div>
       </div>
       
+      <!-- Payment Details -->
       <div style="margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span><b>Adults:</b></span>
@@ -1124,6 +1440,7 @@
         </div>
       </div>
       
+      <!-- Card Details (only if available) -->
       <div id="r_card_details" style="display:none;margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span><b>Batch No:</b></span>
@@ -1135,6 +1452,7 @@
         </div>
       </div>
       
+      <!-- Cash Details (only if cash payment) -->
       <div id="r_cash_details" style="display:none;margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span><b>Paid Amount:</b></span>
@@ -1146,8 +1464,10 @@
         </div>
       </div>
       
+      <!-- Separator -->
       <div style="border-bottom:1px dashed #000;margin:5px 0;"></div>
       
+      <!-- Payment Summary -->
       <div style="margin-bottom:5px;">
         <div style="display:flex;justify-content:space-between;">
           <span>Subtotal:</span>
@@ -1163,13 +1483,16 @@
         </div>
       </div>
       
+      <!-- Separator -->
       <div style="border-bottom:1px dashed #000;margin:5px 0;"></div>
       
+      <!-- Expiry Information -->
       <div style="text-align:center;margin-bottom:5px;" id="r_expiry_section">
         <div style="font-size:10px;"><b>VALID UNTIL</b></div>
         <div style="font-weight:bold;color:#e74c3c;font-size:12px;" id="r_expiry"></div>
       </div>
       
+      <!-- Footer -->
       <div style="text-align:center;font-size:9px;margin-top:10px;">
         Thank you for choosing Koveli Lounge
       </div>
@@ -1179,360 +1502,277 @@
     </div>
   </div>
 
-  <!-- FIREBASE AND OTHER SCRIPTS -->
+  <!-- Add Firebase SDK and your scripts -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
   <script src="fireW1.js"></script>
   <script src="rate1.js"></script>
+  
+  <!-- Company Information -->
   <script src="Co.js"></script>
-  <script src="fireshift.js"></script>
 
-<script>
-// ======== GLOBAL VARIABLES ========
+  <script>
+// ======== MAIN APPLICATION CODE ========
+
+// Store current payment data
 let currentPaymentData = null;
+let receiptCounter = null;
+let lastReceiptNumber = null;
+let pendingSyncQueue = [];
+let isSyncing = false;
 let currentUser = null;
-let isSupervisor = false;
 let foundReceiptData = null;
-let currentShift = null;
-let currentShiftDate = null;
+let isSupervisor = false;
 
-// Maldives timezone offset (UTC+5) in minutes
-const MALDIVES_OFFSET_MINUTES = 5 * 60;
+// Maldives timezone offset (UTC+5 hours in milliseconds)
+const MALDIVES_OFFSET = 5 * 60 * 60 * 1000;
 
-// ======== TIMEZONE FUNCTIONS ========
-function getMaldivesTime() {
+// Check if Firebase is initialized
+function checkFirebase() {
+  if (!window.walkinDb) {
+    console.error("Firebase not initialized. Check fireW.js");
+    return false;
+  }
+  return true;
+}
+
+// Check if Company Info is loaded
+function checkCompanyInfo() {
+  if (!window.companyInfo) {
+    console.warn("Company info not loaded from Co.js");
+    // Provide default values
+    window.companyInfo = {
+      name: "Koveli Lounge",
+      address: "Velana International Airport",
+      phone: "+960 304 6677"
+    };
+  }
+}
+
+// ======== SHIFT MANAGEMENT FUNCTIONS ========
+async function fetchShiftFromFirebase(forceRefresh = false) {
+  try {
+    if (!checkFirebase()) {
+      console.error("Firebase not available for shift fetch");
+      showNotification("Cannot fetch shift: Firebase not available", "error");
+      return null;
+    }
+    
+    // Check if we have cached shift data (unless force refresh)
+    if (!forceRefresh) {
+      const cachedShift = localStorage.getItem('currentShiftData');
+      if (cachedShift) {
+        const shiftData = JSON.parse(cachedShift);
+        const cacheTime = new Date(shiftData.cachedAt).getTime();
+        const now = new Date().getTime();
+        const hoursSinceCache = (now - cacheTime) / (1000 * 60 * 60);
+        
+        // Use cache if less than 1 hour old
+        if (hoursSinceCache < 1) {
+          console.log("Using cached shift data (less than 1 hour old)");
+          updateShiftDisplay(shiftData);
+          return shiftData;
+        }
+      }
+    }
+    
+    showNotification("Fetching shift information from Firebase...", "info", 2000);
+    
+    // Fetch shift data from Firebase
+    const shiftsRef = window.walkinDb.collection("shifts");
+    const snapshot = await shiftsRef.orderBy("date", "desc").limit(1).get();
+    
+    if (snapshot.empty) {
+      showNotification("No shift data found in Firebase", "warning");
+      return null;
+    }
+    
+    const shiftDoc = snapshot.docs[0];
+    const shiftData = shiftDoc.data();
+    
+    // Get the date from Firebase (string format like "2025-12-19")
+    const firebaseDate = shiftData.date;
+    
+    // Check which shift is open
+    let currentShift = "No Shift Open";
+    
+    if (shiftData.morning && shiftData.morning.status === "open") {
+      currentShift = "Morning Shift";
+    } else if (shiftData.evening && shiftData.evening.status === "open") {
+      currentShift = "Evening Shift";
+    }
+    
+    // Prepare shift data for storage
+    const processedShiftData = {
+      date: firebaseDate,
+      shiftName: currentShift,
+      shiftData: shiftData,
+      cachedAt: new Date().toISOString(),
+      fetchedFromFirebase: true
+    };
+    
+    // Store in localStorage
+    localStorage.setItem('currentShiftData', JSON.stringify(processedShiftData));
+    
+    // Update display
+    updateShiftDisplay(processedShiftData);
+    
+    showNotification(`Shift updated: ${currentShift} (${firebaseDate})`, "success");
+    
+    return processedShiftData;
+    
+  } catch (error) {
+    console.error("Error fetching shift from Firebase:", error);
+    showNotification("Error fetching shift data: " + error.message, "error");
+    
+    // Try to use cached data as fallback
+    const cachedShift = localStorage.getItem('currentShiftData');
+    if (cachedShift) {
+      const shiftData = JSON.parse(cachedShift);
+      showNotification("Using cached shift data (network error)", "warning");
+      updateShiftDisplay(shiftData);
+      return shiftData;
+    }
+    
+    return null;
+  }
+}
+
+function updateShiftDisplay(shiftData) {
+  if (!shiftData) {
+    document.getElementById("currentShiftDate").value = "Not Available";
+    document.getElementById("currentShiftName").value = "No Shift";
+    document.getElementById("shiftInfoDisplay").innerHTML = "Shift info not available";
+    return;
+  }
+  
+  const dateField = document.getElementById("currentShiftDate");
+  const shiftField = document.getElementById("currentShiftName");
+  const infoDisplay = document.getElementById("shiftInfoDisplay");
+  
+  if (dateField) {
+    dateField.value = shiftData.date || "Not Available";
+  }
+  
+  if (shiftField) {
+    shiftField.value = shiftData.shiftName || "No Shift";
+  }
+  
+  if (infoDisplay) {
+    const cachedTime = shiftData.cachedAt ? 
+      new Date(shiftData.cachedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+      "Just now";
+    
+    infoDisplay.innerHTML = `
+      <span class="shift-date">Date: ${shiftData.date || "N/A"}</span> | 
+      <span class="shift-name">Shift: ${shiftData.shiftName || "No Shift"}</span>
+      <button class="shift-refresh-btn" onclick="fetchShiftFromFirebase(true)" title="Refresh from Firebase">
+        🔄
+      </button>
+    `;
+  }
+}
+
+function getCurrentShift() {
+  // Get current shift from localStorage
+  const cachedShift = localStorage.getItem('currentShiftData');
+  if (cachedShift) {
+    const shiftData = JSON.parse(cachedShift);
+    return {
+      date: shiftData.date,
+      shiftName: shiftData.shiftName
+    };
+  }
+  
+  // Return default if no shift data
+  return {
+    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+    shiftName: "No Shift"
+  };
+}
+
+// ======== TIMEZONE HELPER FUNCTIONS ========
+function getMaldivesDate() {
+  // Returns current date/time in Maldives timezone (UTC+5)
   const now = new Date();
-  const offset = now.getTimezoneOffset();
-  return new Date(now.getTime() + (offset + MALDIVES_OFFSET_MINUTES) * 60 * 1000);
+  return new Date(now.getTime() + MALDIVES_OFFSET);
 }
 
-function parseMaldivesDate(dateString) {
-  // Parse a date string (YYYY-MM-DD) in Maldives timezone
-  if (!dateString) return getMaldivesTime();
+function getMaldivesTodayRange() {
+  // Get today's start and end in Maldives timezone
+  const maldivesNow = getMaldivesDate();
   
-  // Handle different date formats
-  if (dateString.includes('T')) {
-    // ISO format
-    const date = new Date(dateString);
-    return new Date(date.getTime() + (MALDIVES_OFFSET_MINUTES * 60 * 1000));
-  }
+  // Start of day in Maldives (00:00:00)
+  const start = new Date(maldivesNow);
+  start.setUTCHours(0, 0, 0, 0);
+  const startUTC = new Date(start.getTime() - MALDIVES_OFFSET);
   
-  const [year, month, day] = dateString.split('-').map(Number);
+  // End of day in Maldives (23:59:59.999)
+  const end = new Date(maldivesNow);
+  end.setUTCHours(23, 59, 59, 999);
+  const endUTC = new Date(end.getTime() - MALDIVES_OFFSET);
   
-  if (isNaN(year) || isNaN(month) || isNaN(day)) {
-    console.error("Invalid date string:", dateString);
-    return getMaldivesTime();
-  }
-  
-  // Create date in local timezone first
-  const localDate = new Date(year, month - 1, day);
-  
-  // Adjust for Maldives timezone (UTC+5)
-  const localOffset = localDate.getTimezoneOffset();
-  const maldivesDate = new Date(localDate.getTime() - (localOffset - MALDIVES_OFFSET_MINUTES) * 60 * 1000);
-  
-  return maldivesDate;
+  return { start: startUTC, end: endUTC };
 }
 
-function formatMaldivesDate(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.error("Invalid date passed to formatMaldivesDate:", date);
-    const maldivesNow = getMaldivesTime();
-    const day = String(maldivesNow.getDate()).padStart(2, '0');
-    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
-    const year = maldivesNow.getFullYear();
-    return `${day}/${month}/${year}`;
-  }
+function parsePaymentDate(payment) {
+  // Parse payment date consistently with timezone awareness
   
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function formatMaldivesDateTime(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.error("Invalid date passed to formatMaldivesDateTime:", date);
-    const maldivesNow = getMaldivesTime();
-    const day = String(maldivesNow.getDate()).padStart(2, '0');
-    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
-    const year = maldivesNow.getFullYear();
-    const hours = String(maldivesNow.getHours()).padStart(2, '0');
-    const minutes = String(maldivesNow.getMinutes()).padStart(2, '0');
-    const ampm = maldivesNow.getHours() >= 12 ? 'PM' : 'AM';
-    const displayHours = maldivesNow.getHours() % 12 || 12;
-    
-    return `${day}/${month}/${year} ${displayHours}:${minutes} ${ampm}`;
-  }
-  
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
-  const displayHours = date.getHours() % 12 || 12;
-  
-  return `${day}/${month}/${year} ${displayHours}:${minutes} ${ampm}`;
-}
-
-function getDateKey(date) {
-  if (!(date instanceof Date) || isNaN(date.getTime())) {
-    console.error("Invalid date passed to getDateKey:", date);
-    const maldivesNow = getMaldivesTime();
-    const year = maldivesNow.getFullYear();
-    const month = String(maldivesNow.getMonth() + 1).padStart(2, '0');
-    const day = String(maldivesNow.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
-  
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// ======== SHIFT MANAGEMENT ========
-async function loadCurrentShift() {
-  try {
-    console.log("Loading current shift...");
-    
-    // First check if we're properly connected to Firebase
-    if (!window.walkinDb) {
-      console.warn("Firebase not connected, using local storage for shift");
+  // First, check for voided timestamp (for voided receipts)
+  if (payment.voidedAt) {
+    const voidDate = new Date(payment.voidedAt);
+    if (!isNaN(voidDate.getTime())) {
+      return voidDate;
     }
-    
-    // Try to get shift from fireShift module
-    if (typeof fireShift !== 'undefined' && fireShift.loadCurrentShiftFromFirebase) {
-      console.log("fireShift module found, attempting to load shift...");
-      
-      // Wait for fireShift to initialize if needed
-      if (typeof fireShift.shiftData === 'undefined') {
-        console.log("fireShift data not loaded yet, calling loadCurrentShiftFromFirebase...");
-        const loaded = await fireShift.loadCurrentShiftFromFirebase();
-        
-        if (loaded) {
-          console.log("fireShift loaded successfully from Firebase");
-          console.log("fireShift.currentShift:", fireShift.currentShift);
-          console.log("fireShift.currentShiftDate:", fireShift.currentShiftDate);
-          console.log("fireShift.shiftData:", fireShift.shiftData);
-        } else {
-          console.log("fireShift failed to load from Firebase");
-        }
-      }
-      
-      // Check if we have valid shift data
-      if (fireShift.currentShift && fireShift.currentShiftDate) {
-        currentShift = fireShift.currentShift;
-        
-        // Parse the date - handle both string and Date object
-        if (typeof fireShift.currentShiftDate === 'string') {
-          // If it's a string like "2024-01-15"
-          currentShiftDate = parseMaldivesDate(fireShift.currentShiftDate);
-        } else if (fireShift.currentShiftDate instanceof Date) {
-          // If it's already a Date object
-          currentShiftDate = fireShift.currentShiftDate;
-        } else {
-          // Fallback to today
-          currentShiftDate = getMaldivesTime();
-        }
-        
-        console.log("Using shift from fireShift module:", {
-          shift: currentShift,
-          dateString: fireShift.currentShiftDate,
-          parsedDate: formatMaldivesDate(currentShiftDate),
-          dateKey: getDateKey(currentShiftDate)
-        });
-        
-        saveShiftToLocalStorage();
-        updateShiftDisplay();
-        return;
-      }
-      
-      // Try to use shiftData if direct properties aren't set
-      if (fireShift.shiftData) {
-        currentShift = fireShift.shiftData.currentShift || fireShift.currentShift;
-        
-        if (fireShift.shiftData.currentShiftDate) {
-          if (typeof fireShift.shiftData.currentShiftDate === 'string') {
-            currentShiftDate = parseMaldivesDate(fireShift.shiftData.currentShiftDate);
-          } else if (fireShift.shiftData.currentShiftDate instanceof Date) {
-            currentShiftDate = fireShift.shiftData.currentShiftDate;
-          } else {
-            currentShiftDate = getMaldivesTime();
-          }
-        } else if (fireShift.currentShiftDate) {
-          if (typeof fireShift.currentShiftDate === 'string') {
-            currentShiftDate = parseMaldivesDate(fireShift.currentShiftDate);
-          } else {
-            currentShiftDate = getMaldivesTime();
-          }
-        } else {
-          currentShiftDate = getMaldivesTime();
-        }
-        
-        console.log("Using shift from fireShift.shiftData:", {
-          shift: currentShift,
-          date: formatMaldivesDate(currentShiftDate)
-        });
-        
-        saveShiftToLocalStorage();
-        updateShiftDisplay();
-        return;
-      }
-    }
-    
-    // Check localStorage for saved shift
-    const savedShift = localStorage.getItem('currentShift');
-    const savedShiftDateStr = localStorage.getItem('currentShiftDate');
-    
-    if (savedShift && savedShiftDateStr) {
-      currentShift = savedShift;
-      // Parse saved date in Maldives timezone
-      currentShiftDate = parseMaldivesDate(savedShiftDateStr);
-      
-      console.log("Using saved shift from localStorage:", {
-        shift: currentShift,
-        dateString: savedShiftDateStr,
-        parsedDate: formatMaldivesDate(currentShiftDate)
-      });
-      
-      updateShiftDisplay();
-      return;
-    }
-    
-    // Default fallback - use today's date in Maldives timezone
-    console.warn("No shift found, using fallback with today's Maldives date");
-    const maldivesNow = getMaldivesTime();
-    const todayKey = getDateKey(maldivesNow);
-    
-    // Try to get shift from fireShift even if other data failed
-    if (typeof fireShift !== 'undefined') {
-      currentShift = fireShift.currentShift || "Morning";
-    } else {
-      currentShift = "Morning";
-    }
-    
-    currentShiftDate = parseMaldivesDate(todayKey);
-    
-    console.log("Using fallback shift:", {
-      shift: currentShift,
-      todayKey: todayKey,
-      parsedDate: formatMaldivesDate(currentShiftDate)
-    });
-    
-    saveShiftToLocalStorage();
-    updateShiftDisplay();
-    
-  } catch (error) {
-    console.error("Error loading shift:", error);
-    console.error("Error details:", error.message);
-    
-    // Default to today's date in Maldives timezone
-    const maldivesNow = getMaldivesTime();
-    const todayKey = getDateKey(maldivesNow);
-    currentShift = "Morning";
-    currentShiftDate = parseMaldivesDate(todayKey);
-    
-    console.log("Error recovery - using:", {
-      shift: currentShift,
-      todayKey: todayKey,
-      parsedDate: formatMaldivesDate(currentShiftDate)
-    });
-    
-    saveShiftToLocalStorage();
-    updateShiftDisplay();
   }
+  
+  // Try different timestamp fields
+  if (payment.timestamp) {
+    if (payment.timestamp.toDate) {
+      return payment.timestamp.toDate();
+    } else if (typeof payment.timestamp === 'string') {
+      return new Date(payment.timestamp);
+    } else if (payment.timestamp.seconds) {
+      // Firebase Timestamp
+      return new Date(payment.timestamp.seconds * 1000);
+    }
+  }
+  
+  if (payment.localSaveTime) {
+    const date = new Date(payment.localSaveTime);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  if (payment.time) {
+    const date = new Date(payment.time);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  if (payment.createdAt) {
+    const date = new Date(payment.createdAt);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  // Fallback: Use current date
+  return new Date();
 }
 
-function saveShiftToLocalStorage() {
-  if (!currentShift || !currentShiftDate) {
-    console.error("Cannot save shift: data missing");
-    return;
-  }
-  
-  // Save the date as YYYY-MM-DD string
-  const dateKey = getDateKey(currentShiftDate);
-  localStorage.setItem('currentShift', currentShift);
-  localStorage.setItem('currentShiftDate', dateKey);
-  console.log("Shift saved to localStorage:", { shift: currentShift, date: dateKey });
+function isTodayInMaldives(date) {
+  // Check if a date is today in Maldives timezone
+  const { start, end } = getMaldivesTodayRange();
+  return date >= start && date <= end;
 }
 
-function updateShiftDisplay() {
-  const shiftDot = document.getElementById('shiftDot');
-  const shiftType = document.getElementById('shiftType');
-  const shiftDate = document.getElementById('shiftDate');
-  
-  if (!currentShift || !currentShiftDate) {
-    console.error("Cannot update shift display: shift data missing");
-    shiftType.textContent = 'No Shift';
-    shiftDate.textContent = '--/--/----';
-    return;
-  }
-  
-  // Set shift type
-  if (currentShift === 'Morning') {
-    shiftDot.className = 'shift-dot shift-morning-dot';
-    shiftType.textContent = 'Morning Shift';
-  } else if (currentShift === 'Evening') {
-    shiftDot.className = 'shift-dot shift-evening-dot';
-    shiftType.textContent = 'Evening Shift';
-  } else {
-    shiftDot.className = 'shift-dot';
-    shiftType.textContent = currentShift;
-  }
-  
-  // Format and display the shift date in Maldives timezone
-  const formattedDate = formatMaldivesDate(currentShiftDate);
-  shiftDate.textContent = formattedDate;
-  console.log("Shift display updated. Type:", currentShift, "Maldives Date:", formattedDate);
-}
-
-function showShiftInfo() {
-  if (!currentShift || !currentShiftDate) {
-    alert("Shift information not available");
-    return;
-  }
-  
-  const formattedDate = formatMaldivesDate(currentShiftDate);
-  const firebaseDate = getDateKey(currentShiftDate);
-  
-  const info = `Current Shift: ${currentShift}\n` +
-               `Display Date: ${formattedDate}\n` +
-               `Firebase Date: ${firebaseDate}\n` +
-               `Data Source: ${window.fireShift && window.fireShift.shiftData ? 'Firebase' : 'Local/Default'}\n\n` +
-               `Maldives Time Now: ${formatMaldivesDateTime(getMaldivesTime())}`;
-  alert(info);
-}
-
-// Add this function to allow manual shift refresh
-async function refreshShiftData() {
-  showNotification("Refreshing shift data...", "info");
-  
-  try {
-    if (typeof fireShift !== 'undefined' && fireShift.loadCurrentShiftFromFirebase) {
-      // Clear cached data
-      fireShift.currentShift = null;
-      fireShift.currentShiftDate = null;
-      fireShift.shiftData = null;
-      
-      // Reload from Firebase
-      const loaded = await fireShift.loadCurrentShiftFromFirebase();
-      
-      if (loaded) {
-        // Force reload using the new data
-        await loadCurrentShift();
-        showNotification(`Shift refreshed: ${currentShift} - ${formatMaldivesDate(currentShiftDate)}`, "success");
-      } else {
-        showNotification("Could not refresh shift from Firebase", "warning");
-      }
-    } else {
-      showNotification("Shift module not available", "error");
-    }
-  } catch (error) {
-    console.error("Error refreshing shift:", error);
-    showNotification("Error refreshing shift", "error");
-  }
+function formatDateForDisplay(date) {
+  // Format date in Maldives timezone
+  const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
+  return maldivesDate.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 // ======== NOTIFICATION SYSTEM ========
@@ -1546,133 +1786,831 @@ function showNotification(message, type = 'info', duration = 3000) {
   container.appendChild(notification);
   
   setTimeout(() => {
-    if (notification.parentNode === container) {
-      notification.remove();
-    }
+    notification.remove();
   }, duration);
 }
 
 // ======== USER MANAGEMENT ========
 function getCurrentUser() {
+  // Check if user is logged in from localStorage
   const userData = JSON.parse(localStorage.getItem("loggedInUser"));
   
   if (!userData) {
+    // Redirect to login page if not logged in
     window.location.href = "login.html";
     return null;
   }
   
   currentUser = userData.name || userData.username;
   isSupervisor = userData.Level === 'Supervisor';
+  
+  // Display user info
+  document.getElementById('currentUser').textContent = currentUser;
+  
+  // Check supervisor status
+  const supervisorCleanupSection = document.getElementById('supervisorCleanupSection');
+  
+  if (isSupervisor) {
+    supervisorCleanupSection.style.display = 'block';
+    showNotification(`Welcome Supervisor ${currentUser}!`, 'success');
+  } else {
+    supervisorCleanupSection.style.display = 'none';
+    showNotification(`Welcome ${currentUser}!`, 'success');
+  }
+  
   return userData;
 }
 
-// ======== RECEIPT NUMBER MANAGEMENT ========
+function logoutUser() {
+  if (confirm("Are you sure you want to logout?")) {
+    localStorage.removeItem('loggedInUser');
+    window.location.href = "login.html";
+  }
+}
+
+// ======== RECEIPT NUMBER MANAGEMENT - FIXED VERSION ========
 async function getNextReceiptNumber() {
   try {
-    // Check localStorage for counter
-    let counter = localStorage.getItem('receiptCounter');
-    
-    if (!counter) {
-      // Start from 1564
-      counter = "1564";
-    } else {
-      counter = (parseInt(counter) + 1).toString();
+    // Check if we have a pending receipt number in localStorage
+    const pendingReceipt = JSON.parse(localStorage.getItem('pendingReceiptNumber') || 'null');
+    if (pendingReceipt && pendingReceipt.number && !pendingReceipt.used) {
+      console.log("Using pending receipt number:", pendingReceipt.number);
+      // Mark as used
+      localStorage.setItem('pendingReceiptNumber', JSON.stringify({
+        ...pendingReceipt,
+        used: true
+      }));
+      return pendingReceipt.number;
     }
     
-    // Save to localStorage
-    localStorage.setItem('receiptCounter', counter);
+    // Always try to get the highest number from Firebase first
+    if (checkFirebase()) {
+      try {
+        const receiptsRef = window.walkinDb.collection("receipts");
+        
+        // Get the highest receipt number from Firebase
+        const snapshot = await receiptsRef
+          .orderBy("receiptNumber", "desc")
+          .limit(1)
+          .get();
+        
+        let nextNumber = 1564; // Default start
+        
+        if (!snapshot.empty) {
+          const latestReceipt = snapshot.docs[0].data();
+          const firebaseNumber = latestReceipt.receiptNumber || 1563;
+          
+          // Get local counter
+          const localCounter = parseInt(localStorage.getItem('receiptCounter') || '1563');
+          
+          // Use the HIGHER number between Firebase and local
+          nextNumber = Math.max(firebaseNumber, localCounter) + 1;
+          
+          console.log(`Firebase: ${firebaseNumber}, Local: ${localCounter}, Next: ${nextNumber}`);
+        } else {
+          // No receipts in Firebase yet, use local
+          const localCounter = parseInt(localStorage.getItem('receiptCounter') || '1563');
+          nextNumber = Math.max(localCounter + 1, 1564);
+        }
+        
+        // Format receipt number WITHOUT leading zeros
+        const receiptNumber = nextNumber.toString(); // Just "57777" not "0057777"
+        
+        // Reserve this number locally to prevent conflicts
+        localStorage.setItem('pendingReceiptNumber', JSON.stringify({
+          number: receiptNumber,
+          numeric: nextNumber,
+          timestamp: new Date().toISOString(),
+          used: false
+        }));
+        
+        // Update local counter immediately
+        localStorage.setItem('receiptCounter', nextNumber.toString());
+        
+        return receiptNumber;
+        
+      } catch (firebaseError) {
+        console.warn("Firebase receipt number fetch failed, using local:", firebaseError);
+        // Fall through to local storage
+      }
+    }
     
-    return counter;
+    // Fallback to local storage
+    return getNextLocalReceiptNumber();
     
   } catch (error) {
-    console.error("Error getting receipt number:", error);
-    // Fallback: Generate based on timestamp
-    return Date.now().toString().slice(-6);
+    console.error("Error getting next receipt number:", error);
+    // Final fallback
+    return getNextLocalReceiptNumber();
   }
 }
 
-// ======== PRICING CALCULATIONS ========
-function updatePricing() {
-  const adults = parseInt(document.getElementById("adults").value) || 0;
-  const kids = parseInt(document.getElementById("kids").value) || 0;
-  const rateType = document.getElementById("rateType").value;
-  const currency = document.getElementById("currency").value;
-
-  if (!window.rates) {
-    document.getElementById("subtotal").value = "0.00";
-    document.getElementById("gst").value = "0.00";
-    document.getElementById("total").value = "0.00";
-    return;
-  }
-
-  const adultKey = `Adult${rateType}${currency}`;
-  const kidKey = `Kids${rateType}${currency}`;
+function getNextLocalReceiptNumber() {
+  const key = 'receiptCounter';
+  let counter = localStorage.getItem(key);
   
-  if(!window.rates[adultKey] || !window.rates[kidKey]) {
-    console.warn("Rate not found for:", { adultKey, kidKey });
-    return;
-  }
-
-  const adultRate = window.rates[adultKey];
-  const kidRate = window.rates[kidKey];
-  
-  const subtotal = (adults * adultRate.price) + (kids * kidRate.price);
-  const gst = subtotal * (adultRate.GST / 100);
-  const total = subtotal + gst;
-
-  document.getElementById("subtotal").value = subtotal.toFixed(2);
-  document.getElementById("gst").value = gst.toFixed(2);
-  document.getElementById("total").value = total.toFixed(2);
-  
-  updateCashFields();
-  calculateExpiryTime();
-}
-
-function updateCashFields() {
-  const paymentType = document.getElementById("paymentType").value;
-  const total = parseFloat(document.getElementById("total").value) || 0;
-  
-  if (paymentType === "Cash") {
-    const paidAmount = parseFloat(document.getElementById("paidAmount").value) || 0;
-    const balance = paidAmount - total;
-    document.getElementById("balance").value = balance.toFixed(2);
-  }
-}
-
-function togglePaymentFields() {
-  const paymentType = document.getElementById("paymentType").value;
-  const cashFields = document.getElementById("cashPaymentFields");
-  
-  if (paymentType === "Cash") {
-    cashFields.style.display = "block";
-    const total = parseFloat(document.getElementById("total").value) || 0;
-    document.getElementById("paidAmount").value = total.toFixed(2);
-    updateCashFields();
+  if (!counter) {
+    // Start from 1564 when no counter exists
+    counter = "1564";
+    localStorage.setItem(key, counter);
   } else {
-    cashFields.style.display = "none";
+    counter = (parseInt(counter) + 1).toString();
+    localStorage.setItem(key, counter);
+  }
+  
+  // Receipt number is just the number (no leading zeros)
+  const receiptNumber = counter;
+  
+  // Reserve this number locally to prevent conflicts
+  localStorage.setItem('pendingReceiptNumber', JSON.stringify({
+    number: receiptNumber,
+    numeric: parseInt(receiptNumber),
+    timestamp: new Date().toISOString(),
+    used: false
+  }));
+  
+  return receiptNumber;
+}
+
+// ======== FIXED: CONFIRM RECEIPT NUMBER USAGE ========
+function confirmReceiptNumberUsed(receiptNo) {
+  try {
+    // Mark the pending receipt number as used
+    const pendingReceipt = JSON.parse(localStorage.getItem('pendingReceiptNumber') || 'null');
+    if (pendingReceipt && pendingReceipt.number === receiptNo) {
+      localStorage.setItem('pendingReceiptNumber', JSON.stringify({
+        ...pendingReceipt,
+        used: true
+      }));
+    }
+    
+    // Also update the last used receipt
+    localStorage.setItem('lastUsedReceipt', receiptNo);
+    
+    // Update Firebase with the used receipt number
+    if (checkFirebase()) {
+      const numericReceipt = parseInt(receiptNo);
+      if (!isNaN(numericReceipt)) {
+        // Save to receipts collection in Firebase
+        window.walkinDb.collection("receipts").doc(`receipt_${receiptNo}`).set({
+          receiptNumber: numericReceipt,
+          formattedNumber: receiptNo,
+          usedAt: new Date().toISOString(),
+          usedBy: currentUser || 'Unknown',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(error => {
+          console.warn("Could not update Firebase receipt number:", error);
+        });
+      }
+    }
+    
+  } catch (error) {
+    console.error("Error confirming receipt number usage:", error);
   }
 }
 
-// ======== EXPIRY TIME CALCULATION ========
-function calculateExpiryTime() {
-  if (!currentShiftDate) {
-    console.warn("No shift date for expiry calculation");
-    document.getElementById("headerExpiryTime").textContent = "--:--";
+// ======== FIXED: FILTER BY CURRENT DAY - TIMEZONE AWARE ========
+function filterByCurrentDay(payments) {
+  const { start, end } = getMaldivesTodayRange();
+  
+  console.log('Filtering payments for Maldives day:', {
+    start: start.toISOString(),
+    end: end.toISOString(),
+    localStart: new Date(start.getTime() + MALDIVES_OFFSET).toLocaleString(),
+    localEnd: new Date(end.getTime() + MALDIVES_OFFSET).toLocaleString(),
+    totalPayments: payments.length
+  });
+  
+  const filteredPayments = payments.filter(payment => {
+    // Skip payments that are clearly old (check receipt number if available)
+    if (payment.receiptNo) {
+      const receiptNum = parseInt(payment.receiptNo);
+      if (receiptNum < 1564) {
+        return false; // Too old, ignore
+      }
+    }
+    
+    // Parse payment date with timezone awareness
+    const paymentDate = parsePaymentDate(payment);
+    
+    if (isNaN(paymentDate.getTime())) {
+      console.warn('Invalid date for payment:', payment.receiptNo);
+      return false;
+    }
+    
+    // Check if payment is within today's range in Maldives timezone
+    const isToday = paymentDate >= start && paymentDate <= end;
+    
+    if (!isToday) {
+      console.log('Payment filtered out (not today):', {
+        receiptNo: payment.receiptNo,
+        paymentDate: paymentDate.toISOString(),
+        maldivesDate: new Date(paymentDate.getTime() + MALDIVES_OFFSET).toLocaleString(),
+        inRange: paymentDate >= start && paymentDate <= end
+      });
+    }
+    
+    return isToday;
+  });
+  
+  console.log(`Filtered ${filteredPayments.length} payments for today (out of ${payments.length})`);
+  return filteredPayments;
+}
+
+// ======== LOCAL STORAGE FUNCTIONS ========
+function saveToLocalStorage(data) {
+  try {
+    const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+    
+    // Add Maldives timestamp for consistency
+    data.maldivesTimestamp = getMaldivesDate().toISOString();
+    
+    // Check if payment already exists
+    const existingIndex = pendingPayments.findIndex(p => p.id === data.id);
+    
+    if (existingIndex !== -1) {
+      // Update existing payment
+      pendingPayments[existingIndex] = data;
+    } else {
+      // Add new payment
+      pendingPayments.push(data);
+    }
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(pendingPayments));
+    
+    // Add to sync queue if not already there
+    const inQueue = pendingSyncQueue.some(p => p.id === data.id);
+    if (!inQueue) {
+      pendingSyncQueue.push(data);
+    }
+    
+    // Start sync process if not already running
+    if (!isSyncing && checkFirebase()) {
+      syncPendingPayments();
+    }
+    
+    return data.id;
+  } catch (error) {
+    console.error("Error saving to localStorage:", error);
+    throw error;
+  }
+}
+
+function getPendingPayments() {
+  try {
+    return JSON.parse(localStorage.getItem('pendingPayments') || '[]');
+  } catch (error) {
+    console.error("Error getting pending payments:", error);
+    return [];
+  }
+}
+
+function markPaymentAsSynced(paymentId) {
+  try {
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === paymentId) {
+        return { 
+          ...payment, 
+          synced: true,
+          syncAttempts: 0,
+          lastSynced: new Date().toISOString()
+        };
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Also update in sync queue
+    const queueIndex = pendingSyncQueue.findIndex(p => p.id === paymentId);
+    if (queueIndex !== -1) {
+      pendingSyncQueue[queueIndex] = { 
+        ...pendingSyncQueue[queueIndex], 
+        synced: true,
+        syncAttempts: 0
+      };
+    }
+    
+  } catch (error) {
+    console.error("Error marking payment as synced:", error);
+  }
+}
+
+function incrementSyncAttempts(paymentId) {
+  try {
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === paymentId) {
+        return { 
+          ...payment, 
+          syncAttempts: (payment.syncAttempts || 0) + 1,
+          lastSyncAttempt: new Date().toISOString()
+        };
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+  } catch (error) {
+    console.error("Error incrementing sync attempts:", error);
+  }
+}
+
+// ======== CLEANUP OLD LOCAL PAYMENTS - IMPROVED ========
+function cleanupOldLocalPayments() {
+  try {
+    const pendingPayments = getPendingPayments();
+    const { start } = getMaldivesTodayRange();
+    
+    // Filter to keep only today's payments AND any payments with receipt numbers >= 1564
+    const recentPayments = pendingPayments.filter(payment => {
+      // Parse payment date
+      const paymentDate = parsePaymentDate(payment);
+      
+      if (isNaN(paymentDate.getTime())) {
+        // Invalid date, check receipt number
+        if (payment.receiptNo) {
+          const receiptNum = parseInt(payment.receiptNo);
+          return receiptNum >= 1564;
+        }
+        return false;
+      }
+      
+      // Check if payment is from today in Maldives timezone
+      const isToday = isTodayInMaldives(paymentDate);
+      
+      // Also check receipt number if available
+      if (payment.receiptNo) {
+        const receiptNum = parseInt(payment.receiptNo);
+        if (receiptNum >= 1564) {
+          // Keep payments with valid receipt numbers even if date is ambiguous
+          return true;
+        }
+      }
+      
+      return isToday;
+    });
+    
+    // Also filter sync queue
+    pendingSyncQueue = pendingSyncQueue.filter(payment => {
+      const paymentDate = parsePaymentDate(payment);
+      
+      if (isNaN(paymentDate.getTime())) {
+        return false;
+      }
+      
+      const isToday = isTodayInMaldives(paymentDate);
+      
+      // Check receipt number
+      if (payment.receiptNo) {
+        const receiptNum = parseInt(payment.receiptNo);
+        if (receiptNum >= 1564) {
+          return true;
+        }
+      }
+      
+      return isToday;
+    });
+    
+    // Update localStorage with filtered payments
+    localStorage.setItem('pendingPayments', JSON.stringify(recentPayments));
+    
+    // Count how many were removed
+    const removedCount = pendingPayments.length - recentPayments.length;
+    if (removedCount > 0) {
+      console.log(`Cleaned up ${removedCount} old local payments`);
+      showNotification(`Cleaned up ${removedCount} old payments from local storage`, 'info');
+    }
+    
+    return recentPayments;
+  } catch (error) {
+    console.error("Error cleaning up old payments:", error);
+    return [];
+  }
+}
+
+// ======== FIREBASE SYNC FUNCTIONS ========
+async function syncPendingPayments() {
+  if (!checkFirebase() || isSyncing || pendingSyncQueue.length === 0) {
+    return;
+  }
+  
+  isSyncing = true;
+  
+  try {
+    const payment = pendingSyncQueue[0]; // Get first pending payment
+    
+    if (payment.syncAttempts > 3) {
+      // Too many attempts, skip for now
+      console.warn(`Skipping payment ${payment.id} after ${payment.syncAttempts} attempts`);
+      pendingSyncQueue.shift();
+      isSyncing = false;
+      if (pendingSyncQueue.length > 0) {
+        setTimeout(syncPendingPayments, 1000);
+      }
+      return;
+    }
+    
+    console.log("Syncing payment to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
+    
+    // Get current shift for Firebase data
+    const currentShift = getCurrentShift();
+    
+    // Prepare Firebase data
+    const firebaseData = {
+      receiptNo: payment.receiptNo,
+      name: payment.name || '',
+      flightNo: payment.flightNo || '',
+      seatNo: payment.seatNo || '',
+      shiftDate: currentShift.date, // Use date from shift data
+      shiftName: currentShift.shiftName, // Use shift name from shift data
+      adults: payment.adults || 0,
+      kids: payment.kids || 0,
+      currency: payment.currency || 'USD',
+      paymentType: payment.paymentType || 'Cash',
+      total: payment.total || 0,
+      expiryFormatted: payment.expiryFormatted || '',
+      expiryTimestamp: payment.expiryTimestamp || Date.now(),
+      staff: payment.staff || currentUser || 'Unknown',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      localSaved: true,
+      syncStatus: 'synced',
+      lastUpdated: new Date().toISOString(),
+      maldivesDate: payment.maldivesTimestamp || getMaldivesDate().toISOString()
+    };
+    
+    // Add payment-specific fields
+    if (payment.paymentType === 'Cash') {
+      firebaseData.paidAmount = payment.paidAmount || 0;
+      firebaseData.balance = payment.balance || 0;
+      firebaseData.finalReceiptPrinted = payment.finalReceiptPrinted || false;
+    } else {
+      // For card/QR payments
+      firebaseData.cardDetailsAdded = payment.cardDetailsAdded || false;
+      if (payment.cardDetailsAdded) {
+        firebaseData.batchNo = payment.batchNo || '';
+        firebaseData.approvalCode = payment.approvalCode || '';
+      }
+    }
+    
+    // Add void information if available
+    if (payment.voided) {
+      firebaseData.voided = true;
+      firebaseData.voidedAt = payment.voidedAt || new Date().toISOString();
+      firebaseData.voidedBy = payment.voidedBy || currentUser || 'Unknown';
+      firebaseData.voidReason = payment.voidReason || 'No reason provided';
+      firebaseData.voidMaldivesDate = getMaldivesDate().toISOString();
+    }
+    
+    // Try to sync to Firebase - Document ID is the receipt number
+    const docRef = window.walkinDb.collection("payments").doc(payment.id);
+    await docRef.set(firebaseData, { merge: true });
+    
+    console.log("Successfully synced to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
+    
+    // Mark as synced in localStorage
+    markPaymentAsSynced(payment.id);
+    
+    // Remove from queue
+    pendingSyncQueue.shift();
+    
+    // Show notification
+    showNotification(`Synced to cloud: ${payment.receiptNo}`, 'success');
+    
+  } catch (error) {
+    console.error("Error syncing payment to Firebase:", error);
+    
+    // Increment sync attempts
+    incrementSyncAttempts(payment.id);
+    
+    // Retry after delay
+    setTimeout(syncPendingPayments, 5000);
+    return;
+  }
+  
+  isSyncing = false;
+  
+  // Process next payment if any
+  if (pendingSyncQueue.length > 0) {
+    setTimeout(syncPendingPayments, 1000);
+  }
+}
+
+// ======== FIXED: SAVE PAYMENT - DOCUMENT ID IS RECEIPT NUMBER ========
+async function savePayment(data) {
+  try {
+    // Generate receipt number
+    if (!data.receiptNo) {
+      data.receiptNo = await getNextReceiptNumber();
+    }
+    
+    console.log("Saving payment. Receipt No:", data.receiptNo, "Type:", typeof data.receiptNo);
+    
+    // CONFIRM the receipt number is being used
+    confirmReceiptNumberUsed(data.receiptNo);
+    
+    // Add current user to data
+    data.staff = currentUser;
+    const userData = JSON.parse(localStorage.getItem("loggedInUser"));
+    data.userId = userData ? userData.id : '';
+    
+    // Get current shift for payment data
+    const currentShift = getCurrentShift();
+    
+    // Add shift information to data
+    data.shiftDate = currentShift.date;
+    data.shiftName = currentShift.shiftName;
+    
+    // Add Maldives timestamp
+    data.maldivesTimestamp = getMaldivesDate().toISOString();
+    
+    // DOCUMENT ID IS THE RECEIPT NUMBER
+    const docId = data.receiptNo.toString(); // Ensure it's a string
+    data.id = docId;
+    
+    console.log("Document ID set to:", docId);
+    
+    // Create complete payment record with timestamp
+    const paymentRecord = {
+      ...data,
+      timestamp: new Date().toISOString(),
+      localSaveTime: new Date().toISOString(),
+      maldivesDate: getMaldivesDate().toISOString(),
+      synced: false,
+      syncAttempts: 0
+    };
+    
+    // Save to localStorage immediately (fast)
+    saveToLocalStorage(paymentRecord);
+    
+    // Update current payment data
+    currentPaymentData = {
+      id: docId,
+      ...data
+    };
+    
+    // Update header display
+    document.getElementById("headerReceiptNo").textContent = data.receiptNo;
+    
+    // Show success notification
+    showNotification(`Saved locally: ${data.receiptNo}`, 'success');
+    
+    return { id: docId, receiptNo: data.receiptNo };
+    
+  } catch (error) {
+    console.error("Error in savePayment:", error);
+    throw error;
+  }
+}
+
+// ======== FIXED: GET PAYMENTS ========
+async function getPayments() {
+  try {
+    // Get local payments first
+    const localPayments = getPendingPayments();
+    
+    if (!checkFirebase()) {
+      return localPayments;
+    }
+    
+    try {
+      // Get Firebase payments - limit to reasonable number
+      const snapshot = await window.walkinDb.collection("payments")
+        .orderBy("timestamp", "desc")
+        .limit(200)
+        .get();
+      
+      const firebasePayments = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        firebasePayments.push({
+          id: doc.id, // This is the document ID (should be receipt number)
+          ...data,
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          synced: true // Mark as synced since it's from Firebase
+        });
+      });
+      
+      console.log(`Loaded ${firebasePayments.length} payments from Firebase`);
+      
+      // Create a map of Firebase payments for quick lookup
+      const firebaseMap = new Map();
+      firebasePayments.forEach(p => firebaseMap.set(p.id, p));
+      
+      // Merge: Start with Firebase payments, then add local unsynced payments
+      const mergedPayments = [...firebasePayments];
+      
+      localPayments.forEach(localPayment => {
+        if (!localPayment.synced && !firebaseMap.has(localPayment.id)) {
+          // Add unsynced local payments not already in Firebase
+          mergedPayments.push(localPayment);
+        }
+      });
+      
+      // Sort by timestamp (most recent first)
+      return mergedPayments.sort((a, b) => {
+        const timeA = parsePaymentDate(a).getTime();
+        const timeB = parsePaymentDate(b).getTime();
+        return timeB - timeA;
+      });
+      
+    } catch (firebaseError) {
+      console.error("Error fetching from Firebase, using local only:", firebaseError);
+      return localPayments;
+    }
+    
+  } catch (error) {
+    console.error("Error loading payments:", error);
+    return [];
+  }
+}
+
+// ======== FIXED: DELETE PAYMENT ========
+async function deletePayment(id) {
+  try {
+    console.log("Deleting payment with ID:", id);
+    
+    // Delete from local storage first
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.filter(p => p.id !== id);
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Remove from sync queue
+    pendingSyncQueue = pendingSyncQueue.filter(p => p.id !== id);
+    
+    // Try to delete from Firebase if available
+    if (checkFirebase()) {
+      await window.walkinDb.collection("payments").doc(id).delete();
+      console.log("Deleted from Firebase:", id);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error deleting payment:", error);
+    return false;
+  }
+}
+
+// ======== FIXED: UPDATE PAYMENT WITH IMMEDIATE FIREBASE SYNC ========
+async function updatePayment(id, updates) {
+  try {
+    console.log("Updating payment ID:", id, "Updates:", updates);
+    
+    // Update in local storage first
+    const pendingPayments = getPendingPayments();
+    const updatedPayments = pendingPayments.map(payment => {
+      if (payment.id === id) {
+        const updatedPayment = { ...payment, ...updates };
+        // Mark as unsynced when updated
+        updatedPayment.synced = false;
+        updatedPayment.syncAttempts = 0;
+        updatedPayment.lastUpdated = new Date().toISOString();
+        return updatedPayment;
+      }
+      return payment;
+    });
+    
+    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
+    
+    // Update in sync queue
+    const queueIndex = pendingSyncQueue.findIndex(p => p.id === id);
+    if (queueIndex !== -1) {
+      pendingSyncQueue[queueIndex] = { 
+        ...pendingSyncQueue[queueIndex], 
+        ...updates,
+        synced: false,
+        syncAttempts: 0,
+        lastUpdated: new Date().toISOString()
+      };
+    }
+    
+    // Force immediate Firebase update (not background sync)
+    if (checkFirebase()) {
+      try {
+        const docRef = window.walkinDb.collection("payments").doc(id);
+        await docRef.update({
+          ...updates,
+          lastUpdated: new Date().toISOString(),
+          syncStatus: 'synced',
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        console.log("Immediately updated Firebase for ID:", id);
+      } catch (firebaseError) {
+        console.error("Immediate Firebase update failed:", firebaseError);
+        // It will be synced via background sync later
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating payment:", error);
+    return false;
+  }
+}
+
+// ======== FIXED: SEARCH RECEIPT - DOCUMENT ID IS RECEIPT NUMBER ========
+async function searchPaymentByReceiptNo(receiptNo) {
+  try {
+    console.log("Searching for receipt:", receiptNo);
+    
+    // Clean the receipt number - ensure it's a string
+    const cleanReceiptNo = receiptNo.toString().trim();
+    
+    // Always try Firebase first for fresh data
+    if (checkFirebase()) {
+      try {
+        console.log("Trying Firebase search with receipt number:", cleanReceiptNo);
+        
+        // FIRST: Try direct document ID (receipt number)
+        const doc = await window.walkinDb.collection("payments").doc(cleanReceiptNo).get();
+        if (doc.exists) {
+          console.log("Found by document ID (receipt number):", cleanReceiptNo);
+          const data = doc.data();
+          // Convert Firebase timestamp to Date
+          const timestamp = data.timestamp ? 
+            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
+            new Date();
+          
+          return {
+            id: doc.id, // This should be the receipt number
+            ...data,
+            timestamp: timestamp,
+            synced: true,
+            isFreshFromFirebase: true
+          };
+        }
+        
+        console.log("Not found by document ID, trying receiptNo field...");
+        
+        // SECOND: If not found by document ID, search by receiptNo field
+        const snapshot = await window.walkinDb.collection("payments")
+          .where("receiptNo", "==", cleanReceiptNo)
+          .limit(1)
+          .get();
+        
+        if (!snapshot.empty) {
+          console.log("Found by receiptNo field:", cleanReceiptNo);
+          const doc = snapshot.docs[0];
+          const data = doc.data();
+          const timestamp = data.timestamp ? 
+            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
+            new Date();
+          
+          return {
+            id: doc.id,
+            ...data,
+            timestamp: timestamp,
+            synced: true,
+            isFreshFromFirebase: true
+          };
+        }
+        
+        console.log("Receipt not found in Firebase:", cleanReceiptNo);
+        
+      } catch (firebaseError) {
+        console.warn("Firebase search failed, falling back to local:", firebaseError);
+      }
+    }
+    
+    // Fallback: Search in local storage
+    console.log("Searching in local storage for:", cleanReceiptNo);
+    const pendingPayments = getPendingPayments();
+    const localPayment = pendingPayments.find(p => p.receiptNo === cleanReceiptNo || p.id === cleanReceiptNo);
+    if (localPayment) {
+      console.log("Found in local storage:", cleanReceiptNo);
+      return {
+        ...localPayment,
+        isFreshFromFirebase: false
+      };
+    }
+    
+    console.log("Receipt not found anywhere:", cleanReceiptNo);
+    return null;
+    
+  } catch (error) {
+    console.error("Error searching payment:", error);
     return null;
   }
+}
+
+// ======== CALCULATE EXPIRY TIME ========
+function calculateExpiryTime() {
+  const now = getMaldivesDate(); // Use Maldives time for expiry
+  const expiry = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
   
-  // Use shift date as base for expiry calculation in Maldives timezone
-  console.log("Calculating expiry based on Maldives shift date:", formatMaldivesDate(currentShiftDate));
-  
-  const expiry = new Date(currentShiftDate.getTime() + 3 * 60 * 60 * 1000);
-  
-  const hours = expiry.getHours();
-  const minutes = expiry.getMinutes();
+  // Format as HH:MM AM/PM in Maldives timezone
+  let hours = expiry.getUTCHours();
+  let minutes = expiry.getUTCMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
-  const displayHours = hours % 12 || 12;
-  const displayMinutes = minutes < 10 ? '0' + minutes : minutes;
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  minutes = minutes < 10 ? '0' + minutes : minutes;
   
-  const expiryTime = `${displayHours}:${displayMinutes} ${ampm}`;
+  const expiryTime = `${hours}:${minutes} ${ampm}`;
+  
+  // Update header
   document.getElementById("headerExpiryTime").textContent = expiryTime;
   
   return {
@@ -1726,466 +2664,616 @@ function parseCode(){
   updatePricing();
 }
 
-// ======== SAVE PAYMENT ========
-async function saveNow() {
+// ======== DYNAMIC PRICING ========
+function updatePricing(){
+  const adults = parseInt(document.getElementById("adults").value) || 0;
+  const kids = parseInt(document.getElementById("kids").value) || 0;
+  const rateType = document.getElementById("rateType").value;
+  const currency = document.getElementById("currency").value;
+
+  // Check if rates are available from rate.js
   if (!window.rates) {
-    showNotification("Error: Rates not loaded.", "error");
+    console.error("Rates not loaded from rate.js");
+    document.getElementById("subtotal").value = "0.00";
+    document.getElementById("gst").value = "0.00";
+    document.getElementById("total").value = "0.00";
     return;
+  }
+
+  const adultKey = `Adult${rateType}${currency}`;
+  const kidKey = `Kids${rateType}${currency}`;
+  
+  if(!window.rates[adultKey] || !window.rates[kidKey]) {
+    console.error("Rate not found for:", adultKey, kidKey);
+    return;
+  }
+
+  // Calculate prices
+  const adultRate = window.rates[adultKey];
+  const kidRate = window.rates[kidKey];
+  
+  const subtotal = (adults * adultRate.price) + (kids * kidRate.price);
+  const gst = subtotal * (adultRate.GST / 100);
+  const total = subtotal + gst;
+
+  // Update display
+  document.getElementById("subtotal").value = subtotal.toFixed(2);
+  document.getElementById("gst").value = gst.toFixed(2);
+  document.getElementById("total").value = total.toFixed(2);
+  
+  // Update paid amount and balance for cash payments
+  updateCashFields();
+  
+  // Update expiry time
+  calculateExpiryTime();
+}
+
+// ======== UPDATE CASH PAYMENT FIELDS ========
+function updateCashFields() {
+  const paymentType = document.getElementById("paymentType").value;
+  const total = parseFloat(document.getElementById("total").value) || 0;
+  
+  if (paymentType === "Cash") {
+    const paidAmount = parseFloat(document.getElementById("paidAmount").value) || 0;
+    const balance = paidAmount - total;
+    
+    document.getElementById("balance").value = balance.toFixed(2);
+    
+    // Style balance based on value
+    const balanceField = document.getElementById("balance");
+    balanceField.className = "summary-value";
+    if (balance > 0) {
+      balanceField.classList.add("positive");
+    } else if (balance < 0) {
+      balanceField.classList.add("negative");
+    } else {
+      balanceField.classList.add("zero");
+    }
+  }
+}
+
+// ======== TOGGLE PAYMENT FIELDS ========
+function togglePaymentFields() {
+  const paymentType = document.getElementById("paymentType").value;
+  const cashFields = document.getElementById("cashPaymentFields");
+  
+  if (paymentType === "Cash") {
+    // Show cash fields
+    cashFields.style.display = "block";
+    
+    // Set paid amount to total by default
+    const total = parseFloat(document.getElementById("total").value) || 0;
+    document.getElementById("paidAmount").value = total.toFixed(2);
+    updateCashFields();
+  } else {
+    // Hide cash fields (for all card/QR payments)
+    cashFields.style.display = "none";
+  }
+}
+
+// ======== SAVE PAYMENT (FAST LOCAL FIRST) - IMPROVED ========
+async function saveNow(){
+  // Check if rates are loaded
+  if (!window.rates) {
+    showNotification("Error: Rates not loaded. Check rate.js", "error");
+    return;
+  }
+
+  // Get current shift information
+  const currentShift = getCurrentShift();
+  
+  // Check if we have valid shift data
+  if (currentShift.shiftName === "No Shift") {
+    showNotification("Warning: No shift is currently open. Please check shift status.", "warning");
+    if (!confirm("No open shift detected. Continue anyway?")) {
+      return;
+    }
   }
 
   const paymentType = document.getElementById("paymentType").value;
   const total = parseFloat(document.getElementById("total").value) || 0;
   
-  if (!currentShift || !currentShiftDate) {
-    showNotification("Shift not loaded. Please refresh.", "error");
-    return;
-  }
-
-  // Validate required fields
-  const name = document.getElementById("name").value.trim();
-  const flightNo = document.getElementById("flightNo").value.trim();
-  
-  if (!name || !flightNo) {
-    showNotification("Please fill in passenger name and flight number", "warning");
-    return;
-  }
-
-  if (isNaN(total) || total <= 0) {
-    showNotification("Invalid payment amount.", "warning");
-    return;
-  }
-
-  // Calculate expiry based on shift date
+  // Calculate expiry time (using Maldives timezone)
   const expiryData = calculateExpiryTime();
   
-  if (!expiryData) {
-    showNotification("Error calculating expiry time.", "error");
-    return;
-  }
-  
-  // Use shift date for transaction date in Maldives timezone
-  const transactionDate = currentShiftDate;
-  
-  console.log("Saving payment with Maldives shift date:", formatMaldivesDate(transactionDate));
-  
-  // Get next receipt number
-  const receiptNo = await getNextReceiptNumber();
-  
-  // Prepare payment data
-  const paymentData = {
-    receiptNo: receiptNo,
-    name: name,
-    flightNo: flightNo,
-    seatNo: document.getElementById("seatNo").value.trim(),
-    shift: currentShift,
-    shiftDate: getDateKey(currentShiftDate), // Store as YYYY-MM-DD
-    shiftDateKey: getDateKey(currentShiftDate),
-    transactionDate: transactionDate.toISOString(),
-    transactionDateKey: getDateKey(transactionDate),
-    adults: parseInt(document.getElementById("adults").value) || 0,
-    kids: parseInt(document.getElementById("kids").value) || 0,
-    rateType: document.getElementById("rateType").value,
+  // OPTIMIZED DATA STRUCTURE - Save only essential data
+  const data = {
+    time: new Date().toISOString(),
+    name: document.getElementById("name").value,
+    flightNo: document.getElementById("flightNo").value,
+    seatNo: document.getElementById("seatNo").value,
+    shiftDate: currentShift.date, // Use date from shift data
+    shiftName: currentShift.shiftName, // Use shift name from shift data
+    adults: parseInt(document.getElementById("adults").value),
+    kids: parseInt(document.getElementById("kids").value),
     currency: document.getElementById("currency").value,
     paymentType: paymentType,
-    subtotal: parseFloat(document.getElementById("subtotal").value) || 0,
-    gst: parseFloat(document.getElementById("gst").value) || 0,
     total: total,
     expiryFormatted: expiryData.formatted,
     expiryTimestamp: expiryData.timestamp,
-    staff: currentUser,
-    timestamp: getMaldivesTime().toISOString(), // Current timestamp in Maldives timezone
-    maldivesTimestamp: getMaldivesTime().toISOString(),
-    cardDetailsAdded: paymentType === 'Cash',
+    firstReceiptPrinted: false,
     finalReceiptPrinted: false,
-    voided: false
+    cardDetailsAdded: false,
+    voided: false // Initialize as not voided
   };
-
+  
   // Add payment-specific fields
   if (paymentType === "Cash") {
     const paidAmount = parseFloat(document.getElementById("paidAmount").value) || 0;
     const balance = paidAmount - total;
-    paymentData.paidAmount = paidAmount;
-    paymentData.balance = balance;
-    paymentData.cardDetailsAdded = true;
+    
+    data.paidAmount = paidAmount;
+    data.balance = balance;
+    data.cardDetailsAdded = true; // Cash payments are complete immediately
+    data.finalReceiptPrinted = false; // Cash payments need final receipt
   }
-
-  try {
-    // Save to localStorage first
-    saveToLocalStorage(paymentData);
-    
-    // Save to Firebase if available
-    if (window.walkinDb) {
-      await saveToFirebase(paymentData);
+  
+  // Validate data
+  if (!data.name || !data.flightNo) {
+    showNotification("Please fill in passenger name and flight number", "warning");
+    return;
+  }
+  
+  if (isNaN(data.total) || data.total <= 0) {
+    showNotification("Invalid payment amount. Check passenger details.", "warning");
+    return;
+  }
+  
+  // Validate cash payment
+  if (paymentType === "Cash") {
+    if (data.paidAmount < data.total) {
+      if (!confirm(`Paid amount (${data.paidAmount}) is less than total (${data.total}). Continue anyway?`)) {
+        return;
+      }
     }
+  }
+  
+  // Check for duplicate pending payment
+  const pendingPayments = getPendingPayments();
+  const duplicate = pendingPayments.find(p => 
+    p.name === data.name && 
+    p.flightNo === data.flightNo &&
+    !p.voided &&
+    Math.abs(parsePaymentDate(p).getTime() - new Date().getTime()) < 60000 // Within 1 minute
+  );
+  
+  if (duplicate) {
+    if (!confirm(`A payment for ${data.name} (${data.flightNo}) was recently saved. Create another receipt?`)) {
+      return;
+    }
+  }
+  
+  try {
+    // Save immediately (local storage first, then background sync to Firebase)
+    const result = await savePayment(data);
+    currentPaymentData = {
+      id: result.id,
+      receiptNo: result.receiptNo,
+      ...data
+    };
     
-    // Update UI
-    document.getElementById("headerReceiptNo").textContent = paymentData.receiptNo;
-    currentPaymentData = paymentData;
+    console.log("Payment saved locally. ID:", result.id, "Receipt No:", result.receiptNo);
     
-    // Print receipt
+    // Auto-print first receipt
     setTimeout(() => {
       printReceipt('first');
     }, 300);
     
-    // Reset form
+    // Reset form for next entry
     resetFormForNextEntry();
     
-    showNotification(`Payment saved: ${paymentData.receiptNo}`, "success");
-    
   } catch (error) {
-    console.error("Error saving payment:", error);
-    showNotification("Error saving payment", "error");
-  }
-}
-
-function saveToLocalStorage(payment) {
-  try {
-    const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    payments.push(payment);
-    localStorage.setItem('payments', JSON.stringify(payments));
-    console.log("Payment saved to localStorage:", payment.receiptNo);
-  } catch (error) {
-    console.error("Error saving to localStorage:", error);
-  }
-}
-
-async function saveToFirebase(payment) {
-  if (!window.walkinDb) {
-    console.warn("Firebase not available, skipping Firebase save");
-    return;
-  }
-  
-  try {
-    // Use receipt number as document ID for easy lookup
-    await window.walkinDb.collection("payments").doc(payment.receiptNo).set({
-      ...payment,
-      firebaseTimestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    console.log("Payment saved to Firebase:", payment.receiptNo);
-  } catch (error) {
-    console.error("Error saving to Firebase:", error);
-    throw error;
+    console.error("Error in saveNow:", error);
+    showNotification("Error saving payment: " + error.message, "error");
   }
 }
 
 function resetFormForNextEntry() {
+  // Clear boarding pass input
   document.getElementById("codeInput").value = "";
   document.getElementById("name").value = "";
   document.getElementById("flightNo").value = "";
   document.getElementById("seatNo").value = "";
+  
+  // Reset counts
   document.getElementById("adults").value = 1;
   document.getElementById("kids").value = 0;
+  
+  // Keep other selections as they are
   updatePricing();
+  
+  // Focus on boarding pass input for next entry
   document.getElementById("codeInput").focus();
 }
 
-// ======== LOAD PAYMENTS ========
-async function loadPayments() {
+// ======== LOAD PAYMENTS WITH TABS - MODIFIED ========
+async function loadPayments(){
   try {
-    showNotification("Loading payments...", "info", 2000);
+    showNotification("Loading today's payments...", "info", 2000);
+    const allPayments = await getPayments();
     
-    if (!currentShift || !currentShiftDate) {
-      await loadCurrentShift();
-    }
+    // Filter payments by current day in Maldives timezone
+    const todayPayments = filterByCurrentDay(allPayments);
     
-    const payments = await getPaymentsForCurrentShift();
-    displayPayments(payments);
+    // Load ONLY pending payments for today (excluding voided)
+    loadPendingCardPayments(todayPayments);
     
   } catch (error) {
-    console.error("Error loading payments:", error);
     showNotification("Error loading payments", "error");
+    console.error("Error loading payments:", error);
   }
 }
 
-async function getPaymentsForCurrentShift() {
-  if (!currentShiftDate) {
-    console.error("No shift date available");
-    return [];
-  }
+// ======== LOAD PENDING CARD PAYMENTS (ONLY TODAY'S) ========
+function loadPendingCardPayments(payments) {
+  // First, deduplicate payments by receipt number or ID
+  const uniquePayments = deduplicatePayments(payments);
   
-  const shiftDateKey = getDateKey(currentShiftDate);
-  
-  try {
-    // Try Firebase first
-    if (window.walkinDb) {
-      const snapshot = await window.walkinDb.collection("payments")
-        .where("shiftDateKey", "==", shiftDateKey)
-        .where("shift", "==", currentShift)
-        .orderBy("timestamp", "desc")
-        .limit(50)
-        .get();
-      
-      const firebasePayments = [];
-      snapshot.forEach(doc => {
-        firebasePayments.push(doc.data());
-      });
-      
-      if (firebasePayments.length > 0) {
-        console.log(`Found ${firebasePayments.length} payments in Firebase for shift ${currentShift} on ${shiftDateKey}`);
-        return firebasePayments;
-      }
-    }
-    
-    // Fallback to localStorage
-    const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    const filteredPayments = payments.filter(p => 
-      p.shiftDateKey === shiftDateKey && 
-      p.shift === currentShift
-    ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    
-    console.log(`Found ${filteredPayments.length} payments in localStorage for shift ${currentShift} on ${shiftDateKey}`);
-    return filteredPayments;
-    
-  } catch (error) {
-    console.error("Error fetching payments:", error);
-    // Return localStorage payments
-    const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    return payments.filter(p => 
-      p.shiftDateKey === shiftDateKey && 
-      p.shift === currentShift
-    ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  }
-}
-
-function displayPayments(payments) {
-  const container = document.getElementById("pendingLog");
-  
-  if (payments.length === 0) {
-    container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 20px;">
-      No payments found for current shift.
-    </p>`;
-    return;
-  }
-  
-  // Filter to show only pending non-cash payments
-  const pendingPayments = payments.filter(p => 
-    p.paymentType !== 'Cash' && 
+  // Filter out voided payments and only show non-cash payments that need card details
+  const pendingPayments = uniquePayments.filter(p => 
+    p.paymentType !== "Cash" && 
     !p.cardDetailsAdded &&
-    !p.voided
+    !p.voided // Exclude voided payments
   );
   
+  let html = '';
+  
   if (pendingPayments.length === 0) {
-    container.innerHTML = `<p style="text-align: center; color: var(--text-light); padding: 20px;">
-      No pending card payments for current shift.
-    </p>`;
-    return;
+    html = `<p style="text-align: center; color: var(--text-light); padding: 20px;">No pending non-cash payments found for today.</p>`;
+  } else {
+    html = `<table><tr>
+    <th>Receipt No</th><th>Name</th><th>Payment Method</th><th>Shift Date</th><th>Staff</th><th>Total</th>
+    <th>Expiry</th><th>Action</th></tr>`;
+    
+    pendingPayments.forEach(p=>{
+      const receiptBadge = p.receiptNo ? 
+        `<span class="receipt-badge">${p.receiptNo}</span>` : 
+        `<span class="receipt-badge">N/A</span>`;
+      
+      const currencyBadge = p.currency === 'USD' ? '<span class="currency-badge">USD</span>' : '<span class="currency-badge">MVR</span>';
+      
+      // Payment method badge
+      const paymentBadge = `<span class="payment-method-badge payment-method-${p.paymentType ? p.paymentType.toLowerCase().replace('card', '').replace(' ', '') : 'card'}">${p.paymentType || 'Card'}</span>`;
+      
+      // Shift date display
+      const shiftDate = p.shiftDate || 'N/A';
+      
+      // Staff info
+      const staffInfo = p.staff || 'Unknown';
+      
+      // Format expiry time
+      let expiryTime = 'N/A';
+      if (p.expiryFormatted) {
+        expiryTime = p.expiryFormatted;
+      } else if (p.expiryTime) {
+        const expiryDate = new Date(p.expiryTime);
+        expiryTime = expiryDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      }
+      
+      // Format date for display (Maldives timezone)
+      const paymentDate = parsePaymentDate(p);
+      const displayDate = formatDateForDisplay(paymentDate);
+      
+      // DELETE BUTTON - Only for supervisors
+      const deleteButton = isSupervisor ? 
+        `<button class="action-btn" onclick="deleteEntry('${p.id}')">Delete</button>` : '';
+      
+      html+=`<tr>
+        <td>${receiptBadge}</td>
+        <td>${p.name || 'N/A'}</td>
+        <td>${paymentBadge}</td>
+        <td>${shiftDate}</td>
+        <td>${staffInfo}</td>
+        <td><strong>${(p.total || 0).toFixed(2)}</strong> ${currencyBadge}</td>
+        <td>${expiryTime}</td>
+        <td>
+          <button class="complete-btn" onclick="addCardDetails('${p.id}')">Add Details</button>
+          <button class="print-btn" onclick="reprintPayment('${p.id}')">Print</button>
+          ${deleteButton}
+        </td>
+      </tr>`;
+    });
+    html+="</table>";
   }
   
-  let html = `<table>
-    <tr>
-      <th>Receipt No</th>
-      <th>Name</th>
-      <th>Payment Method</th>
-      <th>Total</th>
-      <th>Expiry</th>
-      <th>Actions</th>
-    </tr>`;
+  document.getElementById("pendingLog").innerHTML = html;
+}
+
+// ======== DEDUPLICATE PAYMENTS ========
+function deduplicatePayments(payments) {
+  const uniqueMap = new Map();
   
-  pendingPayments.forEach(p => {
-    const currencyBadge = p.currency === 'USD' ? 
-      '<span class="currency-badge">USD</span>' : 
-      '<span class="currency-badge">MVR</span>';
+  payments.forEach(payment => {
+    // Use receipt number as primary key, fallback to ID
+    const key = payment.receiptNo || payment.id;
     
-    const paymentBadgeClass = `payment-method-${p.paymentType.toLowerCase()}`;
-    const paymentBadge = `<span class="payment-method-badge ${paymentBadgeClass}">${p.paymentType}</span>`;
-    
-    html += `<tr>
-      <td><span class="receipt-badge">${p.receiptNo}</span></td>
-      <td>${p.name}</td>
-      <td>${paymentBadge}</td>
-      <td><strong>${p.total.toFixed(2)}</strong> ${currencyBadge}</td>
-      <td>${p.expiryFormatted}</td>
-      <td>
-        <button class="complete-btn" onclick="addCardDetails('${p.receiptNo}')">Add Details</button>
-        <button class="print-btn" onclick="reprintPayment('${p.receiptNo}')">Print</button>
-      </td>
-    </tr>`;
+    if (key) {
+      // If we already have this payment, keep the most recent one
+      const existing = uniqueMap.get(key);
+      if (!existing) {
+        uniqueMap.set(key, payment);
+      } else {
+        // Compare timestamps to keep the most recent
+        const existingTime = parsePaymentDate(existing).getTime();
+        const currentTime = parsePaymentDate(payment).getTime();
+        
+        if (currentTime > existingTime) {
+          uniqueMap.set(key, payment);
+        }
+      }
+    }
   });
   
-  html += "</table>";
-  container.innerHTML = html;
+  return Array.from(uniqueMap.values());
 }
 
-// ======== PAYMENT DETAILS MODAL ========
-async function addCardDetails(receiptNo) {
-  const payment = await findPaymentByReceiptNo(receiptNo);
-  if (!payment) {
-    showNotification("Payment not found", "error");
+// ======== DELETE ENTRY - SUPERVISOR CHECK ========
+async function deleteEntry(id){ 
+  // Check if user is supervisor
+  if (!isSupervisor) {
+    showNotification("Only supervisors can delete payment records", "warning");
     return;
   }
   
-  if (payment.voided) {
-    showNotification("Cannot add details to voided receipt", "error");
-    return;
+  if(confirm("Are you sure you want to delete this payment record?")) {
+    await deletePayment(id); 
+    loadPayments(); 
+    showNotification("Payment deleted", "success");
   }
-  
-  if (payment.paymentType === 'Cash') {
-    showNotification("Cash payments don't require card details", "info");
-    return;
-  }
-  
-  if (payment.cardDetailsAdded) {
-    showNotification("Card details already added for this receipt", "info");
-    return;
-  }
-  
-  document.getElementById("modalPaymentId").value = receiptNo;
-  document.getElementById("modalReceiptNo").value = receiptNo;
-  document.getElementById("modalPassengerName").value = payment.name;
-  document.getElementById("modalTotalAmount").value = payment.total.toFixed(2);
-  document.getElementById("modalPaymentMethod").value = payment.paymentType || '';
-  document.getElementById("modalBatchNo").value = payment.batchNo || '';
-  document.getElementById("modalApprovalCode").value = payment.approvalCode || '';
-  
-  document.getElementById("cardDetailsModal").style.display = "flex";
 }
 
+async function viewPayment(id) {
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === id);
+  if (payment) {
+    const paymentDate = parsePaymentDate(payment);
+    const displayDate = formatDateForDisplay(paymentDate);
+    
+    alert(`Payment Details:\n\n` +
+          `Receipt No: ${payment.receiptNo}\n` +
+          `Date: ${displayDate}\n` +
+          `Name: ${payment.name}\n` +
+          `Flight: ${payment.flightNo}\n` +
+          `Seat: ${payment.seatNo}\n` +
+          `Payment Method: ${payment.paymentType}\n` +
+          `Staff: ${payment.staff || 'Unknown'}\n` +
+          `Total: ${payment.total} ${payment.currency}\n` +
+          `Expiry: ${payment.expiryFormatted}\n` +
+          `Status: ${payment.synced ? 'Synced' : 'Local only'}\n` +
+          `Voided: ${payment.voided ? 'Yes' : 'No'}`);
+  }
+}
+
+async function addCardDetails(paymentId) {
+  // Find the payment
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === paymentId);
+  if (payment) {
+    // Check if payment is voided
+    if (payment.voided) {
+      showNotification("Cannot add card details to a voided receipt", "error");
+      return;
+    }
+    
+    // Show modal with payment details
+    document.getElementById("modalPaymentId").value = paymentId;
+    document.getElementById("modalReceiptNo").value = payment.receiptNo || 'N/A';
+    document.getElementById("modalPassengerName").value = payment.name || 'N/A';
+    document.getElementById("modalTotalAmount").value = (payment.total || 0).toFixed(2);
+    
+    // Set existing values if available
+    document.getElementById("modalPaymentMethod").value = payment.paymentType || '';
+    document.getElementById("modalBatchNo").value = payment.batchNo || '';
+    document.getElementById("modalApprovalCode").value = payment.approvalCode || '';
+    
+    // Show modal
+    document.getElementById("cardDetailsModal").style.display = "flex";
+  }
+}
+
+// ======== SAVE CARD DETAILS WITH IMMEDIATE REFRESH ========
 async function saveCardDetails() {
-  const receiptNo = document.getElementById("modalPaymentId").value;
+  const paymentId = document.getElementById("modalPaymentId").value;
   const paymentMethod = document.getElementById("modalPaymentMethod").value;
   const batchNo = document.getElementById("modalBatchNo").value;
   const approvalCode = document.getElementById("modalApprovalCode").value;
   
   if (!paymentMethod || !batchNo || !approvalCode) {
-    showNotification("Please fill all required fields", "warning");
+    showNotification("Please enter payment method, batch number and approval code", "warning");
     return;
   }
   
-  try {
-    // Update payment data
-    const updates = {
-      paymentType: paymentMethod,
-      batchNo: batchNo,
-      approvalCode: approvalCode,
-      cardDetailsAdded: true,
-      cardDetailsAddedAt: getMaldivesTime().toISOString()
-    };
-    
-    // Update localStorage
-    updateLocalPayment(receiptNo, updates);
-    
-    // Update Firebase if available
-    if (window.walkinDb) {
-      await window.walkinDb.collection("payments").doc(receiptNo).update(updates);
-    }
-    
-    // Close modal and refresh
+  const success = await updatePayment(paymentId, {
+    paymentType: paymentMethod,
+    batchNo: batchNo,
+    approvalCode: approvalCode,
+    cardDetailsAdded: true,
+    finalReceiptPrinted: false,
+    lastUpdated: new Date().toISOString() // Add timestamp
+  });
+  
+  if (success) {
+    showNotification("Payment details saved successfully!", "success");
     closeModal();
     loadPayments();
     
-    // Print final receipt
-    const payment = await findPaymentByReceiptNo(receiptNo);
-    if (payment) {
-      printReceipt('final', payment);
-    }
-    
-    showNotification("Payment details saved successfully!", "success");
-    
-  } catch (error) {
-    console.error("Error saving card details:", error);
-    showNotification("Error saving details", "error");
-  }
-}
-
-function updateLocalPayment(receiptNo, updates) {
-  const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-  const updatedPayments = payments.map(p => {
-    if (p.receiptNo === receiptNo) {
-      return { ...p, ...updates };
-    }
-    return p;
-  });
-  localStorage.setItem('payments', JSON.stringify(updatedPayments));
-  console.log("Updated payment in localStorage:", receiptNo);
-}
-
-function closeModal() {
-  document.getElementById("cardDetailsModal").style.display = "none";
-  document.getElementById("modalPaymentMethod").value = "";
-  document.getElementById("modalBatchNo").value = "";
-  document.getElementById("modalApprovalCode").value = "";
-}
-
-// ======== SEARCH FUNCTIONALITY ========
-async function searchReceipt() {
-  const receiptNo = document.getElementById("receiptSearch").value.trim();
-  if (!receiptNo) {
-    showNotification("Please enter receipt number", "warning");
-    return;
-  }
-  
-  showNotification("Searching...", "info", 1500);
-  
-  const payment = await findPaymentByReceiptNo(receiptNo);
-  if (payment) {
-    foundReceiptData = payment;
-    displaySearchResult(payment);
-    showNotification(`Found receipt: ${receiptNo}`, "success");
-  } else {
-    showNotification("Receipt not found", "error");
-  }
-}
-
-async function findPaymentByReceiptNo(receiptNo) {
-  try {
-    // Try Firebase first
-    if (window.walkinDb) {
-      const doc = await window.walkinDb.collection("payments").doc(receiptNo).get();
-      if (doc.exists) {
-        console.log("Found payment in Firebase:", receiptNo);
-        return doc.data();
+    // If we have a found receipt from search, update it immediately
+    if (foundReceiptData && foundReceiptData.id === paymentId) {
+      // Force re-fetch from Firebase to get latest data
+      const freshData = await searchPaymentByReceiptNo(foundReceiptData.receiptNo);
+      if (freshData) {
+        foundReceiptData = freshData;
+        displaySearchResult(freshData);
       }
     }
     
-    // Try localStorage
-    const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    const payment = payments.find(p => p.receiptNo === receiptNo);
-    
+    // Print final receipt
+    const payments = await getPayments();
+    const payment = payments.find(p => p.id === paymentId);
     if (payment) {
-      console.log("Found payment in localStorage:", receiptNo);
+      printReceipt('final', payment);
     }
-    
-    return payment;
-    
-  } catch (error) {
-    console.error("Error searching payment:", error);
-    const payments = JSON.parse(localStorage.getItem('payments') || '[]');
-    return payments.find(p => p.receiptNo === receiptNo);
+  } else {
+    showNotification("Error saving payment details", "error");
   }
 }
 
+function editCardPayment(id) {
+  addCardDetails(id);
+}
+
+async function printFinalCashReceipt(paymentId) {
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === paymentId);
+  if (payment && payment.paymentType === "Cash") {
+    // Mark as final receipt printed
+    await updatePayment(paymentId, {
+      finalReceiptPrinted: true
+    });
+    
+    // Print final receipt
+    printReceipt('final', payment);
+    loadPayments();
+    showNotification("Final receipt printed", "success");
+  }
+}
+
+// ======== MANUAL CLEANUP FOR SUPERVISORS ========
+async function manualCleanupAllOldData() {
+  if (!isSupervisor) {
+    showNotification("Only supervisors can perform manual cleanup", "warning");
+    return;
+  }
+  
+  if (!confirm("This will delete ALL local payment data except for today's entries. Are you sure?")) {
+    return;
+  }
+  
+  // First, sync all pending payments to Firebase
+  if (checkFirebase() && pendingSyncQueue.length > 0) {
+    showNotification("Syncing pending payments before cleanup...", "info", 3000);
+    await syncPendingPayments();
+  }
+  
+  // Perform cleanup
+  const remainingPayments = cleanupOldLocalPayments();
+  
+  // Also cleanup Firebase locally cached data (if any)
+  if (checkFirebase()) {
+    try {
+      // Get today's payments from Firebase to keep cache
+      const today = getMaldivesDate();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const snapshot = await window.walkinDb.collection("payments")
+        .where("timestamp", ">=", todayStart)
+        .limit(100)
+        .get();
+      
+      // Update local cache with only today's data
+      const todayFirebasePayments = [];
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        todayFirebasePayments.push({
+          id: doc.id,
+          ...data,
+          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
+          synced: true
+        });
+      });
+      
+      // Could store this in a separate cache if needed
+      console.log(`Keeping ${todayFirebasePayments.length} Firebase records from today`);
+    } catch (error) {
+      console.error("Error cleaning Firebase cache:", error);
+    }
+  }
+  
+  // Reload payments
+  loadPayments();
+  
+  showNotification("Cleanup completed! Only today's data remains.", "success");
+}
+
+// ======== SEARCH RECEIPT ========
+async function searchReceipt() {
+  const receiptNo = document.getElementById("receiptSearch").value.trim();
+  if (!receiptNo) {
+    showNotification("Please enter a receipt number to search", "warning");
+    return;
+  }
+  
+  showNotification("Searching for receipt...", "info", 2000);
+  
+  // Clear any cached data for this receipt
+  foundReceiptData = null;
+  
+  const payment = await searchPaymentByReceiptNo(receiptNo);
+  if (payment) {
+    foundReceiptData = payment;
+    displaySearchResult(payment);
+    
+    // Show source of data
+    if (payment.isFreshFromFirebase) {
+      showNotification(`Found receipt ${receiptNo} (Fresh from cloud)`, "success");
+    } else {
+      showNotification(`Found receipt ${receiptNo} (Local cache)`, "warning");
+    }
+  } else {
+    showNotification(`Receipt number "${receiptNo}" not found.`, "error");
+  }
+}
+
+// ======== DISPLAY SEARCH RESULT WITH REFRESH BUTTON AND VOID INFO ========
 function displaySearchResult(payment) {
   const contentDiv = document.getElementById("searchResultContent");
   const actionsDiv = document.getElementById("searchResultActions");
   
-  // Format date in Maldives timezone
-  let displayDate = "N/A";
-  if (payment.transactionDate) {
-    const date = new Date(payment.transactionDate);
-    displayDate = formatMaldivesDateTime(date);
-  } else if (payment.timestamp) {
-    const date = new Date(payment.timestamp);
-    displayDate = formatMaldivesDateTime(date);
-  }
+  // Format dates for display
+  const paymentDate = parsePaymentDate(payment);
+  const displayDate = formatDateForDisplay(paymentDate);
   
   let html = `
     <div style="margin-bottom: 15px;">
-      <h4 style="margin: 0 0 10px 0;">Receipt Details</h4>
-      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h4 style="margin: 0;">Receipt Details</h4>
+        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" 
+                onclick="refreshReceiptData('${payment.receiptNo}')">
+          🔄 Refresh
+        </button>
+      </div>
+  `;
+  
+  // Add VOID warning banner if receipt is voided
+  if (payment.voided) {
+    html += `
+      <div class="void-warning">
+        ⚠️ VOID RECEIPT ⚠️
+      </div>
+      <div class="void-info">
+        <div><b>Voided By:</b> ${payment.voidedBy || 'Unknown'}</div>
+        <div><b>Voided At:</b> ${payment.voidedAt ? formatDateForDisplay(new Date(payment.voidedAt)) : 'Unknown'}</div>
+        <div><b>Reason:</b> ${payment.voidReason || 'No reason provided'}</div>
+      </div>
+    `;
+  }
+  
+  html += `
       <div class="input-group">
         <label>Receipt Number</label>
-        <input type="text" readonly value="${payment.receiptNo}">
+        <input type="text" readonly value="${payment.receiptNo || 'N/A'}" style="background: var(--gold-light);">
       </div>
       
-      <div class="input-group">
-        <label>Transaction Date (Maldives Time)</label>
-        <input type="text" readonly value="${displayDate}">
+      <div class="row">
+        <div class="input-group">
+          <label>Transaction Date</label>
+          <input type="text" readonly value="${displayDate}">
+        </div>
       </div>
       
       <div class="row">
         <div class="input-group">
           <label>Passenger Name</label>
-          <input type="text" readonly value="${payment.name}">
+          <input type="text" readonly value="${payment.name || 'N/A'}">
         </div>
         <div class="input-group">
           <label>Flight Number</label>
@@ -2199,34 +3287,77 @@ function displaySearchResult(payment) {
           <input type="text" readonly value="${payment.paymentType}">
         </div>
         <div class="input-group">
+          <label>Currency</label>
+          <input type="text" readonly value="${payment.currency}">
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="input-group">
           <label>Total Amount</label>
-          <input type="text" readonly value="${payment.total.toFixed(2)}" class="summary-value">
+          <input type="text" readonly value="${(payment.total || 0).toFixed(2)}" class="summary-value">
+        </div>
+        <div class="input-group">
+          <label>Expiry Time</label>
+          <input type="text" readonly value="${payment.expiryFormatted || 'N/A'}">
         </div>
       </div>
       
       <div class="row">
         <div class="input-group">
-          <label>Shift</label>
-          <input type="text" readonly value="${payment.shift}">
+          <label>Processed By</label>
+          <input type="text" readonly value="${payment.staff || 'Unknown'}">
         </div>
-        <div class="input-group">
-          <label>Staff</label>
-          <input type="text" readonly value="${payment.staff}">
-        </div>
-      </div>
-      
-      <div class="row">
         <div class="input-group">
           <label>Status</label>
-          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.cardDetailsAdded ? 'COMPLETED' : 'PENDING')}">
+          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.paymentType === 'Cash' ? (payment.finalReceiptPrinted ? 'Complete' : 'Pending Final') : (payment.cardDetailsAdded ? 'Completed' : 'Pending Details'))}">
         </div>
       </div>
-    </div>
   `;
+  
+  if (payment.paymentType !== 'Cash' && !payment.voided) {
+    html += `
+      <div class="row">
+        <div class="input-group">
+          <label>Batch Number</label>
+          <input type="text" readonly value="${payment.batchNo || 'Not Entered'}">
+        </div>
+        <div class="input-group">
+          <label>Approval Code</label>
+          <input type="text" readonly value="${payment.approvalCode || 'Not Entered'}">
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `</div>`;
   
   contentDiv.innerHTML = html;
   actionsDiv.style.display = "flex";
   document.getElementById("searchResultModal").style.display = "flex";
+}
+
+// ======== REFRESH RECEIPT DATA ========
+async function refreshReceiptData(receiptNo) {
+  showNotification("Refreshing receipt data...", "info", 1500);
+  
+  // Clear cached data
+  foundReceiptData = null;
+  
+  // Force fetch from Firebase
+  const payment = await searchPaymentByReceiptNo(receiptNo);
+  if (payment) {
+    foundReceiptData = payment;
+    displaySearchResult(payment);
+    
+    if (payment.isFreshFromFirebase) {
+      showNotification("Data refreshed from cloud", "success");
+    } else {
+      showNotification("Using local data (cloud unavailable)", "warning");
+    }
+  } else {
+    showNotification("Receipt not found after refresh", "error");
+  }
 }
 
 function closeSearchModal() {
@@ -2235,17 +3366,17 @@ function closeSearchModal() {
 }
 
 function printFoundReceipt() {
-  if (!foundReceiptData) return;
-  
-  if (foundReceiptData.voided) {
-    showNotification("Cannot print voided receipt", "error");
+  if (!foundReceiptData) {
+    showNotification("No receipt data found", "error");
     return;
   }
   
-  if (foundReceiptData.paymentType !== 'Cash' && foundReceiptData.cardDetailsAdded) {
+  if (foundReceiptData.paymentType !== 'Cash' && foundReceiptData.cardDetailsAdded && !foundReceiptData.voided) {
     printReceipt('final', foundReceiptData);
-  } else if (foundReceiptData.paymentType === 'Cash') {
-    printReceipt('first', foundReceiptData);
+  } else if (foundReceiptData.paymentType === 'Cash' && foundReceiptData.finalReceiptPrinted && !foundReceiptData.voided) {
+    printReceipt('final', foundReceiptData);
+  } else if (foundReceiptData.voided) {
+    printReceipt('void', foundReceiptData);
   } else {
     printReceipt('first', foundReceiptData);
   }
@@ -2256,28 +3387,29 @@ function printFoundReceipt() {
 function addCardDetailsToFoundReceipt() {
   if (!foundReceiptData) return;
   
+  // Check if receipt is voided
   if (foundReceiptData.voided) {
-    showNotification("Cannot add details to voided receipt", "error");
+    showNotification("Cannot add card details to a voided receipt", "error");
     return;
   }
   
   if (foundReceiptData.paymentType !== 'Cash' && !foundReceiptData.cardDetailsAdded) {
-    addCardDetails(foundReceiptData.receiptNo);
+    addCardDetails(foundReceiptData.id);
     closeSearchModal();
   } else {
-    showNotification("This receipt doesn't require payment details", "info");
+    showNotification("This receipt doesn't require payment details or already has them.", "info");
   }
 }
 
-async function reprintPayment(receiptNo) {
-  const payment = await findPaymentByReceiptNo(receiptNo);
+async function reprintPayment(paymentId) {
+  const payments = await getPayments();
+  const payment = payments.find(p => p.id === paymentId);
   if (payment) {
     if (payment.voided) {
-      showNotification("Cannot print voided receipt", "error");
-      return;
-    }
-    
-    if (payment.paymentType !== 'Cash' && payment.cardDetailsAdded) {
+      printReceipt('void', payment);
+    } else if (payment.paymentType !== 'Cash' && payment.cardDetailsAdded) {
+      printReceipt('final', payment);
+    } else if (payment.paymentType === 'Cash' && payment.finalReceiptPrinted) {
       printReceipt('final', payment);
     } else {
       printReceipt('first', payment);
@@ -2285,90 +3417,161 @@ async function reprintPayment(receiptNo) {
   }
 }
 
-// ======== PRINT RECEIPT ========
-function printReceipt(type = 'first', paymentData = null) {
-  let payment = paymentData || currentPaymentData;
+// ======== MODAL FUNCTIONS ========
+function closeModal() {
+  document.getElementById("cardDetailsModal").style.display = "none";
+  document.getElementById("modalPaymentMethod").value = "";
+  document.getElementById("modalBatchNo").value = "";
+  document.getElementById("modalApprovalCode").value = "";
+}
+
+// ======== TAB FUNCTIONALITY ========
+function showTab(tabName) {
+  // Hide all tab contents
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  // Remove active class from all tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Show selected tab content
+  document.getElementById(tabName).classList.add('active');
+  
+  // Activate selected tab button
+  event.target.classList.add('active');
+  
+  // Load appropriate data based on tab
+  if (tabName === 'pendingCards') {
+    loadPayments(); // This now only loads pending payments
+  }
+}
+
+// ======== PRINT RECEIPT - PROFESSIONAL DESIGN WITH VOID SUPPORT ========
+async function printReceipt(type = 'first', paymentData = null) {
+  let payment = paymentData;
+  
+  if (!payment && currentPaymentData) {
+    payment = currentPaymentData;
+  }
+  
   if (!payment) {
-    showNotification("No payment data to print", "error");
+    showNotification("No payment data available. Please save a payment first.", "warning");
     return;
   }
   
-  // Update receipt content
+  // Check company info
+  checkCompanyInfo();
+  
   const receiptNo = payment.receiptNo;
   const paymentType = payment.paymentType;
+  const isVoided = payment.voided || false;
   
-  document.getElementById("r_receiptNo").textContent = receiptNo + (type === 'final' ? ' (FINAL)' : '');
-  
-  // Format date in Maldives timezone
-  let receiptDate = "N/A";
-  if (payment.transactionDate) {
-    const date = new Date(payment.transactionDate);
-    receiptDate = formatMaldivesDateTime(date);
-  } else if (payment.timestamp) {
-    const date = new Date(payment.timestamp);
-    receiptDate = formatMaldivesDateTime(date);
+  // Update receipt printed status (only if not voided)
+  if (!isVoided) {
+    if (type === 'first') {
+      if (paymentType !== "Cash") {
+        await updatePayment(payment.id, { firstReceiptPrinted: true });
+      } else if (paymentType === "Cash") {
+        await updatePayment(payment.id, { firstReceiptPrinted: true });
+      }
+    } else if (type === 'final') {
+      if (paymentType !== "Cash") {
+        await updatePayment(payment.id, { finalReceiptPrinted: true });
+      } else if (paymentType === "Cash") {
+        await updatePayment(payment.id, { finalReceiptPrinted: true });
+      }
+    }
   }
   
-  document.getElementById("r_date").textContent = receiptDate;
-  document.getElementById("r_shift").textContent = payment.shift;
-  document.getElementById("r_staff").textContent = payment.staff;
-  document.getElementById("r_name").textContent = payment.name;
-  document.getElementById("r_flight").textContent = payment.flightNo || 'N/A';
-  document.getElementById("r_seat").textContent = payment.seatNo || 'N/A';
-  document.getElementById("r_adults").textContent = payment.adults;
-  document.getElementById("r_kids").textContent = payment.kids;
-  document.getElementById("r_payment_method").textContent = paymentType;
-  document.getElementById("r_currency").textContent = payment.currency;
+  // Set receipt content
+  const receiptHeader = document.getElementById("r_header");
+  const voidBanner = document.getElementById("r_void_banner");
+  const voidInfo = document.getElementById("r_void_info");
+  const expirySection = document.getElementById("r_expiry_section");
   
-  document.getElementById("r_subtotal").textContent = payment.subtotal.toFixed(2);
-  document.getElementById("r_gst").textContent = payment.gst.toFixed(2);
-  document.getElementById("r_total").textContent = payment.total.toFixed(2);
-  document.getElementById("r_expiry").textContent = payment.expiryFormatted;
+  if (isVoided) {
+    receiptHeader.innerText = "VOID RECEIPT";
+    voidBanner.style.display = "block";
+    voidInfo.style.display = "block";
+    expirySection.style.display = "none";
+    
+    // Set void information
+    document.getElementById("r_voided_by").innerText = payment.voidedBy || 'Unknown';
+    document.getElementById("r_voided_at").innerText = payment.voidedAt ? 
+      formatDateForDisplay(new Date(payment.voidedAt)) : 
+      'Unknown';
+    document.getElementById("r_void_reason").innerText = payment.voidReason || 'No reason provided';
+  } else {
+    receiptHeader.innerText = "PASSENGER PAYMENT RECEIPT" + (type === 'final' ? ' (FINAL)' : '');
+    voidBanner.style.display = "none";
+    voidInfo.style.display = "none";
+    expirySection.style.display = "block";
+  }
   
-  // Show/hide sections based on payment type
-  if (paymentType !== 'Cash') {
+  document.getElementById("r_receiptNo").innerText = receiptNo + (isVoided ? ' (VOID)' : (type === 'final' ? ' (FINAL)' : ''));
+  document.getElementById("r_date").innerText = formatDateForDisplay(new Date());
+  
+  // Use shift data from payment
+  const shiftInfo = payment.shiftName || payment.shift || 'N/A';
+  const shiftDate = payment.shiftDate || new Date().toISOString().split('T')[0];
+  document.getElementById("r_shift").innerText = `${shiftDate} - ${shiftInfo}`;
+  
+  document.getElementById("r_staff").innerText = payment.staff || currentUser || 'Unknown';
+  document.getElementById("r_name").innerText = payment.name || 'N/A';
+  document.getElementById("r_flight").innerText = payment.flightNo || 'N/A';
+  document.getElementById("r_seat").innerText = payment.seatNo || 'N/A';
+  document.getElementById("r_adults").innerText = payment.adults || 0;
+  document.getElementById("r_kids").innerText = payment.kids || 0;
+  document.getElementById("r_payment_method").innerText = paymentType;
+  document.getElementById("r_currency").innerText = payment.currency || 'N/A';
+  
+  // Calculate subtotal and GST for display
+  const subtotal = payment.total ? (payment.total / 1.08).toFixed(2) : '0.00';
+  const gst = payment.total ? (payment.total - (payment.total / 1.08)).toFixed(2) : '0.00';
+  
+  document.getElementById("r_subtotal").innerText = subtotal;
+  document.getElementById("r_gst").innerText = gst;
+  document.getElementById("r_total").innerText = (payment.total || 0).toFixed(2);
+  document.getElementById("r_expiry").innerText = payment.expiryFormatted || calculateExpiryTime().formatted;
+  
+  // Show/hide receipt sections based on payment type
+  if (paymentType !== "Cash") {
     document.getElementById("r_card_details").style.display = "block";
     document.getElementById("r_cash_details").style.display = "none";
     
+    // Only show payment details if they exist
     if (payment.cardDetailsAdded && payment.batchNo && payment.approvalCode) {
-      document.getElementById("r_batch").textContent = payment.batchNo;
-      document.getElementById("r_approval").textContent = payment.approvalCode;
+      document.getElementById("r_batch").innerText = payment.batchNo;
+      document.getElementById("r_approval").innerText = payment.approvalCode;
     } else {
+      // Hide payment details section if no details available
       document.getElementById("r_card_details").style.display = "none";
     }
   } else {
     document.getElementById("r_card_details").style.display = "none";
     document.getElementById("r_cash_details").style.display = "block";
-    document.getElementById("r_paid").textContent = (payment.paidAmount || 0).toFixed(2);
-    document.getElementById("r_balance").textContent = (payment.balance || 0).toFixed(2);
+    document.getElementById("r_paid").innerText = (payment.paidAmount || 0).toFixed(2);
+    document.getElementById("r_balance").innerText = (payment.balance || 0).toFixed(2);
   }
   
-  // Update receipt header based on type
-  const header = document.getElementById("r_header");
-  if (payment.voided) {
-    header.textContent = "VOIDED RECEIPT";
-    header.style.color = "#e74c3c";
-  } else if (type === 'final') {
-    header.textContent = "FINAL PAYMENT RECEIPT";
-    header.style.color = "#000000";
-  } else {
-    header.textContent = "PASSENGER PAYMENT RECEIPT";
-    header.style.color = "#000000";
-  }
-  
-  // Print the receipt
+  // Print receipt for 76mm thermal printer
   printThermalReceipt();
   
   // Show notification
-  const receiptType = payment.voided ? 'Void' : (type === 'final' ? 'Final' : 'First');
+  const receiptType = isVoided ? 'Void' : (type === 'final' ? 'Final' : 'First');
   showNotification(`Printed ${receiptType} Receipt: ${receiptNo}`, "success");
 }
 
 function printThermalReceipt() {
   const content = document.getElementById("receiptContent").innerHTML;
   
+  // Create a print-friendly window with 76mm width
   const printWindow = window.open('', '_blank', 'width=300,height=600');
   
+  // Thermal printer friendly CSS with void styling
   const thermalCSS = `
     <style>
       @media print {
@@ -2383,9 +3586,20 @@ function printThermalReceipt() {
           font-size: 12px !important;
           line-height: 1.2 !important;
         }
+        .no-print { display: none !important; }
         @page {
           margin: 0;
           size: 70mm auto;
+        }
+        #r_void_banner {
+          background: #e74c3c !important;
+          color: white !important;
+          font-weight: bold !important;
+          border: 2px solid #000 !important;
+        }
+        #r_void_info {
+          background: #f8d7da !important;
+          border: 1px solid #f5c6cb !important;
         }
       }
       body {
@@ -2394,6 +3608,36 @@ function printThermalReceipt() {
         width: 70mm;
         margin: 0 auto;
         padding: 5px;
+      }
+      h1, h2, h3 {
+        font-size: 14px;
+        margin: 5px 0;
+      }
+      hr {
+        border: none;
+        border-top: 1px dashed #000;
+        margin: 5px 0;
+      }
+      .text-center { text-align: center; }
+      .text-right { text-align: right; }
+      .text-bold { font-weight: bold; }
+      .text-large { font-size: 16px; }
+      .text-small { font-size: 10px; }
+      .border-dashed { border: 1px dashed #000; }
+      .receipt-container {
+        width: 100%;
+        max-width: 70mm;
+        margin: 0 auto;
+      }
+      #r_void_banner {
+        background: #e74c3c;
+        color: white;
+        font-weight: bold;
+        border: 2px solid #000;
+      }
+      #r_void_info {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
       }
     </style>
   `;
@@ -2405,7 +3649,7 @@ function printThermalReceipt() {
         ${thermalCSS}
       </head>
       <body onload="window.print(); setTimeout(() => window.close(), 500);">
-        <div style="width:100%;max-width:70mm;margin:0 auto;">
+        <div class="receipt-container">
           ${content}
         </div>
       </body>
@@ -2415,124 +3659,111 @@ function printThermalReceipt() {
   printWindow.document.close();
 }
 
-// ======== INITIALIZATION ========
-async function initializeSystem() {
-  console.log("Initializing Passenger Payment POS...");
-  
-  // Initialize company info
-  if (!window.companyInfo) {
-    window.companyInfo = {
-      name: "Koveli Lounge",
-      address: "Velana International Airport",
-      phone: "+960 304 6677"
-    };
-  }
-  
-  // Get current user
-  getCurrentUser();
-  
-  // Initialize fireshift.js first
-  console.log("Initializing fireShift...");
-  
-  // Check if fireShift is available
-  if (typeof fireShift === 'undefined') {
-    console.error("fireShift module not found! Check if fireshift.js is loaded.");
-    // Try to load it dynamically
-    try {
-      const script = document.createElement('script');
-      script.src = 'fireshift.js';
-      script.onload = async function() {
-        console.log("fireshift.js loaded dynamically");
-        await initializeAfterShiftLoaded();
-      };
-      document.head.appendChild(script);
-    } catch (e) {
-      console.error("Failed to load fireshift.js:", e);
-      await initializeWithDefaultShift();
-    }
-  } else {
-    // fireShift is already loaded
-    await initializeAfterShiftLoaded();
-  }
-}
-
-async function initializeAfterShiftLoaded() {
+// ======== NEW: INITIALIZE RECEIPT COUNTER ========
+async function initializeReceiptCounter() {
   try {
-    // Wait a bit for fireShift to be ready
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Check if we have a last used receipt
+    const lastUsed = localStorage.getItem('lastUsedReceipt');
     
-    // Load current shift from fireshift.js
-    console.log("Loading shift from fireShift...");
-    await loadCurrentShift();
+    if (lastUsed) {
+      const lastNumber = parseInt(lastUsed);
+      if (!isNaN(lastNumber) && lastNumber >= 1564) {
+        // Set local counter to last used number
+        localStorage.setItem('receiptCounter', lastNumber.toString());
+        console.log(`Initialized receipt counter from last used: ${lastNumber}`);
+      }
+    }
     
-    // Debug: Check what shift was loaded
-    console.log("Final shift loaded:", currentShift);
-    console.log("Final shift Maldives date:", currentShiftDate ? formatMaldivesDate(currentShiftDate) : "No date");
-    console.log("Shift date key:", currentShiftDate ? getDateKey(currentShiftDate) : "No date key");
-    
-    // Initialize the rest of the system
-    initializeRestOfSystem();
+    // Try to sync with Firebase for the latest number
+    if (checkFirebase()) {
+      try {
+        const receiptsRef = window.walkinDb.collection("receipts");
+        const snapshot = await receiptsRef
+          .orderBy("receiptNumber", "desc")
+          .limit(1)
+          .get();
+        
+        if (!snapshot.empty) {
+          const latestReceipt = snapshot.docs[0].data();
+          const firebaseNumber = latestReceipt.receiptNumber;
+          
+          const localCounter = parseInt(localStorage.getItem('receiptCounter') || '1563');
+          
+          // Use the higher number between Firebase and local
+          if (firebaseNumber > localCounter) {
+            localStorage.setItem('receiptCounter', firebaseNumber.toString());
+            console.log(`Updated local counter from Firebase: ${firebaseNumber}`);
+          }
+        }
+      } catch (error) {
+        console.warn("Could not sync receipt counter with Firebase:", error);
+      }
+    }
     
   } catch (error) {
-    console.error("Error in initializeAfterShiftLoaded:", error);
-    await initializeWithDefaultShift();
+    console.error("Error initializing receipt counter:", error);
   }
 }
 
-async function initializeWithDefaultShift() {
-  console.log("Initializing with default shift...");
-  // Default to today's date in Maldives timezone
-  const maldivesNow = getMaldivesTime();
-  const todayKey = getDateKey(maldivesNow);
-  currentShift = "Morning";
-  currentShiftDate = parseMaldivesDate(todayKey);
+// ======== AUTO EVENT LISTENERS ========
+window.onload = async function(){
+  // Initialize company info
+  checkCompanyInfo();
   
-  console.log("Using default shift:", {
-    shift: currentShift,
-    todayKey: todayKey,
-    parsedDate: formatMaldivesDate(currentShiftDate)
-  });
+  // Initialize receipt counter
+  await initializeReceiptCounter();
   
-  saveShiftToLocalStorage();
-  updateShiftDisplay();
+  // Get current user from localStorage
+  getCurrentUser();
   
-  // Initialize the rest of the system
-  initializeRestOfSystem();
-}
-
-function initializeRestOfSystem() {
-  // Initialize pricing
+  // Check if Firebase is initialized
+  if (!checkFirebase()) {
+    showNotification("Firebase not initialized. Working in offline mode.", "warning", 5000);
+  } else {
+    console.log("Firebase is ready");
+  }
+  
+  // Fetch shift information from Firebase (or use cached)
+  await fetchShiftFromFirebase();
+  
   updatePricing();
   togglePaymentFields();
-  
-  // Set up event listeners
-  ['adults', 'kids', 'rateType', 'currency'].forEach(id => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.addEventListener('input', updatePricing);
-      element.addEventListener('change', updatePricing);
-    }
+
+  // Live update pricing
+  ['adults','kids','rateType','currency'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', updatePricing);
+    document.getElementById(id).addEventListener('change', updatePricing);
   });
   
-  const paidAmountEl = document.getElementById("paidAmount");
-  if (paidAmountEl) {
-    paidAmountEl.addEventListener('input', updateCashFields);
-  }
+  // Update cash fields when paid amount changes
+  document.getElementById("paidAmount").addEventListener('input', updateCashFields);
   
-  const paymentTypeEl = document.getElementById("paymentType");
-  if (paymentTypeEl) {
-    paymentTypeEl.addEventListener('change', function() {
-      togglePaymentFields();
-    });
-  }
-  
-  const codeInputEl = document.getElementById("codeInput");
-  if (codeInputEl) {
-    codeInputEl.addEventListener('input', parseCode);
-  }
+  // Toggle payment fields when payment type changes
+  document.getElementById("paymentType").addEventListener('change', function() {
+    togglePaymentFields();
+    
+    // Update the modal payment method dropdown to match selection
+    const selectedMethod = this.value;
+    if (selectedMethod !== 'Cash') {
+      // When selecting a non-cash method, pre-select it in modal
+      const modalPaymentMethod = document.getElementById("modalPaymentMethod");
+      if (modalPaymentMethod) {
+        // Find and select the option
+        for (let option of modalPaymentMethod.options) {
+          if (option.value === selectedMethod) {
+            option.selected = true;
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  // Auto parse code as user types
+  document.getElementById("codeInput").addEventListener('input', parseCode);
   
   // Prevent focus on readonly fields
-  ['subtotal', 'gst', 'total', 'balance'].forEach(id => {
+  ['subtotal','gst','total','balance'].forEach(id=>{
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('focus', function() { this.blur(); });
@@ -2540,49 +3771,42 @@ function initializeRestOfSystem() {
   });
   
   // Close modals when clicking outside
-  const cardModal = document.getElementById("cardDetailsModal");
-  if (cardModal) {
-    cardModal.addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-  }
+  document.getElementById("cardDetailsModal").addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeModal();
+    }
+  });
   
-  const searchModal = document.getElementById("searchResultModal");
-  if (searchModal) {
-    searchModal.addEventListener('click', function(e) {
-      if (e.target === this) closeSearchModal();
-    });
-  }
+  document.getElementById("searchResultModal").addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeSearchModal();
+    }
+  });
   
-  // Search on Enter key
-  const receiptSearchEl = document.getElementById("receiptSearch");
-  if (receiptSearchEl) {
-    receiptSearchEl.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') searchReceipt();
-    });
-  }
+  // Search on Enter key in receipt search
+  document.getElementById("receiptSearch").addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      searchReceipt();
+    }
+  });
   
-  // Initialize expiry time (based on shift date)
+  // Initialize expiry time
   calculateExpiryTime();
   
-  // Load any existing payments
+  // Cleanup old local payment data on startup
   setTimeout(() => {
-    loadPayments();
-  }, 1000);
+    cleanupOldLocalPayments();
+  }, 3000);
   
-  // Show final notification with Maldives shift date
-  const shiftDateDisplay = currentShiftDate ? formatMaldivesDate(currentShiftDate) : 'Unknown';
-  showNotification(`System ready. Shift: ${currentShift} | Date: ${shiftDateDisplay}`, "success");
-  console.log("System initialization complete. Shift:", currentShift, "Maldives Date:", shiftDateDisplay);
-}
-
-// Initialize on window load
-window.onload = function() {
-  console.log("Window loaded, starting initialization...");
+  // Start syncing any pending payments
   setTimeout(() => {
-    initializeSystem();
-  }, 100);
+    pendingSyncQueue = getPendingPayments().filter(p => !p.synced);
+    if (pendingSyncQueue.length > 0 && checkFirebase()) {
+      syncPendingPayments();
+      showNotification(`Syncing ${pendingSyncQueue.length} pending payments...`, "info", 3000);
+    }
+  }, 2000);
 };
-</script>
+  </script>
 </body>
 </html>
