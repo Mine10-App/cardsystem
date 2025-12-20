@@ -3,14 +3,14 @@
 
 // Both variable names for compatibility
 const firebaseConfig = {
-        apiKey: "AIzaSyD6npGK2ODuTM55hhn-Kirpq1I562AvGVE",
-        authDomain: "walkint.firebaseapp.com",
-        projectId: "walkint",
-        storageBucket: "walkint.firebasestorage.app",
-        messagingSenderId: "681695627675",
-        appId: "1:681695627675:web:ef74621bebbd8b52f3b93e",
-        measurementId: "G-KZNQX1KPY3"
-        };
+        apiKey: "AIzaSyDojmglqNlJmwgKYe0UcEcrElLV45SK9As",
+  authDomain: "cardsystem-21773.firebaseapp.com",
+  projectId: "cardsystem-21773",
+  storageBucket: "cardsystem-21773.firebasestorage.app",
+  messagingSenderId: "408973003834",
+  appId: "1:408973003834:web:96db400ec750fb62dab903",
+  measurementId: "G-6QX2WLEBTP"
+};
 
 // Alias for shiftFirebaseConfig for backward compatibility
 const shiftFirebaseConfig = firebaseConfig;
