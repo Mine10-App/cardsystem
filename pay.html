@@ -1527,6 +1527,11 @@ let isSupervisor = false;
 // Maldives timezone offset (UTC+5 hours in milliseconds)
 const MALDIVES_OFFSET = 5 * 60 * 60 * 1000;
 
+// ----------- SHIFT MANAGEMENT CONSTANTS -----------
+const SHIFT_STORAGE_KEY = 'currentShiftData_PAYMENT';
+const SHIFT_TIMESTAMP_KEY = 'shiftDataTimestamp_PAYMENT';
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // Check if Firebase is initialized
 function checkFirebase() {
   if (!window.walkinDb) {
@@ -1550,229 +1555,437 @@ function checkCompanyInfo() {
 }
 
 // ======== SHIFT MANAGEMENT FUNCTIONS ========
-async function fetchShiftFromFirebase(forceRefresh = false) {
-  try {
-    if (!checkFirebase()) {
-      console.error("Firebase not available for shift fetch");
-      showNotification("Cannot fetch shift: Firebase not available", "error");
-      return null;
+function getMaldivesTime() {
+    const now = new Date();
+    return new Date(now.getTime() + MALDIVES_OFFSET);
+}
+
+function parseFirebaseDate(dateString) {
+    // Parse Firebase date string like "2025-12-19"
+    if (!dateString) return new Date();
+    
+    const parts = dateString.split('-');
+    if (parts.length !== 3) {
+        console.error("Invalid date format:", dateString);
+        return new Date();
     }
     
-    // Check if we have cached shift data (unless force refresh)
-    if (!forceRefresh) {
-      const cachedShift = localStorage.getItem('currentShiftData');
-      if (cachedShift) {
-        const shiftData = JSON.parse(cachedShift);
-        const cacheTime = new Date(shiftData.cachedAt).getTime();
-        const now = new Date().getTime();
-        const hoursSinceCache = (now - cacheTime) / (1000 * 60 * 60);
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1;
+    const day = parseInt(parts[2]);
+    
+    return new Date(year, month, day);
+}
+
+function getDateKeyFromFirebaseDate(dateString) {
+    // Convert Firebase date string "2025-12-19" to key "2025_12_19"
+    if (!dateString) return '';
+    return dateString.replace(/-/g, '_');
+}
+
+// ----------- INITIALIZE SHIFT FIREBASE -----------
+function initializeShiftFirebase() {
+    try {
+        console.log("Initializing Firebase for shift data...");
         
-        // Use cache if less than 1 hour old
-        if (hoursSinceCache < 1) {
-          console.log("Using cached shift data (less than 1 hour old)");
-          updateShiftDisplay(shiftData);
-          return shiftData;
+        // Check if shift config is loaded from fireshift.js
+        if (typeof firebaseConfig === 'undefined' && typeof shiftFirebaseConfig === 'undefined') {
+            console.error("❌ Shift Firebase config not found in fireshift.js");
+            showNotification("Firebase configuration not found", "error");
+            return null;
         }
-      }
+        
+        // Use whichever config is available
+        const config = firebaseConfig || shiftFirebaseConfig;
+        console.log("Using Firebase config for project:", config.projectId);
+        
+        // Check if Firebase app already exists
+        let app;
+        try {
+            // Try to get existing app
+            app = firebase.app('shiftApp');
+            console.log("Using existing Firebase app: shiftApp");
+        } catch (e) {
+            // Create new app for shifts
+            app = firebase.initializeApp(config, 'shiftApp');
+            console.log("Created new Firebase app: shiftApp");
+        }
+        
+        // Initialize Firestore
+        const shiftFirestore = firebase.firestore(app);
+        console.log("✅ Shift Firestore initialized successfully");
+        
+        return shiftFirestore;
+        
+    } catch (error) {
+        console.error("❌ Error initializing shift Firebase:", error);
+        showNotification("Failed to initialize Firebase for shift data", "error");
+        return null;
     }
+}
+
+// ----------- CHECK FOR OPEN SHIFT -----------
+function checkForOpenShift(shiftData) {
+    console.log("🔍 Checking for open shift in data...");
     
-    showNotification("Fetching shift information from Firebase...", "info", 2000);
-    
-    // Fetch shift data from Firebase
-    const shiftsRef = window.walkinDb.collection("shifts");
-    const snapshot = await shiftsRef.orderBy("date", "desc").limit(1).get();
-    
-    if (snapshot.empty) {
-      showNotification("No shift data found in Firebase", "warning");
-      return null;
-    }
-    
-    const shiftDoc = snapshot.docs[0];
-    const shiftData = shiftDoc.data();
-    
-    // Get the date from Firebase (string format like "2025-12-19")
-    const firebaseDate = shiftData.date;
-    
-    // Check which shift is open
-    let currentShift = "No Shift Open";
-    
-    if (shiftData.morning && shiftData.morning.status === "open") {
-      currentShift = "Morning Shift";
-    } else if (shiftData.evening && shiftData.evening.status === "open") {
-      currentShift = "Evening Shift";
-    }
-    
-    // Prepare shift data for storage
-    const processedShiftData = {
-      date: firebaseDate,
-      shiftName: currentShift,
-      shiftData: shiftData,
-      cachedAt: new Date().toISOString(),
-      fetchedFromFirebase: true
+    let result = {
+        success: false,
+        isActive: false,
+        shiftName: "No Shift Open",
+        shiftType: "",
+        openTime: "",
+        details: {},
+        firebaseDate: shiftData?.date || ""
     };
     
-    // Store in localStorage
-    localStorage.setItem('currentShiftData', JSON.stringify(processedShiftData));
+    if (!shiftData) {
+        return result;
+    }
     
-    // Update display
-    updateShiftDisplay(processedShiftData);
+    // Check morning shift
+    if (shiftData.morning && shiftData.morning.status === 'open') {
+        result.success = true;
+        result.isActive = true;
+        result.shiftName = "Morning Shift";
+        result.shiftType = "morning";
+        result.openTime = shiftData.morning.open || "";
+        result.details = shiftData.morning;
+        console.log("✓ Morning shift is OPEN");
+        return result;
+    }
     
-    showNotification(`Shift updated: ${currentShift} (${firebaseDate})`, "success");
+    // Check evening shift
+    if (shiftData.evening && shiftData.evening.status === 'open') {
+        result.success = true;
+        result.isActive = true;
+        result.shiftName = "Evening Shift";
+        result.shiftType = "evening";
+        result.openTime = shiftData.evening.open || "";
+        result.details = shiftData.evening;
+        console.log("✓ Evening shift is OPEN");
+        return result;
+    }
     
-    return processedShiftData;
+    // Check if both shifts are "not_available"
+    if (shiftData.morning && shiftData.morning.status === "not_available" && 
+        shiftData.evening && shiftData.evening.status === "not_available") {
+        result.success = true;
+        result.shiftName = "Shifts Not Started Today";
+        console.log("⏳ Both shifts not available yet");
+        return result;
+    }
     
-  } catch (error) {
-    console.error("Error fetching shift from Firebase:", error);
-    showNotification("Error fetching shift data: " + error.message, "error");
+    // Check if both shifts are closed
+    if ((!shiftData.morning || shiftData.morning.status === "closed") && 
+        (!shiftData.evening || shiftData.evening.status === "closed")) {
+        result.success = true;
+        result.shiftName = "All Shifts Closed";
+        console.log("🔒 All shifts closed");
+        return result;
+    }
     
-    // Try to use cached data as fallback
-    const cachedShift = localStorage.getItem('currentShiftData');
+    // Default case
+    result.success = true;
+    return result;
+}
+
+// ----------- FETCH SHIFT DATA (SAME AS DASHBOARD) -----------
+async function fetchShiftDataFromFirebase(forceRefresh = false) {
+    console.log("🌐 Fetching shift data from Firebase...");
+    
+    try {
+        // Initialize Firebase for shifts if not done yet
+        let shiftFirestore = initializeShiftFirebase();
+        if (!shiftFirestore) {
+            throw new Error("Failed to initialize Firebase for shifts");
+        }
+        
+        // Get current Maldives time
+        const maldivesNow = getMaldivesTime();
+        const todayMaldivesDate = maldivesNow.toISOString().split('T')[0]; // YYYY-MM-DD
+        
+        console.log("📅 Today's Maldives date (ISO):", todayMaldivesDate);
+        
+        // Try today first, then yesterday, then day before
+        let foundShiftData = null;
+        let foundFirebaseDate = null;
+        let foundDate = null;
+        let shiftCheck = null;
+        let daysBack = 0;
+        let docId = '';
+        
+        for (let i = 0; i < 3; i++) {
+            // Calculate date to check (today - i days)
+            const checkDate = new Date(maldivesNow);
+            checkDate.setDate(maldivesNow.getDate() - i);
+            const checkDateString = checkDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            const checkDateKey = checkDateString.replace(/-/g, '_');
+            docId = `shift_${checkDateKey}`;
+            
+            console.log(`📅 Checking ${i} day(s) back: ${checkDateString} (doc: ${docId})`);
+            
+            try {
+                // SINGLE READ per date
+                const shiftDoc = await shiftFirestore.collection("shifts").doc(docId).get();
+                
+                if (shiftDoc.exists) {
+                    const shiftData = shiftDoc.data();
+                    console.log(`✅ Found document for ${checkDateString}`);
+                    
+                    // Check if this document has an open shift
+                    const checkResult = checkForOpenShift(shiftData);
+                    
+                    if (checkResult.isActive) {
+                        console.log(`🎉 Found open shift ${i} day(s) back`);
+                        foundShiftData = shiftData;
+                        foundFirebaseDate = shiftData.date || checkDateString;
+                        foundDate = parseFirebaseDate(foundFirebaseDate);
+                        shiftCheck = checkResult;
+                        daysBack = i;
+                        break; // Stop searching when we find an open shift
+                    }
+                }
+            } catch (error) {
+                console.error(`❌ Error checking ${checkDateString}:`, error);
+                // Continue to next date
+            }
+        }
+        
+        if (!foundShiftData) {
+            console.log("⚠️ No open shift found in any date");
+            return {
+                success: false,
+                message: "No open shift found",
+                date: todayMaldivesDate,
+                isActive: false,
+                timestamp: new Date().toISOString()
+            };
+        }
+        
+        const shiftDateObj = parseFirebaseDate(foundFirebaseDate);
+        
+        let dateIndicator = "";
+        if (daysBack === 1) {
+            dateIndicator = " (Yesterday)";
+        } else if (daysBack === 2) {
+            dateIndicator = " (Day before)";
+        } else if (daysBack > 2) {
+            dateIndicator = ` (${daysBack} days ago)`;
+        }
+        
+        // Format date for display
+        const shiftDateDisplay = shiftDateObj.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) + dateIndicator;
+        
+        const currentDateObj = parseFirebaseDate(todayMaldivesDate);
+        const currentDateDisplay = shiftDateObj.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        const isDifferentDay = shiftDateDisplay !== currentDateDisplay;
+        
+        const result = {
+            success: true,
+            name: shiftCheck.shiftName,
+            shiftDateDisplay: shiftDateDisplay,
+            rawShiftDate: shiftDateObj,
+            firebaseDate: foundFirebaseDate,
+            foundDateKey: getDateKeyFromFirebaseDate(foundFirebaseDate),
+            isActive: shiftCheck.isActive,
+            openTime: shiftCheck.openTime,
+            shiftType: shiftCheck.shiftType,
+            fullData: foundShiftData,
+            isFromPreviousDay: isDifferentDay,
+            daysBack: daysBack,
+            timestamp: new Date().toISOString(),
+            documentId: docId,
+            // Store this for payment page
+            currentShiftInfo: {
+                shift: shiftCheck.shiftType,
+                shiftDate: foundFirebaseDate, // Store as string "2025-12-19"
+                shiftDateKey: getDateKeyFromFirebaseDate(foundFirebaseDate),
+                shiftName: shiftCheck.shiftName,
+                isPreviousDay: isDifferentDay,
+                shiftDateDisplay: shiftDateDisplay
+            }
+        };
+        
+        console.log("📦 Final shift data result:", result);
+        
+        // Save to localStorage for payment page
+        saveShiftToLocalStorage(result);
+        
+        // Also save the current shift info separately for easy access
+        localStorage.setItem('currentShiftInfo', JSON.stringify(result.currentShiftInfo));
+        
+        return result;
+        
+    } catch (error) {
+        console.error("❌ Error fetching shift data:", error);
+        return {
+            success: false,
+            message: "Error: " + error.message,
+            timestamp: new Date().toISOString()
+        };
+    }
+}
+
+// ----------- SAVE TO LOCAL STORAGE -----------
+function saveShiftToLocalStorage(shiftData) {
+    try {
+        localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(shiftData));
+        localStorage.setItem(SHIFT_TIMESTAMP_KEY, new Date().toISOString());
+        console.log("💾 Saved shift data to localStorage");
+    } catch (e) {
+        console.error("❌ Error saving to localStorage:", e);
+    }
+}
+
+// ----------- LOAD FROM LOCAL STORAGE -----------
+function loadShiftFromLocalStorage() {
+    try {
+        const savedData = localStorage.getItem(SHIFT_STORAGE_KEY);
+        const savedTimestamp = localStorage.getItem(SHIFT_TIMESTAMP_KEY);
+        
+        if (!savedData || !savedTimestamp) {
+            console.log("📭 No saved shift data found");
+            return null;
+        }
+        
+        const data = JSON.parse(savedData);
+        const timestamp = new Date(savedTimestamp);
+        const now = new Date();
+        const age = now - timestamp;
+        
+        console.log("📂 Loaded shift data from localStorage (age:", Math.floor(age/1000), "seconds)");
+        
+        // Data is considered fresh if less than cache duration
+        if (age < CACHE_DURATION) {
+            return data;
+        } else {
+            console.log("📛 Saved data is outdated");
+            return null;
+        }
+        
+    } catch (e) {
+        console.error("❌ Error loading from localStorage:", e);
+        return null;
+    }
+}
+
+// ----------- GET CURRENT SHIFT FOR PAYMENTS -----------
+function getCurrentShiftInfo() {
+    // Try to get from localStorage first (cached)
+    const cachedShift = localStorage.getItem('currentShiftInfo');
+    
     if (cachedShift) {
-      const shiftData = JSON.parse(cachedShift);
-      showNotification("Using cached shift data (network error)", "warning");
-      updateShiftDisplay(shiftData);
-      return shiftData;
+        try {
+            const shiftInfo = JSON.parse(cachedShift);
+            console.log("📋 Using cached shift info:", shiftInfo);
+            return shiftInfo;
+        } catch (e) {
+            console.error("Error parsing cached shift info:", e);
+        }
     }
     
-    return null;
-  }
-}
-
-function updateShiftDisplay(shiftData) {
-  if (!shiftData) {
-    document.getElementById("currentShiftDate").value = "Not Available";
-    document.getElementById("currentShiftName").value = "No Shift";
-    document.getElementById("shiftInfoDisplay").innerHTML = "Shift info not available";
-    return;
-  }
-  
-  const dateField = document.getElementById("currentShiftDate");
-  const shiftField = document.getElementById("currentShiftName");
-  const infoDisplay = document.getElementById("shiftInfoDisplay");
-  
-  if (dateField) {
-    dateField.value = shiftData.date || "Not Available";
-  }
-  
-  if (shiftField) {
-    shiftField.value = shiftData.shiftName || "No Shift";
-  }
-  
-  if (infoDisplay) {
-    const cachedTime = shiftData.cachedAt ? 
-      new Date(shiftData.cachedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
-      "Just now";
+    // Default fallback
+    const maldivesNow = getMaldivesTime();
+    const todayDate = maldivesNow.toISOString().split('T')[0];
     
-    infoDisplay.innerHTML = `
-      <span class="shift-date">Date: ${shiftData.date || "N/A"}</span> | 
-      <span class="shift-name">Shift: ${shiftData.shiftName || "No Shift"}</span>
-      <button class="shift-refresh-btn" onclick="fetchShiftFromFirebase(true)" title="Refresh from Firebase">
-        🔄
-      </button>
-    `;
-  }
-}
-
-function getCurrentShift() {
-  // Get current shift from localStorage
-  const cachedShift = localStorage.getItem('currentShiftData');
-  if (cachedShift) {
-    const shiftData = JSON.parse(cachedShift);
     return {
-      date: shiftData.date,
-      shiftName: shiftData.shiftName
+        shift: "morning",
+        shiftDate: todayDate,
+        shiftDateKey: getDateKeyFromFirebaseDate(todayDate),
+        shiftName: "Morning Shift",
+        isPreviousDay: false,
+        shiftDateDisplay: "Today"
     };
-  }
-  
-  // Return default if no shift data
-  return {
-    date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
-    shiftName: "No Shift"
-  };
 }
 
-// ======== TIMEZONE HELPER FUNCTIONS ========
-function getMaldivesDate() {
-  // Returns current date/time in Maldives timezone (UTC+5)
-  const now = new Date();
-  return new Date(now.getTime() + MALDIVES_OFFSET);
-}
-
-function getMaldivesTodayRange() {
-  // Get today's start and end in Maldives timezone
-  const maldivesNow = getMaldivesDate();
-  
-  // Start of day in Maldives (00:00:00)
-  const start = new Date(maldivesNow);
-  start.setUTCHours(0, 0, 0, 0);
-  const startUTC = new Date(start.getTime() - MALDIVES_OFFSET);
-  
-  // End of day in Maldives (23:59:59.999)
-  const end = new Date(maldivesNow);
-  end.setUTCHours(23, 59, 59, 999);
-  const endUTC = new Date(end.getTime() - MALDIVES_OFFSET);
-  
-  return { start: startUTC, end: endUTC };
-}
-
-function parsePaymentDate(payment) {
-  // Parse payment date consistently with timezone awareness
-  
-  // First, check for voided timestamp (for voided receipts)
-  if (payment.voidedAt) {
-    const voidDate = new Date(payment.voidedAt);
-    if (!isNaN(voidDate.getTime())) {
-      return voidDate;
+// ----------- REFRESH SHIFT DATA -----------
+async function refreshShiftData(showNotification = true) {
+    console.log("🔄 Refreshing shift data...");
+    
+    try {
+        const result = await fetchShiftDataFromFirebase(true);
+        
+        if (result.success && result.isActive) {
+            // Update UI with shift info
+            updateShiftDisplay(result);
+            
+            if (showNotification) {
+                showMessage(`Shift updated: ${result.name} (${result.firebaseDate})`, "success");
+            }
+            
+            return result;
+        } else {
+            if (showNotification) {
+                showMessage("No active shift found", "warning");
+            }
+            return result;
+        }
+    } catch (error) {
+        console.error("Error refreshing shift data:", error);
+        if (showNotification) {
+            showMessage("Failed to refresh shift data", "error");
+        }
+        return null;
     }
-  }
-  
-  // Try different timestamp fields
-  if (payment.timestamp) {
-    if (payment.timestamp.toDate) {
-      return payment.timestamp.toDate();
-    } else if (typeof payment.timestamp === 'string') {
-      return new Date(payment.timestamp);
-    } else if (payment.timestamp.seconds) {
-      // Firebase Timestamp
-      return new Date(payment.timestamp.seconds * 1000);
+}
+
+// ----------- UPDATE SHIFT DISPLAY IN UI -----------
+function updateShiftDisplay(shiftData) {
+    if (!shiftData) {
+        // Try to get cached data
+        const cachedData = loadShiftFromLocalStorage();
+        if (cachedData) {
+            shiftData = cachedData;
+        } else {
+            document.getElementById("currentShiftDate").value = "Not Available";
+            document.getElementById("currentShiftName").value = "No Shift";
+            document.getElementById("shiftInfoDisplay").innerHTML = "Shift info not available";
+            return;
+        }
     }
-  }
-  
-  if (payment.localSaveTime) {
-    const date = new Date(payment.localSaveTime);
-    if (!isNaN(date.getTime())) return date;
-  }
-  
-  if (payment.time) {
-    const date = new Date(payment.time);
-    if (!isNaN(date.getTime())) return date;
-  }
-  
-  if (payment.createdAt) {
-    const date = new Date(payment.createdAt);
-    if (!isNaN(date.getTime())) return date;
-  }
-  
-  // Fallback: Use current date
-  return new Date();
-}
-
-function isTodayInMaldives(date) {
-  // Check if a date is today in Maldives timezone
-  const { start, end } = getMaldivesTodayRange();
-  return date >= start && date <= end;
-}
-
-function formatDateForDisplay(date) {
-  // Format date in Maldives timezone
-  const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
-  return maldivesDate.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+    
+    const dateField = document.getElementById("currentShiftDate");
+    const shiftField = document.getElementById("currentShiftName");
+    const infoDisplay = document.getElementById("shiftInfoDisplay");
+    
+    if (dateField) {
+        dateField.value = shiftData.firebaseDate || "Not Available";
+    }
+    
+    if (shiftField) {
+        shiftField.value = shiftData.name || "No Shift";
+    }
+    
+    if (infoDisplay) {
+        const cachedTime = shiftData.timestamp ? 
+            new Date(shiftData.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 
+            "Just now";
+        
+        let statusIndicator = "";
+        if (!shiftData.isActive) {
+            statusIndicator = '<span style="color: #e74c3c; font-weight: bold;"> (INACTIVE)</span>';
+        }
+        
+        infoDisplay.innerHTML = `
+            <span style="font-weight: bold; color: #ffd700;">Date: ${shiftData.firebaseDate || "N/A"}</span> | 
+            <span style="font-weight: bold; color: #87ceeb;">Shift: ${shiftData.name || "No Shift"}${statusIndicator}</span>
+            <button style="padding: 2px 8px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; color: white; cursor: pointer; font-size: 11px; margin-left: 5px;" 
+                    onclick="refreshShiftData(true)" title="Refresh from Firebase">
+                🔄 Refresh
+            </button>
+        `;
+    }
 }
 
 // ======== NOTIFICATION SYSTEM ========
@@ -1788,6 +2001,11 @@ function showNotification(message, type = 'info', duration = 3000) {
   setTimeout(() => {
     notification.remove();
   }, duration);
+}
+
+// ----------- SHOW MESSAGE FUNCTION -----------
+function showMessage(message, type = "info") {
+    showNotification(message, type, 3000);
 }
 
 // ======== USER MANAGEMENT ========
@@ -1828,7 +2046,7 @@ function logoutUser() {
   }
 }
 
-// ======== RECEIPT NUMBER MANAGEMENT - FIXED VERSION ========
+// ======== RECEIPT NUMBER MANAGEMENT ========
 async function getNextReceiptNumber() {
   try {
     // Check if we have a pending receipt number in localStorage
@@ -1932,7 +2150,7 @@ function getNextLocalReceiptNumber() {
   return receiptNumber;
 }
 
-// ======== FIXED: CONFIRM RECEIPT NUMBER USAGE ========
+// ======== CONFIRM RECEIPT NUMBER USAGE ========
 function confirmReceiptNumberUsed(receiptNo) {
   try {
     // Mark the pending receipt number as used
@@ -1969,7 +2187,72 @@ function confirmReceiptNumberUsed(receiptNo) {
   }
 }
 
-// ======== FIXED: FILTER BY CURRENT DAY - TIMEZONE AWARE ========
+// ======== FILTER BY CURRENT DAY - TIMEZONE AWARE ========
+function getMaldivesTodayRange() {
+  // Get today's start and end in Maldives timezone
+  const maldivesNow = getMaldivesTime();
+  
+  // Start of day in Maldives (00:00:00)
+  const start = new Date(maldivesNow);
+  start.setUTCHours(0, 0, 0, 0);
+  const startUTC = new Date(start.getTime() - MALDIVES_OFFSET);
+  
+  // End of day in Maldives (23:59:59.999)
+  const end = new Date(maldivesNow);
+  end.setUTCHours(23, 59, 59, 999);
+  const endUTC = new Date(end.getTime() - MALDIVES_OFFSET);
+  
+  return { start: startUTC, end: endUTC };
+}
+
+function parsePaymentDate(payment) {
+  // Parse payment date consistently with timezone awareness
+  
+  // First, check for voided timestamp (for voided receipts)
+  if (payment.voidedAt) {
+    const voidDate = new Date(payment.voidedAt);
+    if (!isNaN(voidDate.getTime())) {
+      return voidDate;
+    }
+  }
+  
+  // Try different timestamp fields
+  if (payment.timestamp) {
+    if (payment.timestamp.toDate) {
+      return payment.timestamp.toDate();
+    } else if (typeof payment.timestamp === 'string') {
+      return new Date(payment.timestamp);
+    } else if (payment.timestamp.seconds) {
+      // Firebase Timestamp
+      return new Date(payment.timestamp.seconds * 1000);
+    }
+  }
+  
+  if (payment.localSaveTime) {
+    const date = new Date(payment.localSaveTime);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  if (payment.time) {
+    const date = new Date(payment.time);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  if (payment.createdAt) {
+    const date = new Date(payment.createdAt);
+    if (!isNaN(date.getTime())) return date;
+  }
+  
+  // Fallback: Use current date
+  return new Date();
+}
+
+function isTodayInMaldives(date) {
+  // Check if a date is today in Maldives timezone
+  const { start, end } = getMaldivesTodayRange();
+  return date >= start && date <= end;
+}
+
 function filterByCurrentDay(payments) {
   const { start, end } = getMaldivesTodayRange();
   
@@ -2023,7 +2306,7 @@ function saveToLocalStorage(data) {
     const pendingPayments = JSON.parse(localStorage.getItem('pendingPayments') || '[]');
     
     // Add Maldives timestamp for consistency
-    data.maldivesTimestamp = getMaldivesDate().toISOString();
+    data.maldivesTimestamp = getMaldivesTime().toISOString();
     
     // Check if payment already exists
     const existingIndex = pendingPayments.findIndex(p => p.id === data.id);
@@ -2065,239 +2348,7 @@ function getPendingPayments() {
   }
 }
 
-function markPaymentAsSynced(paymentId) {
-  try {
-    const pendingPayments = getPendingPayments();
-    const updatedPayments = pendingPayments.map(payment => {
-      if (payment.id === paymentId) {
-        return { 
-          ...payment, 
-          synced: true,
-          syncAttempts: 0,
-          lastSynced: new Date().toISOString()
-        };
-      }
-      return payment;
-    });
-    
-    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
-    
-    // Also update in sync queue
-    const queueIndex = pendingSyncQueue.findIndex(p => p.id === paymentId);
-    if (queueIndex !== -1) {
-      pendingSyncQueue[queueIndex] = { 
-        ...pendingSyncQueue[queueIndex], 
-        synced: true,
-        syncAttempts: 0
-      };
-    }
-    
-  } catch (error) {
-    console.error("Error marking payment as synced:", error);
-  }
-}
-
-function incrementSyncAttempts(paymentId) {
-  try {
-    const pendingPayments = getPendingPayments();
-    const updatedPayments = pendingPayments.map(payment => {
-      if (payment.id === paymentId) {
-        return { 
-          ...payment, 
-          syncAttempts: (payment.syncAttempts || 0) + 1,
-          lastSyncAttempt: new Date().toISOString()
-        };
-      }
-      return payment;
-    });
-    
-    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
-  } catch (error) {
-    console.error("Error incrementing sync attempts:", error);
-  }
-}
-
-// ======== CLEANUP OLD LOCAL PAYMENTS - IMPROVED ========
-function cleanupOldLocalPayments() {
-  try {
-    const pendingPayments = getPendingPayments();
-    const { start } = getMaldivesTodayRange();
-    
-    // Filter to keep only today's payments AND any payments with receipt numbers >= 1564
-    const recentPayments = pendingPayments.filter(payment => {
-      // Parse payment date
-      const paymentDate = parsePaymentDate(payment);
-      
-      if (isNaN(paymentDate.getTime())) {
-        // Invalid date, check receipt number
-        if (payment.receiptNo) {
-          const receiptNum = parseInt(payment.receiptNo);
-          return receiptNum >= 1564;
-        }
-        return false;
-      }
-      
-      // Check if payment is from today in Maldives timezone
-      const isToday = isTodayInMaldives(paymentDate);
-      
-      // Also check receipt number if available
-      if (payment.receiptNo) {
-        const receiptNum = parseInt(payment.receiptNo);
-        if (receiptNum >= 1564) {
-          // Keep payments with valid receipt numbers even if date is ambiguous
-          return true;
-        }
-      }
-      
-      return isToday;
-    });
-    
-    // Also filter sync queue
-    pendingSyncQueue = pendingSyncQueue.filter(payment => {
-      const paymentDate = parsePaymentDate(payment);
-      
-      if (isNaN(paymentDate.getTime())) {
-        return false;
-      }
-      
-      const isToday = isTodayInMaldives(paymentDate);
-      
-      // Check receipt number
-      if (payment.receiptNo) {
-        const receiptNum = parseInt(payment.receiptNo);
-        if (receiptNum >= 1564) {
-          return true;
-        }
-      }
-      
-      return isToday;
-    });
-    
-    // Update localStorage with filtered payments
-    localStorage.setItem('pendingPayments', JSON.stringify(recentPayments));
-    
-    // Count how many were removed
-    const removedCount = pendingPayments.length - recentPayments.length;
-    if (removedCount > 0) {
-      console.log(`Cleaned up ${removedCount} old local payments`);
-      showNotification(`Cleaned up ${removedCount} old payments from local storage`, 'info');
-    }
-    
-    return recentPayments;
-  } catch (error) {
-    console.error("Error cleaning up old payments:", error);
-    return [];
-  }
-}
-
-// ======== FIREBASE SYNC FUNCTIONS ========
-async function syncPendingPayments() {
-  if (!checkFirebase() || isSyncing || pendingSyncQueue.length === 0) {
-    return;
-  }
-  
-  isSyncing = true;
-  
-  try {
-    const payment = pendingSyncQueue[0]; // Get first pending payment
-    
-    if (payment.syncAttempts > 3) {
-      // Too many attempts, skip for now
-      console.warn(`Skipping payment ${payment.id} after ${payment.syncAttempts} attempts`);
-      pendingSyncQueue.shift();
-      isSyncing = false;
-      if (pendingSyncQueue.length > 0) {
-        setTimeout(syncPendingPayments, 1000);
-      }
-      return;
-    }
-    
-    console.log("Syncing payment to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
-    
-    // Get current shift for Firebase data
-    const currentShift = getCurrentShift();
-    
-    // Prepare Firebase data
-    const firebaseData = {
-      receiptNo: payment.receiptNo,
-      name: payment.name || '',
-      flightNo: payment.flightNo || '',
-      seatNo: payment.seatNo || '',
-      shiftDate: currentShift.date, // Use date from shift data
-      shiftName: currentShift.shiftName, // Use shift name from shift data
-      adults: payment.adults || 0,
-      kids: payment.kids || 0,
-      currency: payment.currency || 'USD',
-      paymentType: payment.paymentType || 'Cash',
-      total: payment.total || 0,
-      expiryFormatted: payment.expiryFormatted || '',
-      expiryTimestamp: payment.expiryTimestamp || Date.now(),
-      staff: payment.staff || currentUser || 'Unknown',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      localSaved: true,
-      syncStatus: 'synced',
-      lastUpdated: new Date().toISOString(),
-      maldivesDate: payment.maldivesTimestamp || getMaldivesDate().toISOString()
-    };
-    
-    // Add payment-specific fields
-    if (payment.paymentType === 'Cash') {
-      firebaseData.paidAmount = payment.paidAmount || 0;
-      firebaseData.balance = payment.balance || 0;
-      firebaseData.finalReceiptPrinted = payment.finalReceiptPrinted || false;
-    } else {
-      // For card/QR payments
-      firebaseData.cardDetailsAdded = payment.cardDetailsAdded || false;
-      if (payment.cardDetailsAdded) {
-        firebaseData.batchNo = payment.batchNo || '';
-        firebaseData.approvalCode = payment.approvalCode || '';
-      }
-    }
-    
-    // Add void information if available
-    if (payment.voided) {
-      firebaseData.voided = true;
-      firebaseData.voidedAt = payment.voidedAt || new Date().toISOString();
-      firebaseData.voidedBy = payment.voidedBy || currentUser || 'Unknown';
-      firebaseData.voidReason = payment.voidReason || 'No reason provided';
-      firebaseData.voidMaldivesDate = getMaldivesDate().toISOString();
-    }
-    
-    // Try to sync to Firebase - Document ID is the receipt number
-    const docRef = window.walkinDb.collection("payments").doc(payment.id);
-    await docRef.set(firebaseData, { merge: true });
-    
-    console.log("Successfully synced to Firebase. Document ID:", payment.id, "Receipt No:", payment.receiptNo);
-    
-    // Mark as synced in localStorage
-    markPaymentAsSynced(payment.id);
-    
-    // Remove from queue
-    pendingSyncQueue.shift();
-    
-    // Show notification
-    showNotification(`Synced to cloud: ${payment.receiptNo}`, 'success');
-    
-  } catch (error) {
-    console.error("Error syncing payment to Firebase:", error);
-    
-    // Increment sync attempts
-    incrementSyncAttempts(payment.id);
-    
-    // Retry after delay
-    setTimeout(syncPendingPayments, 5000);
-    return;
-  }
-  
-  isSyncing = false;
-  
-  // Process next payment if any
-  if (pendingSyncQueue.length > 0) {
-    setTimeout(syncPendingPayments, 1000);
-  }
-}
-
-// ======== FIXED: SAVE PAYMENT - DOCUMENT ID IS RECEIPT NUMBER ========
+// ======== SAVE PAYMENT WITH SHIFT DATA ========
 async function savePayment(data) {
   try {
     // Generate receipt number
@@ -2315,28 +2366,34 @@ async function savePayment(data) {
     const userData = JSON.parse(localStorage.getItem("loggedInUser"));
     data.userId = userData ? userData.id : '';
     
-    // Get current shift for payment data
-    const currentShift = getCurrentShift();
+    // Get current shift information for payment data
+    const currentShift = getCurrentShiftInfo();
     
     // Add shift information to data
-    data.shiftDate = currentShift.date;
-    data.shiftName = currentShift.shiftName;
+    data.shiftDate = currentShift.shiftDate; // From Firebase "2025-12-19"
+    data.shiftName = currentShift.shiftName; // "Morning Shift" or "Evening Shift"
+    data.shiftType = currentShift.shift; // "morning" or "evening"
     
     // Add Maldives timestamp
-    data.maldivesTimestamp = getMaldivesDate().toISOString();
+    data.maldivesTimestamp = getMaldivesTime().toISOString();
     
     // DOCUMENT ID IS THE RECEIPT NUMBER
     const docId = data.receiptNo.toString(); // Ensure it's a string
     data.id = docId;
     
     console.log("Document ID set to:", docId);
+    console.log("Shift data attached:", {
+      shiftDate: data.shiftDate,
+      shiftName: data.shiftName,
+      shiftType: data.shiftType
+    });
     
     // Create complete payment record with timestamp
     const paymentRecord = {
       ...data,
       timestamp: new Date().toISOString(),
       localSaveTime: new Date().toISOString(),
-      maldivesDate: getMaldivesDate().toISOString(),
+      maldivesDate: getMaldivesTime().toISOString(),
       synced: false,
       syncAttempts: 0
     };
@@ -2353,8 +2410,8 @@ async function savePayment(data) {
     // Update header display
     document.getElementById("headerReceiptNo").textContent = data.receiptNo;
     
-    // Show success notification
-    showNotification(`Saved locally: ${data.receiptNo}`, 'success');
+    // Show success notification with shift info
+    showNotification(`Saved locally: ${data.receiptNo} (${currentShift.shiftName} - ${currentShift.shiftDate})`, 'success');
     
     return { id: docId, receiptNo: data.receiptNo };
     
@@ -2364,394 +2421,7 @@ async function savePayment(data) {
   }
 }
 
-// ======== FIXED: GET PAYMENTS ========
-async function getPayments() {
-  try {
-    // Get local payments first
-    const localPayments = getPendingPayments();
-    
-    if (!checkFirebase()) {
-      return localPayments;
-    }
-    
-    try {
-      // Get Firebase payments - limit to reasonable number
-      const snapshot = await window.walkinDb.collection("payments")
-        .orderBy("timestamp", "desc")
-        .limit(200)
-        .get();
-      
-      const firebasePayments = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        firebasePayments.push({
-          id: doc.id, // This is the document ID (should be receipt number)
-          ...data,
-          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-          synced: true // Mark as synced since it's from Firebase
-        });
-      });
-      
-      console.log(`Loaded ${firebasePayments.length} payments from Firebase`);
-      
-      // Create a map of Firebase payments for quick lookup
-      const firebaseMap = new Map();
-      firebasePayments.forEach(p => firebaseMap.set(p.id, p));
-      
-      // Merge: Start with Firebase payments, then add local unsynced payments
-      const mergedPayments = [...firebasePayments];
-      
-      localPayments.forEach(localPayment => {
-        if (!localPayment.synced && !firebaseMap.has(localPayment.id)) {
-          // Add unsynced local payments not already in Firebase
-          mergedPayments.push(localPayment);
-        }
-      });
-      
-      // Sort by timestamp (most recent first)
-      return mergedPayments.sort((a, b) => {
-        const timeA = parsePaymentDate(a).getTime();
-        const timeB = parsePaymentDate(b).getTime();
-        return timeB - timeA;
-      });
-      
-    } catch (firebaseError) {
-      console.error("Error fetching from Firebase, using local only:", firebaseError);
-      return localPayments;
-    }
-    
-  } catch (error) {
-    console.error("Error loading payments:", error);
-    return [];
-  }
-}
-
-// ======== FIXED: DELETE PAYMENT ========
-async function deletePayment(id) {
-  try {
-    console.log("Deleting payment with ID:", id);
-    
-    // Delete from local storage first
-    const pendingPayments = getPendingPayments();
-    const updatedPayments = pendingPayments.filter(p => p.id !== id);
-    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
-    
-    // Remove from sync queue
-    pendingSyncQueue = pendingSyncQueue.filter(p => p.id !== id);
-    
-    // Try to delete from Firebase if available
-    if (checkFirebase()) {
-      await window.walkinDb.collection("payments").doc(id).delete();
-      console.log("Deleted from Firebase:", id);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error deleting payment:", error);
-    return false;
-  }
-}
-
-// ======== FIXED: UPDATE PAYMENT WITH IMMEDIATE FIREBASE SYNC ========
-async function updatePayment(id, updates) {
-  try {
-    console.log("Updating payment ID:", id, "Updates:", updates);
-    
-    // Update in local storage first
-    const pendingPayments = getPendingPayments();
-    const updatedPayments = pendingPayments.map(payment => {
-      if (payment.id === id) {
-        const updatedPayment = { ...payment, ...updates };
-        // Mark as unsynced when updated
-        updatedPayment.synced = false;
-        updatedPayment.syncAttempts = 0;
-        updatedPayment.lastUpdated = new Date().toISOString();
-        return updatedPayment;
-      }
-      return payment;
-    });
-    
-    localStorage.setItem('pendingPayments', JSON.stringify(updatedPayments));
-    
-    // Update in sync queue
-    const queueIndex = pendingSyncQueue.findIndex(p => p.id === id);
-    if (queueIndex !== -1) {
-      pendingSyncQueue[queueIndex] = { 
-        ...pendingSyncQueue[queueIndex], 
-        ...updates,
-        synced: false,
-        syncAttempts: 0,
-        lastUpdated: new Date().toISOString()
-      };
-    }
-    
-    // Force immediate Firebase update (not background sync)
-    if (checkFirebase()) {
-      try {
-        const docRef = window.walkinDb.collection("payments").doc(id);
-        await docRef.update({
-          ...updates,
-          lastUpdated: new Date().toISOString(),
-          syncStatus: 'synced',
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        console.log("Immediately updated Firebase for ID:", id);
-      } catch (firebaseError) {
-        console.error("Immediate Firebase update failed:", firebaseError);
-        // It will be synced via background sync later
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error("Error updating payment:", error);
-    return false;
-  }
-}
-
-// ======== FIXED: SEARCH RECEIPT - DOCUMENT ID IS RECEIPT NUMBER ========
-async function searchPaymentByReceiptNo(receiptNo) {
-  try {
-    console.log("Searching for receipt:", receiptNo);
-    
-    // Clean the receipt number - ensure it's a string
-    const cleanReceiptNo = receiptNo.toString().trim();
-    
-    // Always try Firebase first for fresh data
-    if (checkFirebase()) {
-      try {
-        console.log("Trying Firebase search with receipt number:", cleanReceiptNo);
-        
-        // FIRST: Try direct document ID (receipt number)
-        const doc = await window.walkinDb.collection("payments").doc(cleanReceiptNo).get();
-        if (doc.exists) {
-          console.log("Found by document ID (receipt number):", cleanReceiptNo);
-          const data = doc.data();
-          // Convert Firebase timestamp to Date
-          const timestamp = data.timestamp ? 
-            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
-            new Date();
-          
-          return {
-            id: doc.id, // This should be the receipt number
-            ...data,
-            timestamp: timestamp,
-            synced: true,
-            isFreshFromFirebase: true
-          };
-        }
-        
-        console.log("Not found by document ID, trying receiptNo field...");
-        
-        // SECOND: If not found by document ID, search by receiptNo field
-        const snapshot = await window.walkinDb.collection("payments")
-          .where("receiptNo", "==", cleanReceiptNo)
-          .limit(1)
-          .get();
-        
-        if (!snapshot.empty) {
-          console.log("Found by receiptNo field:", cleanReceiptNo);
-          const doc = snapshot.docs[0];
-          const data = doc.data();
-          const timestamp = data.timestamp ? 
-            (data.timestamp.toDate ? data.timestamp.toDate() : new Date(data.timestamp)) : 
-            new Date();
-          
-          return {
-            id: doc.id,
-            ...data,
-            timestamp: timestamp,
-            synced: true,
-            isFreshFromFirebase: true
-          };
-        }
-        
-        console.log("Receipt not found in Firebase:", cleanReceiptNo);
-        
-      } catch (firebaseError) {
-        console.warn("Firebase search failed, falling back to local:", firebaseError);
-      }
-    }
-    
-    // Fallback: Search in local storage
-    console.log("Searching in local storage for:", cleanReceiptNo);
-    const pendingPayments = getPendingPayments();
-    const localPayment = pendingPayments.find(p => p.receiptNo === cleanReceiptNo || p.id === cleanReceiptNo);
-    if (localPayment) {
-      console.log("Found in local storage:", cleanReceiptNo);
-      return {
-        ...localPayment,
-        isFreshFromFirebase: false
-      };
-    }
-    
-    console.log("Receipt not found anywhere:", cleanReceiptNo);
-    return null;
-    
-  } catch (error) {
-    console.error("Error searching payment:", error);
-    return null;
-  }
-}
-
-// ======== CALCULATE EXPIRY TIME ========
-function calculateExpiryTime() {
-  const now = getMaldivesDate(); // Use Maldives time for expiry
-  const expiry = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
-  
-  // Format as HH:MM AM/PM in Maldives timezone
-  let hours = expiry.getUTCHours();
-  let minutes = expiry.getUTCMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // the hour '0' should be '12'
-  minutes = minutes < 10 ? '0' + minutes : minutes;
-  
-  const expiryTime = `${hours}:${minutes} ${ampm}`;
-  
-  // Update header
-  document.getElementById("headerExpiryTime").textContent = expiryTime;
-  
-  return {
-    time: expiry,
-    formatted: expiryTime,
-    timestamp: expiry.getTime()
-  };
-}
-
-// ======== PARSE BOARDING PASS ========
-function parseCode(){
-  const code = document.getElementById("codeInput").value.trim().toUpperCase();
-  if(!code) return;
-  const parts = code.split(/\s+/);
-
-  // Name + PNR
-  const idxMLE = code.indexOf('MLE');
-  let name='', pnr='';
-  if(idxMLE!==-1){
-    let fullNamePart = code.substring(0,idxMLE).trim();
-    if(fullNamePart.length>8){
-      name = fullNamePart.substring(2, fullNamePart.length-6).trim();
-      pnr = fullNamePart.substring(fullNamePart.length-6).trim();
-    }
-  }
-
-  // Flight No
-  let flightNo=''; let flightTokenIndex=-1;
-  for(let i=0;i<parts.length;i++){
-    if(parts[i].includes('MLE')){
-      flightTokenIndex=i;
-      const mleToken = parts[i];
-      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
-      break;
-    }
-  }
-
-  // Seat No
-  let seatNo='';
-  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
-    let seatToken = parts[flightTokenIndex+2];
-    if(seatToken.length>9){
-      seatNo = seatToken.substring(5, seatToken.length-4);
-    }
-  }
-
-  document.getElementById("name").value = name;
-  document.getElementById("flightNo").value = flightNo;
-  document.getElementById("seatNo").value = seatNo;
-
-  updatePricing();
-}
-
-// ======== DYNAMIC PRICING ========
-function updatePricing(){
-  const adults = parseInt(document.getElementById("adults").value) || 0;
-  const kids = parseInt(document.getElementById("kids").value) || 0;
-  const rateType = document.getElementById("rateType").value;
-  const currency = document.getElementById("currency").value;
-
-  // Check if rates are available from rate.js
-  if (!window.rates) {
-    console.error("Rates not loaded from rate.js");
-    document.getElementById("subtotal").value = "0.00";
-    document.getElementById("gst").value = "0.00";
-    document.getElementById("total").value = "0.00";
-    return;
-  }
-
-  const adultKey = `Adult${rateType}${currency}`;
-  const kidKey = `Kids${rateType}${currency}`;
-  
-  if(!window.rates[adultKey] || !window.rates[kidKey]) {
-    console.error("Rate not found for:", adultKey, kidKey);
-    return;
-  }
-
-  // Calculate prices
-  const adultRate = window.rates[adultKey];
-  const kidRate = window.rates[kidKey];
-  
-  const subtotal = (adults * adultRate.price) + (kids * kidRate.price);
-  const gst = subtotal * (adultRate.GST / 100);
-  const total = subtotal + gst;
-
-  // Update display
-  document.getElementById("subtotal").value = subtotal.toFixed(2);
-  document.getElementById("gst").value = gst.toFixed(2);
-  document.getElementById("total").value = total.toFixed(2);
-  
-  // Update paid amount and balance for cash payments
-  updateCashFields();
-  
-  // Update expiry time
-  calculateExpiryTime();
-}
-
-// ======== UPDATE CASH PAYMENT FIELDS ========
-function updateCashFields() {
-  const paymentType = document.getElementById("paymentType").value;
-  const total = parseFloat(document.getElementById("total").value) || 0;
-  
-  if (paymentType === "Cash") {
-    const paidAmount = parseFloat(document.getElementById("paidAmount").value) || 0;
-    const balance = paidAmount - total;
-    
-    document.getElementById("balance").value = balance.toFixed(2);
-    
-    // Style balance based on value
-    const balanceField = document.getElementById("balance");
-    balanceField.className = "summary-value";
-    if (balance > 0) {
-      balanceField.classList.add("positive");
-    } else if (balance < 0) {
-      balanceField.classList.add("negative");
-    } else {
-      balanceField.classList.add("zero");
-    }
-  }
-}
-
-// ======== TOGGLE PAYMENT FIELDS ========
-function togglePaymentFields() {
-  const paymentType = document.getElementById("paymentType").value;
-  const cashFields = document.getElementById("cashPaymentFields");
-  
-  if (paymentType === "Cash") {
-    // Show cash fields
-    cashFields.style.display = "block";
-    
-    // Set paid amount to total by default
-    const total = parseFloat(document.getElementById("total").value) || 0;
-    document.getElementById("paidAmount").value = total.toFixed(2);
-    updateCashFields();
-  } else {
-    // Hide cash fields (for all card/QR payments)
-    cashFields.style.display = "none";
-  }
-}
-
-// ======== SAVE PAYMENT (FAST LOCAL FIRST) - IMPROVED ========
+// ======== UPDATE SAVE NOW FUNCTION WITH SHIFT CHECK ========
 async function saveNow(){
   // Check if rates are loaded
   if (!window.rates) {
@@ -2760,12 +2430,17 @@ async function saveNow(){
   }
 
   // Get current shift information
-  const currentShift = getCurrentShift();
+  const currentShift = getCurrentShiftInfo();
   
-  // Check if we have valid shift data
-  if (currentShift.shiftName === "No Shift") {
-    showNotification("Warning: No shift is currently open. Please check shift status.", "warning");
-    if (!confirm("No open shift detected. Continue anyway?")) {
+  // Check if we have a valid shift date
+  if (!currentShift.shiftDate || currentShift.shiftDate === "") {
+    showNotification("Error: No shift date available. Please refresh shift data.", "error");
+    return;
+  }
+  
+  // Warn if using previous day shift
+  if (currentShift.isPreviousDay) {
+    if (!confirm(`WARNING: You are saving to previous day's shift (${currentShift.shiftDate}). Continue anyway?`)) {
       return;
     }
   }
@@ -2782,8 +2457,9 @@ async function saveNow(){
     name: document.getElementById("name").value,
     flightNo: document.getElementById("flightNo").value,
     seatNo: document.getElementById("seatNo").value,
-    shiftDate: currentShift.date, // Use date from shift data
+    shiftDate: currentShift.shiftDate, // Use date from shift data
     shiftName: currentShift.shiftName, // Use shift name from shift data
+    shiftType: currentShift.shift, // "morning" or "evening"
     adults: parseInt(document.getElementById("adults").value),
     kids: parseInt(document.getElementById("kids").value),
     currency: document.getElementById("currency").value,
@@ -2853,6 +2529,10 @@ async function saveNow(){
     };
     
     console.log("Payment saved locally. ID:", result.id, "Receipt No:", result.receiptNo);
+    console.log("Shift data saved:", {
+      shiftDate: data.shiftDate,
+      shiftName: data.shiftName
+    });
     
     // Auto-print first receipt
     setTimeout(() => {
@@ -2868,850 +2548,10 @@ async function saveNow(){
   }
 }
 
-function resetFormForNextEntry() {
-  // Clear boarding pass input
-  document.getElementById("codeInput").value = "";
-  document.getElementById("name").value = "";
-  document.getElementById("flightNo").value = "";
-  document.getElementById("seatNo").value = "";
-  
-  // Reset counts
-  document.getElementById("adults").value = 1;
-  document.getElementById("kids").value = 0;
-  
-  // Keep other selections as they are
-  updatePricing();
-  
-  // Focus on boarding pass input for next entry
-  document.getElementById("codeInput").focus();
-}
-
-// ======== LOAD PAYMENTS WITH TABS - MODIFIED ========
-async function loadPayments(){
-  try {
-    showNotification("Loading today's payments...", "info", 2000);
-    const allPayments = await getPayments();
-    
-    // Filter payments by current day in Maldives timezone
-    const todayPayments = filterByCurrentDay(allPayments);
-    
-    // Load ONLY pending payments for today (excluding voided)
-    loadPendingCardPayments(todayPayments);
-    
-  } catch (error) {
-    showNotification("Error loading payments", "error");
-    console.error("Error loading payments:", error);
-  }
-}
-
-// ======== LOAD PENDING CARD PAYMENTS (ONLY TODAY'S) ========
-function loadPendingCardPayments(payments) {
-  // First, deduplicate payments by receipt number or ID
-  const uniquePayments = deduplicatePayments(payments);
-  
-  // Filter out voided payments and only show non-cash payments that need card details
-  const pendingPayments = uniquePayments.filter(p => 
-    p.paymentType !== "Cash" && 
-    !p.cardDetailsAdded &&
-    !p.voided // Exclude voided payments
-  );
-  
-  let html = '';
-  
-  if (pendingPayments.length === 0) {
-    html = `<p style="text-align: center; color: var(--text-light); padding: 20px;">No pending non-cash payments found for today.</p>`;
-  } else {
-    html = `<table><tr>
-    <th>Receipt No</th><th>Name</th><th>Payment Method</th><th>Shift Date</th><th>Staff</th><th>Total</th>
-    <th>Expiry</th><th>Action</th></tr>`;
-    
-    pendingPayments.forEach(p=>{
-      const receiptBadge = p.receiptNo ? 
-        `<span class="receipt-badge">${p.receiptNo}</span>` : 
-        `<span class="receipt-badge">N/A</span>`;
-      
-      const currencyBadge = p.currency === 'USD' ? '<span class="currency-badge">USD</span>' : '<span class="currency-badge">MVR</span>';
-      
-      // Payment method badge
-      const paymentBadge = `<span class="payment-method-badge payment-method-${p.paymentType ? p.paymentType.toLowerCase().replace('card', '').replace(' ', '') : 'card'}">${p.paymentType || 'Card'}</span>`;
-      
-      // Shift date display
-      const shiftDate = p.shiftDate || 'N/A';
-      
-      // Staff info
-      const staffInfo = p.staff || 'Unknown';
-      
-      // Format expiry time
-      let expiryTime = 'N/A';
-      if (p.expiryFormatted) {
-        expiryTime = p.expiryFormatted;
-      } else if (p.expiryTime) {
-        const expiryDate = new Date(p.expiryTime);
-        expiryTime = expiryDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      }
-      
-      // Format date for display (Maldives timezone)
-      const paymentDate = parsePaymentDate(p);
-      const displayDate = formatDateForDisplay(paymentDate);
-      
-      // DELETE BUTTON - Only for supervisors
-      const deleteButton = isSupervisor ? 
-        `<button class="action-btn" onclick="deleteEntry('${p.id}')">Delete</button>` : '';
-      
-      html+=`<tr>
-        <td>${receiptBadge}</td>
-        <td>${p.name || 'N/A'}</td>
-        <td>${paymentBadge}</td>
-        <td>${shiftDate}</td>
-        <td>${staffInfo}</td>
-        <td><strong>${(p.total || 0).toFixed(2)}</strong> ${currencyBadge}</td>
-        <td>${expiryTime}</td>
-        <td>
-          <button class="complete-btn" onclick="addCardDetails('${p.id}')">Add Details</button>
-          <button class="print-btn" onclick="reprintPayment('${p.id}')">Print</button>
-          ${deleteButton}
-        </td>
-      </tr>`;
-    });
-    html+="</table>";
-  }
-  
-  document.getElementById("pendingLog").innerHTML = html;
-}
-
-// ======== DEDUPLICATE PAYMENTS ========
-function deduplicatePayments(payments) {
-  const uniqueMap = new Map();
-  
-  payments.forEach(payment => {
-    // Use receipt number as primary key, fallback to ID
-    const key = payment.receiptNo || payment.id;
-    
-    if (key) {
-      // If we already have this payment, keep the most recent one
-      const existing = uniqueMap.get(key);
-      if (!existing) {
-        uniqueMap.set(key, payment);
-      } else {
-        // Compare timestamps to keep the most recent
-        const existingTime = parsePaymentDate(existing).getTime();
-        const currentTime = parsePaymentDate(payment).getTime();
-        
-        if (currentTime > existingTime) {
-          uniqueMap.set(key, payment);
-        }
-      }
-    }
-  });
-  
-  return Array.from(uniqueMap.values());
-}
-
-// ======== DELETE ENTRY - SUPERVISOR CHECK ========
-async function deleteEntry(id){ 
-  // Check if user is supervisor
-  if (!isSupervisor) {
-    showNotification("Only supervisors can delete payment records", "warning");
-    return;
-  }
-  
-  if(confirm("Are you sure you want to delete this payment record?")) {
-    await deletePayment(id); 
-    loadPayments(); 
-    showNotification("Payment deleted", "success");
-  }
-}
-
-async function viewPayment(id) {
-  const payments = await getPayments();
-  const payment = payments.find(p => p.id === id);
-  if (payment) {
-    const paymentDate = parsePaymentDate(payment);
-    const displayDate = formatDateForDisplay(paymentDate);
-    
-    alert(`Payment Details:\n\n` +
-          `Receipt No: ${payment.receiptNo}\n` +
-          `Date: ${displayDate}\n` +
-          `Name: ${payment.name}\n` +
-          `Flight: ${payment.flightNo}\n` +
-          `Seat: ${payment.seatNo}\n` +
-          `Payment Method: ${payment.paymentType}\n` +
-          `Staff: ${payment.staff || 'Unknown'}\n` +
-          `Total: ${payment.total} ${payment.currency}\n` +
-          `Expiry: ${payment.expiryFormatted}\n` +
-          `Status: ${payment.synced ? 'Synced' : 'Local only'}\n` +
-          `Voided: ${payment.voided ? 'Yes' : 'No'}`);
-  }
-}
-
-async function addCardDetails(paymentId) {
-  // Find the payment
-  const payments = await getPayments();
-  const payment = payments.find(p => p.id === paymentId);
-  if (payment) {
-    // Check if payment is voided
-    if (payment.voided) {
-      showNotification("Cannot add card details to a voided receipt", "error");
-      return;
-    }
-    
-    // Show modal with payment details
-    document.getElementById("modalPaymentId").value = paymentId;
-    document.getElementById("modalReceiptNo").value = payment.receiptNo || 'N/A';
-    document.getElementById("modalPassengerName").value = payment.name || 'N/A';
-    document.getElementById("modalTotalAmount").value = (payment.total || 0).toFixed(2);
-    
-    // Set existing values if available
-    document.getElementById("modalPaymentMethod").value = payment.paymentType || '';
-    document.getElementById("modalBatchNo").value = payment.batchNo || '';
-    document.getElementById("modalApprovalCode").value = payment.approvalCode || '';
-    
-    // Show modal
-    document.getElementById("cardDetailsModal").style.display = "flex";
-  }
-}
-
-// ======== SAVE CARD DETAILS WITH IMMEDIATE REFRESH ========
-async function saveCardDetails() {
-  const paymentId = document.getElementById("modalPaymentId").value;
-  const paymentMethod = document.getElementById("modalPaymentMethod").value;
-  const batchNo = document.getElementById("modalBatchNo").value;
-  const approvalCode = document.getElementById("modalApprovalCode").value;
-  
-  if (!paymentMethod || !batchNo || !approvalCode) {
-    showNotification("Please enter payment method, batch number and approval code", "warning");
-    return;
-  }
-  
-  const success = await updatePayment(paymentId, {
-    paymentType: paymentMethod,
-    batchNo: batchNo,
-    approvalCode: approvalCode,
-    cardDetailsAdded: true,
-    finalReceiptPrinted: false,
-    lastUpdated: new Date().toISOString() // Add timestamp
-  });
-  
-  if (success) {
-    showNotification("Payment details saved successfully!", "success");
-    closeModal();
-    loadPayments();
-    
-    // If we have a found receipt from search, update it immediately
-    if (foundReceiptData && foundReceiptData.id === paymentId) {
-      // Force re-fetch from Firebase to get latest data
-      const freshData = await searchPaymentByReceiptNo(foundReceiptData.receiptNo);
-      if (freshData) {
-        foundReceiptData = freshData;
-        displaySearchResult(freshData);
-      }
-    }
-    
-    // Print final receipt
-    const payments = await getPayments();
-    const payment = payments.find(p => p.id === paymentId);
-    if (payment) {
-      printReceipt('final', payment);
-    }
-  } else {
-    showNotification("Error saving payment details", "error");
-  }
-}
-
-function editCardPayment(id) {
-  addCardDetails(id);
-}
-
-async function printFinalCashReceipt(paymentId) {
-  const payments = await getPayments();
-  const payment = payments.find(p => p.id === paymentId);
-  if (payment && payment.paymentType === "Cash") {
-    // Mark as final receipt printed
-    await updatePayment(paymentId, {
-      finalReceiptPrinted: true
-    });
-    
-    // Print final receipt
-    printReceipt('final', payment);
-    loadPayments();
-    showNotification("Final receipt printed", "success");
-  }
-}
-
-// ======== MANUAL CLEANUP FOR SUPERVISORS ========
-async function manualCleanupAllOldData() {
-  if (!isSupervisor) {
-    showNotification("Only supervisors can perform manual cleanup", "warning");
-    return;
-  }
-  
-  if (!confirm("This will delete ALL local payment data except for today's entries. Are you sure?")) {
-    return;
-  }
-  
-  // First, sync all pending payments to Firebase
-  if (checkFirebase() && pendingSyncQueue.length > 0) {
-    showNotification("Syncing pending payments before cleanup...", "info", 3000);
-    await syncPendingPayments();
-  }
-  
-  // Perform cleanup
-  const remainingPayments = cleanupOldLocalPayments();
-  
-  // Also cleanup Firebase locally cached data (if any)
-  if (checkFirebase()) {
-    try {
-      // Get today's payments from Firebase to keep cache
-      const today = getMaldivesDate();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const snapshot = await window.walkinDb.collection("payments")
-        .where("timestamp", ">=", todayStart)
-        .limit(100)
-        .get();
-      
-      // Update local cache with only today's data
-      const todayFirebasePayments = [];
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        todayFirebasePayments.push({
-          id: doc.id,
-          ...data,
-          timestamp: data.timestamp ? data.timestamp.toDate() : new Date(),
-          synced: true
-        });
-      });
-      
-      // Could store this in a separate cache if needed
-      console.log(`Keeping ${todayFirebasePayments.length} Firebase records from today`);
-    } catch (error) {
-      console.error("Error cleaning Firebase cache:", error);
-    }
-  }
-  
-  // Reload payments
-  loadPayments();
-  
-  showNotification("Cleanup completed! Only today's data remains.", "success");
-}
-
-// ======== SEARCH RECEIPT ========
-async function searchReceipt() {
-  const receiptNo = document.getElementById("receiptSearch").value.trim();
-  if (!receiptNo) {
-    showNotification("Please enter a receipt number to search", "warning");
-    return;
-  }
-  
-  showNotification("Searching for receipt...", "info", 2000);
-  
-  // Clear any cached data for this receipt
-  foundReceiptData = null;
-  
-  const payment = await searchPaymentByReceiptNo(receiptNo);
-  if (payment) {
-    foundReceiptData = payment;
-    displaySearchResult(payment);
-    
-    // Show source of data
-    if (payment.isFreshFromFirebase) {
-      showNotification(`Found receipt ${receiptNo} (Fresh from cloud)`, "success");
-    } else {
-      showNotification(`Found receipt ${receiptNo} (Local cache)`, "warning");
-    }
-  } else {
-    showNotification(`Receipt number "${receiptNo}" not found.`, "error");
-  }
-}
-
-// ======== DISPLAY SEARCH RESULT WITH REFRESH BUTTON AND VOID INFO ========
-function displaySearchResult(payment) {
-  const contentDiv = document.getElementById("searchResultContent");
-  const actionsDiv = document.getElementById("searchResultActions");
-  
-  // Format dates for display
-  const paymentDate = parsePaymentDate(payment);
-  const displayDate = formatDateForDisplay(paymentDate);
-  
-  let html = `
-    <div style="margin-bottom: 15px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h4 style="margin: 0;">Receipt Details</h4>
-        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" 
-                onclick="refreshReceiptData('${payment.receiptNo}')">
-          🔄 Refresh
-        </button>
-      </div>
-  `;
-  
-  // Add VOID warning banner if receipt is voided
-  if (payment.voided) {
-    html += `
-      <div class="void-warning">
-        ⚠️ VOID RECEIPT ⚠️
-      </div>
-      <div class="void-info">
-        <div><b>Voided By:</b> ${payment.voidedBy || 'Unknown'}</div>
-        <div><b>Voided At:</b> ${payment.voidedAt ? formatDateForDisplay(new Date(payment.voidedAt)) : 'Unknown'}</div>
-        <div><b>Reason:</b> ${payment.voidReason || 'No reason provided'}</div>
-      </div>
-    `;
-  }
-  
-  html += `
-      <div class="input-group">
-        <label>Receipt Number</label>
-        <input type="text" readonly value="${payment.receiptNo || 'N/A'}" style="background: var(--gold-light);">
-      </div>
-      
-      <div class="row">
-        <div class="input-group">
-          <label>Transaction Date</label>
-          <input type="text" readonly value="${displayDate}">
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="input-group">
-          <label>Passenger Name</label>
-          <input type="text" readonly value="${payment.name || 'N/A'}">
-        </div>
-        <div class="input-group">
-          <label>Flight Number</label>
-          <input type="text" readonly value="${payment.flightNo || 'N/A'}">
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="input-group">
-          <label>Payment Method</label>
-          <input type="text" readonly value="${payment.paymentType}">
-        </div>
-        <div class="input-group">
-          <label>Currency</label>
-          <input type="text" readonly value="${payment.currency}">
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="input-group">
-          <label>Total Amount</label>
-          <input type="text" readonly value="${(payment.total || 0).toFixed(2)}" class="summary-value">
-        </div>
-        <div class="input-group">
-          <label>Expiry Time</label>
-          <input type="text" readonly value="${payment.expiryFormatted || 'N/A'}">
-        </div>
-      </div>
-      
-      <div class="row">
-        <div class="input-group">
-          <label>Processed By</label>
-          <input type="text" readonly value="${payment.staff || 'Unknown'}">
-        </div>
-        <div class="input-group">
-          <label>Status</label>
-          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.paymentType === 'Cash' ? (payment.finalReceiptPrinted ? 'Complete' : 'Pending Final') : (payment.cardDetailsAdded ? 'Completed' : 'Pending Details'))}">
-        </div>
-      </div>
-  `;
-  
-  if (payment.paymentType !== 'Cash' && !payment.voided) {
-    html += `
-      <div class="row">
-        <div class="input-group">
-          <label>Batch Number</label>
-          <input type="text" readonly value="${payment.batchNo || 'Not Entered'}">
-        </div>
-        <div class="input-group">
-          <label>Approval Code</label>
-          <input type="text" readonly value="${payment.approvalCode || 'Not Entered'}">
-        </div>
-      </div>
-    `;
-  }
-  
-  html += `</div>`;
-  
-  contentDiv.innerHTML = html;
-  actionsDiv.style.display = "flex";
-  document.getElementById("searchResultModal").style.display = "flex";
-}
-
-// ======== REFRESH RECEIPT DATA ========
-async function refreshReceiptData(receiptNo) {
-  showNotification("Refreshing receipt data...", "info", 1500);
-  
-  // Clear cached data
-  foundReceiptData = null;
-  
-  // Force fetch from Firebase
-  const payment = await searchPaymentByReceiptNo(receiptNo);
-  if (payment) {
-    foundReceiptData = payment;
-    displaySearchResult(payment);
-    
-    if (payment.isFreshFromFirebase) {
-      showNotification("Data refreshed from cloud", "success");
-    } else {
-      showNotification("Using local data (cloud unavailable)", "warning");
-    }
-  } else {
-    showNotification("Receipt not found after refresh", "error");
-  }
-}
-
-function closeSearchModal() {
-  document.getElementById("searchResultModal").style.display = "none";
-  foundReceiptData = null;
-}
-
-function printFoundReceipt() {
-  if (!foundReceiptData) {
-    showNotification("No receipt data found", "error");
-    return;
-  }
-  
-  if (foundReceiptData.paymentType !== 'Cash' && foundReceiptData.cardDetailsAdded && !foundReceiptData.voided) {
-    printReceipt('final', foundReceiptData);
-  } else if (foundReceiptData.paymentType === 'Cash' && foundReceiptData.finalReceiptPrinted && !foundReceiptData.voided) {
-    printReceipt('final', foundReceiptData);
-  } else if (foundReceiptData.voided) {
-    printReceipt('void', foundReceiptData);
-  } else {
-    printReceipt('first', foundReceiptData);
-  }
-  
-  closeSearchModal();
-}
-
-function addCardDetailsToFoundReceipt() {
-  if (!foundReceiptData) return;
-  
-  // Check if receipt is voided
-  if (foundReceiptData.voided) {
-    showNotification("Cannot add card details to a voided receipt", "error");
-    return;
-  }
-  
-  if (foundReceiptData.paymentType !== 'Cash' && !foundReceiptData.cardDetailsAdded) {
-    addCardDetails(foundReceiptData.id);
-    closeSearchModal();
-  } else {
-    showNotification("This receipt doesn't require payment details or already has them.", "info");
-  }
-}
-
-async function reprintPayment(paymentId) {
-  const payments = await getPayments();
-  const payment = payments.find(p => p.id === paymentId);
-  if (payment) {
-    if (payment.voided) {
-      printReceipt('void', payment);
-    } else if (payment.paymentType !== 'Cash' && payment.cardDetailsAdded) {
-      printReceipt('final', payment);
-    } else if (payment.paymentType === 'Cash' && payment.finalReceiptPrinted) {
-      printReceipt('final', payment);
-    } else {
-      printReceipt('first', payment);
-    }
-  }
-}
-
-// ======== MODAL FUNCTIONS ========
-function closeModal() {
-  document.getElementById("cardDetailsModal").style.display = "none";
-  document.getElementById("modalPaymentMethod").value = "";
-  document.getElementById("modalBatchNo").value = "";
-  document.getElementById("modalApprovalCode").value = "";
-}
-
-// ======== TAB FUNCTIONALITY ========
-function showTab(tabName) {
-  // Hide all tab contents
-  document.querySelectorAll('.tab-content').forEach(tab => {
-    tab.classList.remove('active');
-  });
-  
-  // Remove active class from all tab buttons
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  
-  // Show selected tab content
-  document.getElementById(tabName).classList.add('active');
-  
-  // Activate selected tab button
-  event.target.classList.add('active');
-  
-  // Load appropriate data based on tab
-  if (tabName === 'pendingCards') {
-    loadPayments(); // This now only loads pending payments
-  }
-}
-
-// ======== PRINT RECEIPT - PROFESSIONAL DESIGN WITH VOID SUPPORT ========
-async function printReceipt(type = 'first', paymentData = null) {
-  let payment = paymentData;
-  
-  if (!payment && currentPaymentData) {
-    payment = currentPaymentData;
-  }
-  
-  if (!payment) {
-    showNotification("No payment data available. Please save a payment first.", "warning");
-    return;
-  }
-  
-  // Check company info
-  checkCompanyInfo();
-  
-  const receiptNo = payment.receiptNo;
-  const paymentType = payment.paymentType;
-  const isVoided = payment.voided || false;
-  
-  // Update receipt printed status (only if not voided)
-  if (!isVoided) {
-    if (type === 'first') {
-      if (paymentType !== "Cash") {
-        await updatePayment(payment.id, { firstReceiptPrinted: true });
-      } else if (paymentType === "Cash") {
-        await updatePayment(payment.id, { firstReceiptPrinted: true });
-      }
-    } else if (type === 'final') {
-      if (paymentType !== "Cash") {
-        await updatePayment(payment.id, { finalReceiptPrinted: true });
-      } else if (paymentType === "Cash") {
-        await updatePayment(payment.id, { finalReceiptPrinted: true });
-      }
-    }
-  }
-  
-  // Set receipt content
-  const receiptHeader = document.getElementById("r_header");
-  const voidBanner = document.getElementById("r_void_banner");
-  const voidInfo = document.getElementById("r_void_info");
-  const expirySection = document.getElementById("r_expiry_section");
-  
-  if (isVoided) {
-    receiptHeader.innerText = "VOID RECEIPT";
-    voidBanner.style.display = "block";
-    voidInfo.style.display = "block";
-    expirySection.style.display = "none";
-    
-    // Set void information
-    document.getElementById("r_voided_by").innerText = payment.voidedBy || 'Unknown';
-    document.getElementById("r_voided_at").innerText = payment.voidedAt ? 
-      formatDateForDisplay(new Date(payment.voidedAt)) : 
-      'Unknown';
-    document.getElementById("r_void_reason").innerText = payment.voidReason || 'No reason provided';
-  } else {
-    receiptHeader.innerText = "PASSENGER PAYMENT RECEIPT" + (type === 'final' ? ' (FINAL)' : '');
-    voidBanner.style.display = "none";
-    voidInfo.style.display = "none";
-    expirySection.style.display = "block";
-  }
-  
-  document.getElementById("r_receiptNo").innerText = receiptNo + (isVoided ? ' (VOID)' : (type === 'final' ? ' (FINAL)' : ''));
-  document.getElementById("r_date").innerText = formatDateForDisplay(new Date());
-  
-  // Use shift data from payment
-  const shiftInfo = payment.shiftName || payment.shift || 'N/A';
-  const shiftDate = payment.shiftDate || new Date().toISOString().split('T')[0];
-  document.getElementById("r_shift").innerText = `${shiftDate} - ${shiftInfo}`;
-  
-  document.getElementById("r_staff").innerText = payment.staff || currentUser || 'Unknown';
-  document.getElementById("r_name").innerText = payment.name || 'N/A';
-  document.getElementById("r_flight").innerText = payment.flightNo || 'N/A';
-  document.getElementById("r_seat").innerText = payment.seatNo || 'N/A';
-  document.getElementById("r_adults").innerText = payment.adults || 0;
-  document.getElementById("r_kids").innerText = payment.kids || 0;
-  document.getElementById("r_payment_method").innerText = paymentType;
-  document.getElementById("r_currency").innerText = payment.currency || 'N/A';
-  
-  // Calculate subtotal and GST for display
-  const subtotal = payment.total ? (payment.total / 1.08).toFixed(2) : '0.00';
-  const gst = payment.total ? (payment.total - (payment.total / 1.08)).toFixed(2) : '0.00';
-  
-  document.getElementById("r_subtotal").innerText = subtotal;
-  document.getElementById("r_gst").innerText = gst;
-  document.getElementById("r_total").innerText = (payment.total || 0).toFixed(2);
-  document.getElementById("r_expiry").innerText = payment.expiryFormatted || calculateExpiryTime().formatted;
-  
-  // Show/hide receipt sections based on payment type
-  if (paymentType !== "Cash") {
-    document.getElementById("r_card_details").style.display = "block";
-    document.getElementById("r_cash_details").style.display = "none";
-    
-    // Only show payment details if they exist
-    if (payment.cardDetailsAdded && payment.batchNo && payment.approvalCode) {
-      document.getElementById("r_batch").innerText = payment.batchNo;
-      document.getElementById("r_approval").innerText = payment.approvalCode;
-    } else {
-      // Hide payment details section if no details available
-      document.getElementById("r_card_details").style.display = "none";
-    }
-  } else {
-    document.getElementById("r_card_details").style.display = "none";
-    document.getElementById("r_cash_details").style.display = "block";
-    document.getElementById("r_paid").innerText = (payment.paidAmount || 0).toFixed(2);
-    document.getElementById("r_balance").innerText = (payment.balance || 0).toFixed(2);
-  }
-  
-  // Print receipt for 76mm thermal printer
-  printThermalReceipt();
-  
-  // Show notification
-  const receiptType = isVoided ? 'Void' : (type === 'final' ? 'Final' : 'First');
-  showNotification(`Printed ${receiptType} Receipt: ${receiptNo}`, "success");
-}
-
-function printThermalReceipt() {
-  const content = document.getElementById("receiptContent").innerHTML;
-  
-  // Create a print-friendly window with 76mm width
-  const printWindow = window.open('', '_blank', 'width=300,height=600');
-  
-  // Thermal printer friendly CSS with void styling
-  const thermalCSS = `
-    <style>
-      @media print {
-        body {
-          width: 70mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          font-family: 'Courier New', monospace !important;
-          font-size: 12px !important;
-        }
-        * {
-          font-size: 12px !important;
-          line-height: 1.2 !important;
-        }
-        .no-print { display: none !important; }
-        @page {
-          margin: 0;
-          size: 70mm auto;
-        }
-        #r_void_banner {
-          background: #e74c3c !important;
-          color: white !important;
-          font-weight: bold !important;
-          border: 2px solid #000 !important;
-        }
-        #r_void_info {
-          background: #f8d7da !important;
-          border: 1px solid #f5c6cb !important;
-        }
-      }
-      body {
-        font-family: 'Courier New', monospace;
-        font-size: 12px;
-        width: 70mm;
-        margin: 0 auto;
-        padding: 5px;
-      }
-      h1, h2, h3 {
-        font-size: 14px;
-        margin: 5px 0;
-      }
-      hr {
-        border: none;
-        border-top: 1px dashed #000;
-        margin: 5px 0;
-      }
-      .text-center { text-align: center; }
-      .text-right { text-align: right; }
-      .text-bold { font-weight: bold; }
-      .text-large { font-size: 16px; }
-      .text-small { font-size: 10px; }
-      .border-dashed { border: 1px dashed #000; }
-      .receipt-container {
-        width: 100%;
-        max-width: 70mm;
-        margin: 0 auto;
-      }
-      #r_void_banner {
-        background: #e74c3c;
-        color: white;
-        font-weight: bold;
-        border: 2px solid #000;
-      }
-      #r_void_info {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-      }
-    </style>
-  `;
-  
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Koveli Lounge Receipt</title>
-        ${thermalCSS}
-      </head>
-      <body onload="window.print(); setTimeout(() => window.close(), 500);">
-        <div class="receipt-container">
-          ${content}
-        </div>
-      </body>
-    </html>
-  `);
-  
-  printWindow.document.close();
-}
-
-// ======== NEW: INITIALIZE RECEIPT COUNTER ========
-async function initializeReceiptCounter() {
-  try {
-    // Check if we have a last used receipt
-    const lastUsed = localStorage.getItem('lastUsedReceipt');
-    
-    if (lastUsed) {
-      const lastNumber = parseInt(lastUsed);
-      if (!isNaN(lastNumber) && lastNumber >= 1564) {
-        // Set local counter to last used number
-        localStorage.setItem('receiptCounter', lastNumber.toString());
-        console.log(`Initialized receipt counter from last used: ${lastNumber}`);
-      }
-    }
-    
-    // Try to sync with Firebase for the latest number
-    if (checkFirebase()) {
-      try {
-        const receiptsRef = window.walkinDb.collection("receipts");
-        const snapshot = await receiptsRef
-          .orderBy("receiptNumber", "desc")
-          .limit(1)
-          .get();
-        
-        if (!snapshot.empty) {
-          const latestReceipt = snapshot.docs[0].data();
-          const firebaseNumber = latestReceipt.receiptNumber;
-          
-          const localCounter = parseInt(localStorage.getItem('receiptCounter') || '1563');
-          
-          // Use the higher number between Firebase and local
-          if (firebaseNumber > localCounter) {
-            localStorage.setItem('receiptCounter', firebaseNumber.toString());
-            console.log(`Updated local counter from Firebase: ${firebaseNumber}`);
-          }
-        }
-      } catch (error) {
-        console.warn("Could not sync receipt counter with Firebase:", error);
-      }
-    }
-    
-  } catch (error) {
-    console.error("Error initializing receipt counter:", error);
-  }
-}
-
 // ======== AUTO EVENT LISTENERS ========
 window.onload = async function(){
   // Initialize company info
   checkCompanyInfo();
-  
-  // Initialize receipt counter
-  await initializeReceiptCounter();
   
   // Get current user from localStorage
   getCurrentUser();
@@ -3723,8 +2563,17 @@ window.onload = async function(){
     console.log("Firebase is ready");
   }
   
-  // Fetch shift information from Firebase (or use cached)
-  await fetchShiftFromFirebase();
+  // Load shift data from localStorage or fetch from Firebase
+  const cachedShiftData = loadShiftFromLocalStorage();
+  if (cachedShiftData) {
+    updateShiftDisplay(cachedShiftData);
+    console.log("Using cached shift data");
+  } else {
+    // Fetch fresh shift data
+    console.log("No cached shift data, fetching from Firebase...");
+    showNotification("Loading shift data...", "info", 2000);
+    await refreshShiftData(false);
+  }
   
   updatePricing();
   togglePaymentFields();
@@ -3806,6 +2655,11 @@ window.onload = async function(){
       showNotification(`Syncing ${pendingSyncQueue.length} pending payments...`, "info", 3000);
     }
   }, 2000);
+  
+  // Auto-refresh shift data every 5 minutes
+  setInterval(() => {
+    refreshShiftData(false);
+  }, 5 * 60 * 1000);
 };
   </script>
 </body>
