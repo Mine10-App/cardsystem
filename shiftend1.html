@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Report Generator</title>
+    <title>Shift Summary Report</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -35,26 +35,26 @@
         header {
             background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
             color: white;
-            padding: 25px 30px;
+            padding: 20px 30px;
             text-align: center;
             border-bottom: 4px solid #3498db;
         }
         
         h1 {
-            font-size: 2.4rem;
+            font-size: 2rem;
             margin-bottom: 10px;
             font-weight: 700;
         }
         
         .subtitle {
-            font-size: 1.1rem;
+            font-size: 0.9rem;
             opacity: 0.9;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-weight: 300;
         }
         
         .filter-section {
-            padding: 25px 30px;
+            padding: 20px 30px;
             background-color: #f8f9fa;
             border-bottom: 1px solid #dee2e6;
         }
@@ -62,7 +62,7 @@
         .filter-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 15px;
             align-items: flex-end;
         }
         
@@ -82,10 +82,10 @@
         .filter-group input,
         .filter-group select {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 2px solid #ddd;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             transition: border-color 0.3s;
             background-color: white;
         }
@@ -99,21 +99,21 @@
         
         .action-buttons {
             display: flex;
-            gap: 15px;
-            margin-top: 25px;
+            gap: 12px;
+            margin-top: 20px;
         }
         
         .btn {
-            padding: 14px 28px;
+            padding: 12px 24px;
             border: none;
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
         }
         
@@ -154,20 +154,20 @@
         }
         
         .report-container {
-            padding: 30px;
-            min-height: 500px;
+            padding: 20px;
+            min-height: 300px;
         }
         
         .loading {
             text-align: center;
             padding: 40px;
             color: #7f8c8d;
-            font-size: 18px;
+            font-size: 16px;
         }
         
         .loading i {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: 36px;
+            margin-bottom: 15px;
             color: #3498db;
             animation: spin 2s linear infinite;
         }
@@ -179,9 +179,9 @@
         
         .error {
             text-align: center;
-            padding: 40px;
+            padding: 30px;
             color: #e74c3c;
-            font-size: 18px;
+            font-size: 16px;
             background-color: #ffeaea;
             border-radius: 8px;
             border-left: 4px solid #e74c3c;
@@ -189,146 +189,100 @@
         
         .no-data {
             text-align: center;
-            padding: 60px;
+            padding: 40px;
             color: #7f8c8d;
-            font-size: 18px;
+            font-size: 16px;
             background-color: #f8f9fa;
             border-radius: 8px;
             border: 2px dashed #ddd;
         }
         
-        /* A4 Report Styles */
+        /* A4 Report Styles - ULTRA SIMPLE */
         .a4-report {
             width: 21cm;
             min-height: 29.7cm;
             margin: 0 auto;
             background: white;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            padding: 2cm;
+            padding: 1.5cm;
             font-size: 12px;
             line-height: 1.4;
         }
         
         .report-header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #2c3e50;
-            padding-bottom: 20px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 10px;
         }
         
         .report-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         
         .report-subtitle {
-            font-size: 16px;
+            font-size: 13px;
             color: #7f8c8d;
             margin-bottom: 5px;
         }
         
         .report-date {
-            font-size: 14px;
+            font-size: 12px;
             color: #2c3e50;
             font-weight: 600;
         }
         
-        .report-summary {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            border-left: 4px solid #3498db;
-        }
-        
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .summary-item {
-            text-align: center;
-        }
-        
-        .summary-label {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-bottom: 5px;
-        }
-        
-        .summary-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .flight-table {
+        .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 25px 0;
+            margin: 15px 0;
             font-size: 11px;
         }
         
-        .flight-table th {
+        .summary-table th {
             background-color: #2c3e50;
             color: white;
-            padding: 12px 8px;
+            padding: 8px 6px;
             text-align: left;
             font-weight: 600;
             border: 1px solid #34495e;
         }
         
-        .flight-table td {
-            padding: 10px 8px;
+        .summary-table td {
+            padding: 6px 6px;
             border: 1px solid #ddd;
         }
         
-        .flight-table tr:nth-child(even) {
+        .summary-table tr:nth-child(even) {
             background-color: #f8f9fa;
         }
         
-        .flight-table tr:hover {
+        .summary-table tr:hover {
             background-color: #e8f4fc;
         }
         
-        .airline-header {
-            background-color: #3498db !important;
-            color: white;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        
-        .total-row {
+        .grand-total {
             background-color: #2c3e50 !important;
             color: white;
             font-weight: bold;
+            font-size: 12px;
         }
         
-        .flight-count {
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .pax-count {
-            font-weight: bold;
-            color: #27ae60;
+        .flight-count, .pax-count {
+            text-align: center;
+            font-weight: 600;
         }
         
         .report-footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #ddd;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
             text-align: center;
             color: #7f8c8d;
-            font-size: 11px;
-        }
-        
-        .page-break {
-            page-break-before: always;
+            font-size: 10px;
         }
         
         .print-controls {
@@ -342,8 +296,8 @@
         }
         
         .print-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             background: #3498db;
             color: white;
@@ -352,7 +306,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -371,76 +325,10 @@
             background: #6c7b7d;
         }
         
-        .tooltip {
-            position: absolute;
-            right: 70px;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            white-space: nowrap;
-            opacity: 0;
-            transform: translateX(10px);
-            transition: all 0.3s;
-            pointer-events: none;
-        }
-        
-        .print-btn:hover .tooltip {
-            opacity: 1;
-            transform: translateX(0);
-        }
-        
-        @media screen and (max-width: 1200px) {
-            .a4-report {
-                width: 100%;
-                padding: 1cm;
-            }
-            
-            .filter-container {
-                flex-direction: column;
-            }
-        }
-        
-        @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            
-            .container {
-                box-shadow: none;
-                border-radius: 0;
-            }
-            
-            header, .filter-section, .print-controls, .action-buttons {
-                display: none !important;
-            }
-            
-            .report-container {
-                padding: 0;
-            }
-            
-            .a4-report {
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-            }
-            
-            .page-break {
-                page-break-before: always;
-            }
-            
-            .flight-table {
-                page-break-inside: avoid;
-            }
-        }
-        
         .status-message {
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-radius: 6px;
-            margin: 20px 30px;
+            margin: 15px 30px;
             text-align: center;
             font-weight: 600;
             display: none;
@@ -467,19 +355,66 @@
         
         footer {
             text-align: center;
-            padding: 20px;
+            padding: 15px;
             color: #7f8c8d;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             border-top: 2px solid #f0f0f0;
             background-color: #f8f9fa;
+        }
+        
+        @media screen and (max-width: 1200px) {
+            .a4-report {
+                width: 100%;
+                padding: 1cm;
+            }
+            
+            .filter-container {
+                flex-direction: column;
+            }
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+                border-radius: 0;
+            }
+            
+            header, .filter-section, .print-controls, .action-buttons, footer {
+                display: none !important;
+            }
+            
+            .report-container {
+                padding: 0;
+            }
+            
+            .a4-report {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+                font-size: 10px;
+            }
+            
+            .summary-table {
+                font-size: 10px;
+            }
+            
+            .report-title {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-chart-bar"></i> Shift Report Generator</h1>
-            <p class="subtitle">Generate A4 printable daily shift reports with airline-wise breakdown</p>
+            <h1><i class="fas fa-file-alt"></i> Shift Summary</h1>
+            <p class="subtitle">Flight-wise passenger count - Simple Report</p>
         </header>
         
         <div class="status-message" id="statusMessage"></div>
@@ -499,50 +434,40 @@
                         <option value="evening">Evening Shift</option>
                     </select>
                 </div>
-                
-                <div class="filter-group">
-                    <label for="airlineFilter"><i class="fas fa-plane"></i> Airline (Optional)</label>
-                    <select id="airlineFilter">
-                        <option value="all">All Airlines</option>
-                    </select>
-                </div>
             </div>
             
             <div class="action-buttons">
                 <button id="generateBtn" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Generate Report
+                    <i class="fas fa-search"></i> Generate
                 </button>
                 <button id="resetBtn" class="btn btn-secondary">
-                    <i class="fas fa-redo"></i> Reset Filters
+                    <i class="fas fa-redo"></i> Reset
                 </button>
                 <button id="exportBtn" class="btn btn-success" style="display: none;">
-                    <i class="fas fa-file-export"></i> Export CSV
+                    <i class="fas fa-file-excel"></i> Export
                 </button>
             </div>
         </div>
         
         <div class="report-container" id="reportContainer">
             <div class="no-data" id="noDataMessage">
-                <i class="fas fa-file-alt" style="font-size: 64px; margin-bottom: 20px; color: #ddd;"></i>
-                <h3>No Report Generated Yet</h3>
-                <p>Select a date and shift, then click "Generate Report" to view the report</p>
+                <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 15px; color: #ddd;"></i>
+                <h3>No Report Generated</h3>
+                <p>Select date and shift, then click "Generate"</p>
             </div>
         </div>
         
         <footer>
-            <p><i class="fas fa-database"></i> Shift Report System &copy; <span id="currentYear">2024</span></p>
-            <p style="font-size: 0.8rem; margin-top: 5px;">Powered by Firebase</p>
+            <p>Shift Summary Report System</p>
         </footer>
     </div>
     
     <div class="print-controls" style="display: none;" id="printControls">
         <button id="printBtn" class="print-btn">
             <i class="fas fa-print"></i>
-            <span class="tooltip">Print Report</span>
         </button>
         <button id="backToFilters" class="print-btn back-btn">
             <i class="fas fa-arrow-left"></i>
-            <span class="tooltip">Back to Filters</span>
         </button>
     </div>
 
@@ -551,7 +476,6 @@
         // ==================== DOM ELEMENTS ====================
         const dateFilter = document.getElementById('dateFilter');
         const shiftFilter = document.getElementById('shiftFilter');
-        const airlineFilter = document.getElementById('airlineFilter');
         const generateBtn = document.getElementById('generateBtn');
         const resetBtn = document.getElementById('resetBtn');
         const exportBtn = document.getElementById('exportBtn');
@@ -561,98 +485,26 @@
         const noDataMessage = document.getElementById('noDataMessage');
         const statusMessage = document.getElementById('statusMessage');
         const printControls = document.getElementById('printControls');
-        const currentYear = document.getElementById('currentYear');
 
         // ==================== GLOBAL VARIABLES ====================
         let currentReportData = null;
-        let airlinesList = [];
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', function() {
-            // Set current year
-            currentYear.textContent = new Date().getFullYear();
-            
             // Set default date to today
             const today = new Date();
             const todayString = today.toISOString().split('T')[0];
             dateFilter.value = todayString;
             
-            // Initialize Firebase and load airlines
-            initializeFirebase();
-            
             // Setup event listeners
             setupEventListeners();
         });
-
-        // ==================== FIREBASE INITIALIZATION ====================
-        async function initializeFirebase() {
-            try {
-                if (window.passengerDb) {
-                    console.log("Firebase passengerDb already initialized");
-                    loadAirlinesList();
-                } else {
-                    console.log("Waiting for passengerDb initialization...");
-                    // Try again after a short delay
-                    setTimeout(() => {
-                        if (window.passengerDb) {
-                            loadAirlinesList();
-                        } else {
-                            showMessage("Firebase connection not available", "error");
-                        }
-                    }, 1000);
-                }
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                showMessage("Firebase connection error", "error");
-            }
-        }
-
-        // ==================== LOAD AIRLINES LIST ====================
-        async function loadAirlinesList() {
-            try {
-                showMessage("Loading airlines list...", "info");
-                
-                // Query unique airlines from passengers collection
-                const querySnapshot = await window.passengerDb
-                    .collection('passengers')
-                    .where('approved', '==', true)
-                    .orderBy('airline')
-                    .get();
-                
-                const airlinesSet = new Set();
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.airline) {
-                        airlinesSet.add(data.airline);
-                    }
-                });
-                
-                // Convert Set to Array and sort
-                airlinesList = Array.from(airlinesSet).sort();
-                
-                // Populate airline filter
-                airlineFilter.innerHTML = '<option value="all">All Airlines</option>';
-                airlinesList.forEach(airline => {
-                    const option = document.createElement('option');
-                    option.value = airline;
-                    option.textContent = airline;
-                    airlineFilter.appendChild(option);
-                });
-                
-                console.log(`Loaded ${airlinesList.length} airlines`);
-                showMessage("Ready to generate reports", "success");
-                
-            } catch (error) {
-                console.error("Error loading airlines list:", error);
-                showMessage("Error loading airlines list", "error");
-            }
-        }
 
         // ==================== EVENT LISTENERS ====================
         function setupEventListeners() {
             generateBtn.addEventListener('click', generateReport);
             resetBtn.addEventListener('click', resetFilters);
-            exportBtn.addEventListener('click', exportToCSV);
+            exportBtn.addEventListener('click', exportToExcel);
             printBtn.addEventListener('click', printReport);
             backToFilters.addEventListener('click', showFilters);
         }
@@ -662,7 +514,6 @@
             try {
                 const date = dateFilter.value;
                 const shift = shiftFilter.value;
-                const airline = airlineFilter.value;
                 
                 if (!date) {
                     showMessage("Please select a date", "error");
@@ -673,12 +524,13 @@
                 reportContainer.innerHTML = `
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading report data for ${date}...</p>
+                        <p>Loading data for ${date}...</p>
                     </div>
                 `;
                 
                 noDataMessage.style.display = 'none';
                 printControls.style.display = 'none';
+                exportBtn.style.display = 'none';
                 
                 // Build query
                 let query = window.passengerDb
@@ -691,24 +543,17 @@
                     query = query.where('shift', '==', shift);
                 }
                 
-                // Add airline filter if not "all"
-                if (airline !== 'all') {
-                    query = query.where('airline', '==', airline);
-                }
-                
                 // Execute query
                 const querySnapshot = await query.get();
                 
                 if (querySnapshot.empty) {
                     reportContainer.innerHTML = `
                         <div class="no-data">
-                            <i class="fas fa-file-alt" style="font-size: 64px; margin-bottom: 20px; color: #ddd;"></i>
+                            <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 15px; color: #ddd;"></i>
                             <h3>No Data Found</h3>
-                            <p>No passenger data found for the selected filters</p>
-                            <p>Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift} | Airline: ${airline === 'all' ? 'All' : airline}</p>
+                            <p>No data for Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift}</p>
                         </div>
                     `;
-                    exportBtn.style.display = 'none';
                     return;
                 }
                 
@@ -720,34 +565,31 @@
                 
                 console.log(`Found ${passengers.length} passengers`);
                 
-                // Group data by airline and flight
-                const groupedData = groupPassengersByAirlineAndFlight(passengers);
+                // Group data by flight
+                const flightData = groupDataByFlight(passengers);
                 
                 // Store current report data
                 currentReportData = {
                     date: date,
                     shift: shift,
-                    airline: airline,
                     passengers: passengers,
-                    groupedData: groupedData
+                    flightData: flightData
                 };
                 
                 // Generate and display report
-                generateReportHTML(groupedData, date, shift, airline, passengers.length);
+                generateReportHTML(flightData, date, shift);
                 
-                // Show export button
+                // Show export button and print controls
                 exportBtn.style.display = 'flex';
-                
-                // Show print controls
                 printControls.style.display = 'flex';
                 
-                showMessage(`Report generated: ${passengers.length} passengers found`, "success");
+                showMessage(`Report generated: ${flightData.flights.length} flights, ${flightData.totalPassengers} passengers`, "success");
                 
             } catch (error) {
                 console.error("Error generating report:", error);
                 reportContainer.innerHTML = `
                     <div class="error">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                        <i class="fas fa-exclamation-triangle" style="font-size: 36px; margin-bottom: 15px;"></i>
                         <h3>Error Loading Report</h3>
                         <p>${error.message}</p>
                     </div>
@@ -756,51 +598,56 @@
             }
         }
 
-        // ==================== GROUP DATA BY AIRLINE AND FLIGHT ====================
-        function groupPassengersByAirlineAndFlight(passengers) {
-            const groupedData = {};
+        // ==================== GROUP DATA BY FLIGHT ====================
+        function groupDataByFlight(passengers) {
+            const flightMap = new Map();
+            let totalPassengers = 0;
+            let totalPax = 0;
             
             passengers.forEach(passenger => {
                 const airline = passenger.airline || 'Unknown';
                 const flightNo = passenger.flightNo || 'Unknown';
+                const key = `${airline}_${flightNo}`;
+                const numPax = passenger.numPax || 1;
                 
-                if (!groupedData[airline]) {
-                    groupedData[airline] = {};
+                if (!flightMap.has(key)) {
+                    flightMap.set(key, {
+                        airline: airline,
+                        flightNo: flightNo,
+                        passengers: 0,
+                        pax: 0
+                    });
                 }
                 
-                if (!groupedData[airline][flightNo]) {
-                    groupedData[airline][flightNo] = {
-                        passengers: [],
-                        totalPax: 0
-                    };
-                }
-                
-                groupedData[airline][flightNo].passengers.push(passenger);
-                groupedData[airline][flightNo].totalPax += passenger.numPax || 1;
+                const flight = flightMap.get(key);
+                flight.passengers++;
+                flight.pax += numPax;
+                totalPassengers++;
+                totalPax += numPax;
             });
             
-            return groupedData;
+            // Convert Map to sorted array
+            const flights = Array.from(flightMap.values()).sort((a, b) => {
+                if (a.airline === b.airline) {
+                    return a.flightNo.localeCompare(b.flightNo);
+                }
+                return a.airline.localeCompare(b.airline);
+            });
+            
+            return {
+                flights: flights,
+                totalPassengers: totalPassengers,
+                totalPax: totalPax,
+                totalFlights: flights.length
+            };
         }
 
         // ==================== GENERATE REPORT HTML ====================
-        function generateReportHTML(groupedData, date, shift, airlineFilter, totalPassengers) {
-            // Calculate totals
-            let totalFlights = 0;
-            let totalPax = 0;
-            let airlinesCount = Object.keys(groupedData).length;
-            
-            Object.keys(groupedData).forEach(airline => {
-                totalFlights += Object.keys(groupedData[airline]).length;
-                Object.keys(groupedData[airline]).forEach(flight => {
-                    totalPax += groupedData[airline][flight].totalPax;
-                });
-            });
-            
+        function generateReportHTML(flightData, date, shift) {
             // Format date
             const formattedDate = new Date(date).toLocaleDateString('en-US', {
-                weekday: 'long',
                 year: 'numeric',
-                month: 'long',
+                month: 'short',
                 day: 'numeric'
             });
             
@@ -808,171 +655,88 @@
             let reportHTML = `
                 <div class="a4-report">
                     <div class="report-header">
-                        <div class="report-title">Daily Shift Report</div>
-                        <div class="report-subtitle">Passenger Approval Summary</div>
-                        <div class="report-date">${formattedDate}</div>
-                        <div class="report-date">Shift: ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)}</div>
-                        ${airlineFilter !== 'all' ? `<div class="report-date">Airline: ${airlineFilter}</div>` : ''}
+                        <div class="report-title">DAILY SHIFT SUMMARY</div>
+                        <div class="report-subtitle">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)}</div>
                     </div>
                     
-                    <div class="report-summary">
-                        <h3>Report Summary</h3>
-                        <div class="summary-grid">
-                            <div class="summary-item">
-                                <div class="summary-label">Total Airlines</div>
-                                <div class="summary-value">${airlinesCount}</div>
-                            </div>
-                            <div class="summary-item">
-                                <div class="summary-label">Total Flights</div>
-                                <div class="summary-value">${totalFlights}</div>
-                            </div>
-                            <div class="summary-item">
-                                <div class="summary-label">Total Passengers</div>
-                                <div class="summary-value">${totalPassengers}</div>
-                            </div>
-                            <div class="summary-item">
-                                <div class="summary-label">Total Pax</div>
-                                <div class="summary-value">${totalPax}</div>
-                            </div>
-                        </div>
-                    </div>
-            `;
-            
-            // Generate table for each airline
-            Object.keys(groupedData).sort().forEach((airline, airlineIndex) => {
-                const airlineFlights = groupedData[airline];
-                const airlineTotalFlights = Object.keys(airlineFlights).length;
-                let airlineTotalPax = 0;
-                
-                // Calculate airline total pax
-                Object.keys(airlineFlights).forEach(flight => {
-                    airlineTotalPax += airlineFlights[flight].totalPax;
-                });
-                
-                reportHTML += `
-                    <table class="flight-table">
+                    <table class="summary-table">
                         <thead>
-                            <tr class="airline-header">
-                                <th colspan="6">${airline} - ${airlineTotalFlights} Flight(s) - ${airlineTotalPax} Pax</th>
-                            </tr>
                             <tr>
-                                <th width="15%">Flight No</th>
-                                <th width="25%">Passenger Name</th>
-                                <th width="15%">Seat</th>
-                                <th width="15%">Class</th>
-                                <th width="15%">FQTV</th>
-                                <th width="15%">Shift</th>
+                                <th width="40%">Airline</th>
+                                <th width="30%">Flight No</th>
+                                <th width="15%">Passengers</th>
+                                <th width="15%">Pax</th>
                             </tr>
                         </thead>
                         <tbody>
-                `;
-                
-                Object.keys(airlineFlights).sort().forEach((flightNo, flightIndex) => {
-                    const flightData = airlineFlights[flightNo];
-                    
-                    // Add flight header row
-                    reportHTML += `
-                        <tr>
-                            <td colspan="6" style="background-color: #f1f8ff; font-weight: bold; color: #2c3e50;">
-                                ${flightNo} - ${flightData.passengers.length} Passenger(s) - ${flightData.totalPax} Pax
-                            </td>
-                        </tr>
-                    `;
-                    
-                    // Add passenger rows
-                    flightData.passengers.forEach((passenger, passengerIndex) => {
-                        reportHTML += `
-                            <tr>
-                                <td>${passengerIndex === 0 ? flightNo : ''}</td>
-                                <td>${passenger.name || '-'}</td>
-                                <td>${passenger.seatNo || '-'}</td>
-                                <td>${passenger.class || '-'}</td>
-                                <td>${passenger.fqtv || '-'}</td>
-                                <td>${passenger.shift || '-'}</td>
-                            </tr>
-                        `;
-                    });
-                });
-                
+            `;
+            
+            // Add flight rows
+            flightData.flights.forEach(flight => {
                 reportHTML += `
-                        </tbody>
-                    </table>
+                    <tr>
+                        <td>${flight.airline}</td>
+                        <td>${flight.flightNo}</td>
+                        <td class="flight-count">${flight.passengers}</td>
+                        <td class="pax-count">${flight.pax}</td>
+                    </tr>
                 `;
-                
-                // Add page break after every 3 airlines (for better printing)
-                if ((airlineIndex + 1) % 3 === 0 && airlineIndex !== Object.keys(groupedData).length - 1) {
-                    reportHTML += `<div class="page-break"></div>`;
-                }
             });
             
-            // Add grand totals
+            // Add grand total row
             reportHTML += `
-                <table class="flight-table">
-                    <tr class="total-row">
-                        <td colspan="2"><strong>GRAND TOTALS</strong></td>
-                        <td><strong>${airlinesCount} Airlines</strong></td>
-                        <td><strong>${totalFlights} Flights</strong></td>
-                        <td><strong>${totalPassengers} Passengers</strong></td>
-                        <td><strong>${totalPax} Pax</strong></td>
+                    <tr class="grand-total">
+                        <td colspan="2">GRAND TOTAL (${flightData.totalFlights} Flights)</td>
+                        <td>${flightData.totalPassengers}</td>
+                        <td>${flightData.totalPax}</td>
                     </tr>
-                </table>
-                
-                <div class="report-footer">
-                    <p>Report generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
-                    <p>Shift Report System - Confidential</p>
-                </div>
+                </tbody>
+            </table>
+            
+            <div class="report-footer">
+                <p>Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
             </div>
+        </div>
             `;
             
             reportContainer.innerHTML = reportHTML;
         }
 
-        // ==================== EXPORT TO CSV ====================
-        function exportToCSV() {
+        // ==================== EXPORT TO EXCEL ====================
+        function exportToExcel() {
             if (!currentReportData) return;
             
             try {
-                const { passengers, date, shift, airline } = currentReportData;
+                const { flightData, date, shift } = currentReportData;
                 
-                // Create CSV header
+                // Create CSV content
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Airline,Flight No,Passenger Name,Seat,Class,FQTV,Pax,Shift,PNR,Date,Approved By,Approved At\n";
+                csvContent += "Airline,Flight No,Passengers,Total Pax\n";
                 
-                // Add rows
-                passengers.forEach(passenger => {
-                    const row = [
-                        `"${passenger.airline || ''}"`,
-                        `"${passenger.flightNo || ''}"`,
-                        `"${passenger.name || ''}"`,
-                        `"${passenger.seatNo || ''}"`,
-                        `"${passenger.class || ''}"`,
-                        `"${passenger.fqtv || ''}"`,
-                        passenger.numPax || 1,
-                        `"${passenger.shift || ''}"`,
-                        `"${passenger.pnr || ''}"`,
-                        `"${passenger.date || ''}"`,
-                        `"${passenger.approvedBy || ''}"`,
-                        `"${passenger.approvedAt || ''}"`
-                    ];
-                    csvContent += row.join(",") + "\n";
+                // Add flight rows
+                flightData.flights.forEach(flight => {
+                    csvContent += `${flight.airline},${flight.flightNo},${flight.passengers},${flight.pax}\n`;
                 });
+                
+                // Add grand total
+                csvContent += `GRAND TOTAL,,${flightData.totalPassengers},${flightData.totalPax}\n`;
                 
                 // Create download link
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `shift_report_${date}_${shift}_${airline}.csv`);
+                link.setAttribute("download", `shift_${date}_${shift}.csv`);
                 document.body.appendChild(link);
                 
                 // Download file
                 link.click();
                 document.body.removeChild(link);
                 
-                showMessage("CSV file exported successfully", "success");
+                showMessage("File exported successfully", "success");
                 
             } catch (error) {
-                console.error("Error exporting to CSV:", error);
-                showMessage("Error exporting to CSV: " + error.message, "error");
+                console.error("Error exporting:", error);
+                showMessage("Error exporting: " + error.message, "error");
             }
         }
 
@@ -996,10 +760,9 @@
             
             dateFilter.value = todayString;
             shiftFilter.value = 'all';
-            airlineFilter.value = 'all';
             
             showFilters();
-            showMessage("Filters reset to default", "info");
+            showMessage("Filters reset", "info");
         }
 
         // ==================== UTILITY FUNCTIONS ====================
@@ -1010,7 +773,7 @@
             
             setTimeout(() => {
                 statusMessage.style.display = 'none';
-            }, 4000);
+            }, 3000);
         }
     </script>
 </body>
