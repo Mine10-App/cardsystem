@@ -402,7 +402,7 @@ body {
         
         <div class="header-item">
             <i class="fas fa-calendar-alt"></i>
-            <span id="currentDate">Loading...</span>
+            <span id="shiftDateDisplay">Loading shift date...</span>
         </div>
         
         <div class="header-item">
@@ -578,10 +578,6 @@ try {
     }, 2000);
 }
 
-// ----------- Set current date (Maldives time) -----------
-const maldivesNow = getMaldivesTime();
-document.getElementById("currentDate").textContent = formatMaldivesDate(maldivesNow);
-
 // ----------- Initialize Firebase with shift config -----------
 let shiftFirestore = null;
 
@@ -689,83 +685,6 @@ function checkForOpenShift(shiftData) {
     return result;
 }
 
-// ----------- SEARCH PREVIOUS DATES FOR OPEN SHIFT (MINIMAL READS) -----------
-async function findOpenShiftInPreviousDates(startDate) {
-    console.log("🔙 Searching for open shift in previous dates (minimal reads)...");
-    
-    try {
-        if (!shiftFirestore) {
-            shiftFirestore = initializeShiftFirebase();
-            if (!shiftFirestore) {
-                throw new Error("Firestore not initialized");
-            }
-        }
-        
-        // Only check yesterday and day before yesterday (minimal reads)
-        const daysToCheck = [1, 2]; // Check 1 and 2 days back
-        let earliestOpenShift = null;
-        
-        for (let i = 0; i < daysToCheck.length; i++) {
-            const daysBack = daysToCheck[i];
-            
-            // Go back specified days
-            const previousDate = new Date(startDate);
-            previousDate.setDate(startDate.getDate() - daysBack);
-            
-            // Get date key in Maldives timezone
-            const previousDateKey = getDateKey(previousDate);
-            const previousDocId = `shift_${previousDateKey}`;
-            
-            console.log(`📅 Checking ${daysBack} day(s) ago: ${previousDateKey}`);
-            
-            try {
-                // SINGLE READ per day - minimal Firebase reads
-                const previousDoc = await shiftFirestore.collection("shifts").doc(previousDocId).get();
-                
-                if (previousDoc.exists) {
-                    const shiftData = previousDoc.data();
-                    console.log(`✅ Found document for ${previousDateKey}`);
-                    
-                    // Check if this document has an open shift
-                    const shiftCheck = checkForOpenShift(shiftData);
-                    
-                    if (shiftCheck.isActive) {
-                        console.log(`🎉 Found open shift ${daysBack} day(s) ago`);
-                        
-                        const result = {
-                            success: true,
-                            shiftData: shiftData,
-                            foundDate: previousDate,
-                            foundDateKey: previousDateKey,
-                            daysBack: daysBack,
-                            shiftCheck: shiftCheck
-                        };
-                        
-                        // Return immediately - minimal reads
-                        return result;
-                    }
-                }
-            } catch (error) {
-                console.error(`❌ Error checking ${previousDateKey}:`, error);
-                // Continue to next day
-            }
-        }
-        
-        console.log("🔍 No open shift found in previous 2 days");
-        return {
-            success: false,
-            message: "No open shift found in previous days"
-        };
-        
-    } catch (error) {
-        console.error("❌ Error searching previous dates:", error);
-        return {
-            success: false,
-            message: "Error: " + error.message
-        };
-    }
-}
-
 // ----------- FETCH SHIFT DATA (MINIMAL READS) -----------
 async function fetchShiftData() {
     console.log("🌐 Fetching shift data with minimal reads...");
@@ -781,103 +700,89 @@ async function fetchShiftData() {
         
         // Get current Maldives time
         const maldivesNow = getMaldivesTime();
-        const todayKey = getDateKey(maldivesNow);
         
-        console.log("📅 Maldives date for document:", todayKey);
-        
-        // SINGLE READ - Only read today's document
-        const todayDocId = `shift_${todayKey}`;
-        console.log("🔍 Fetching today's document:", todayDocId);
-        
-        const todayShiftDoc = await shiftFirestore.collection("shifts").doc(todayDocId).get();
-        
-        let shiftData = null;
+        // Try today first
+        let currentDate = maldivesNow;
+        let foundShiftData = null;
+        let foundDate = null;
+        let foundDateKey = null;
         let shiftCheck = null;
-        let foundDate = maldivesNow;
-        let foundDateKey = todayKey;
         let daysBack = 0;
-        let isFromPreviousDay = false;
         
-        // Check if today's shift exists
-        if (todayShiftDoc.exists) {
-            shiftData = todayShiftDoc.data();
-            console.log("✅ Today's shift data retrieved");
+        // Check up to 2 previous days (today + yesterday + day before)
+        for (let i = 0; i < 3; i++) {
+            // Calculate date to check (today - i days)
+            const checkDate = new Date(maldivesNow);
+            checkDate.setDate(maldivesNow.getDate() - i);
             
-            // Check if today has any open shift
-            shiftCheck = checkForOpenShift(shiftData);
+            // Get date key for Firebase document
+            const checkDateKey = getDateKey(checkDate);
+            const docId = `shift_${checkDateKey}`;
             
-            if (shiftCheck.isActive) {
-                console.log("✓ Found open shift in today's document");
-            } else {
-                console.log("⚠️ No open shift found today. Checking previous day...");
+            console.log(`📅 Checking date ${i} day(s) back: ${checkDateKey}`);
+            
+            try {
+                // SINGLE READ per date
+                const shiftDoc = await shiftFirestore.collection("shifts").doc(docId).get();
                 
-                // ONE ADDITIONAL READ - Only check previous day if today has no open shift
-                const previousOpenShift = await findOpenShiftInPreviousDates(maldivesNow);
-                
-                if (previousOpenShift.success) {
-                    console.log(`✓ Found open shift from ${previousOpenShift.daysBack} day(s) ago`);
-                    shiftData = previousOpenShift.shiftData;
-                    foundDate = previousOpenShift.foundDate;
-                    foundDateKey = previousOpenShift.foundDateKey;
-                    daysBack = previousOpenShift.daysBack;
-                    shiftCheck = previousOpenShift.shiftCheck;
-                    isFromPreviousDay = true;
-                } else {
-                    console.log("⚠️ No open shift found anywhere");
-                    // Keep today's data even if no shift is open
+                if (shiftDoc.exists) {
+                    const shiftData = shiftDoc.data();
+                    console.log(`✅ Found document for ${checkDateKey}`);
+                    
+                    // Check if this document has an open shift
+                    const checkResult = checkForOpenShift(shiftData);
+                    
+                    if (checkResult.isActive) {
+                        console.log(`🎉 Found open shift ${i} day(s) back`);
+                        foundShiftData = shiftData;
+                        foundDate = checkDate;
+                        foundDateKey = checkDateKey;
+                        shiftCheck = checkResult;
+                        daysBack = i;
+                        break; // Stop searching when we find an open shift
+                    }
                 }
+            } catch (error) {
+                console.error(`❌ Error checking ${checkDateKey}:`, error);
+                // Continue to next date
             }
-        } else {
-            console.log("❌ No shift document found for today");
-            
-            // ONE ADDITIONAL READ - Only check previous day if today has no document
-            const previousOpenShift = await findOpenShiftInPreviousDates(maldivesNow);
-            
-            if (previousOpenShift.success) {
-                console.log(`✓ Found open shift from ${previousOpenShift.daysBack} day(s) ago`);
-                shiftData = previousOpenShift.shiftData;
-                foundDate = previousOpenShift.foundDate;
-                foundDateKey = previousOpenShift.foundDateKey;
-                daysBack = previousOpenShift.daysBack;
-                shiftCheck = previousOpenShift.shiftCheck;
-                isFromPreviousDay = true;
-            } else {
-                console.log("⚠️ No shift data found at all");
-                return {
-                    success: false,
-                    message: "No shift data found",
-                    date: formatMaldivesDate(maldivesNow),
-                    isActive: false,
-                    timestamp: new Date().toISOString()
-                };
-            }
+        }
+        
+        if (!foundShiftData) {
+            console.log("⚠️ No open shift found in any date");
+            return {
+                success: false,
+                message: "No open shift found",
+                date: formatMaldivesDate(maldivesNow),
+                isActive: false,
+                timestamp: new Date().toISOString()
+            };
         }
         
         // Format the result
         const displayDate = formatMaldivesDate(foundDate);
         let dateIndicator = "";
         
-        if (isFromPreviousDay) {
-            if (daysBack === 1) {
-                dateIndicator = " (Yesterday)";
-            } else if (daysBack === 2) {
-                dateIndicator = " (Day before)";
-            } else {
-                dateIndicator = ` (${daysBack} days ago)`;
-            }
+        if (daysBack === 1) {
+            dateIndicator = " (Yesterday)";
+        } else if (daysBack === 2) {
+            dateIndicator = " (Day before)";
+        } else if (daysBack > 2) {
+            dateIndicator = ` (${daysBack} days ago)`;
         }
         
         const result = {
             success: true,
             name: shiftCheck.shiftName,
             date: displayDate + dateIndicator,
+            rawDate: foundDate, // Store the actual date object
             foundDate: foundDate,
             foundDateKey: foundDateKey,
             isActive: shiftCheck.isActive,
             openTime: shiftCheck.openTime,
             shiftType: shiftCheck.shiftType,
-            fullData: shiftData,
-            isFromPreviousDay: isFromPreviousDay,
+            fullData: foundShiftData,
+            isFromPreviousDay: daysBack > 0,
             daysBack: daysBack,
             timestamp: new Date().toISOString(),
             documentId: `shift_${foundDateKey}`,
@@ -886,7 +791,8 @@ async function fetchShiftData() {
                 shift: shiftCheck.shiftType,
                 shiftDate: foundDate.toISOString(),
                 shiftDateKey: foundDateKey,
-                shiftName: shiftCheck.shiftName
+                shiftName: shiftCheck.shiftName,
+                isPreviousDay: daysBack > 0
             }
         };
         
@@ -986,7 +892,7 @@ async function refreshShiftData() {
 
 // ----------- UPDATE UI -----------
 function updateUIWithShiftData(shiftData) {
-    console.log("🎨 Updating UI with:", shiftData);
+    console.log("🎨 Updating UI with shift data:", shiftData);
     
     if (!shiftData || !shiftData.success) {
         // Show error
@@ -995,11 +901,15 @@ function updateUIWithShiftData(shiftData) {
         document.getElementById("statusDot").className = "status-dot inactive";
         document.getElementById("lastUpdated").textContent = "Failed to load data";
         document.getElementById("shiftTime").textContent = "";
+        document.getElementById("shiftDateDisplay").textContent = "Error loading date";
         
         // Disable payment button
         disablePaymentButton();
         return;
     }
+    
+    // Update shift date display - show ACTUAL SHIFT DATE, not current date
+    document.getElementById("shiftDateDisplay").textContent = shiftData.date;
     
     // Update shift display
     let displayName = shiftData.name;
@@ -1039,6 +949,10 @@ function updateUIWithShiftData(shiftData) {
     // Update last updated time (Maldives time)
     const updatedTime = formatTimeForDisplay(new Date(shiftData.timestamp));
     document.getElementById("lastUpdated").textContent = `Updated: ${updatedTime}`;
+    
+    // Update payment button status
+    document.getElementById("paymentStatus").textContent = shiftData.isActive ? 
+        "Ready for payments" : "Disabled - No active shift";
 }
 
 // ----------- PAYMENT BUTTON CONTROL -----------
@@ -1153,7 +1067,7 @@ document.getElementById("cashDrawerBtn").addEventListener("click", function(e) {
                     <p>Click Print to open cash drawer</p>
                     <p><small>Select EPSON TM printer</small></p>
                     <p><small>Shift: ${cachedData.name}</small></p>
-                    <p><small>Date: ${cachedData.date}</small></p>
+                    <p><small>Shift Date: ${cachedData.date}</small></p>
                     ${cachedData.isFromPreviousDay ? '<p><small><i class="fas fa-history"></i> Previous day shift</small></p>' : ''}
                     <p><small>Time (Maldives): ${currentTime}</small></p>
                 </body>
@@ -1191,6 +1105,10 @@ function logout() {
 async function initializeDashboard() {
     console.log("🚀 Initializing payment dashboard...");
     
+    // Show loading state
+    document.getElementById("shiftDateDisplay").textContent = "Loading shift date...";
+    document.getElementById("currentShift").textContent = "Loading...";
+    
     // First, try to load from localStorage (cached)
     const cachedData = loadShiftFromLocalStorage();
     
@@ -1227,6 +1145,7 @@ async function initializeDashboard() {
         if (!cachedData) {
             showMessage("Failed to load shift data: " + error.message, "error");
             document.getElementById("shiftStatusText").textContent = "Failed to load";
+            document.getElementById("shiftDateDisplay").textContent = "Error";
         }
     }
 }
@@ -1276,44 +1195,6 @@ window.clearShiftCache = function() {
     refreshShiftData();
 };
 
-// Debug function to test minimal reads
-window.debugFirebaseReads = async function() {
-    console.log("=== DEBUG MINIMAL READS ===");
-    
-    if (!shiftFirestore) {
-        shiftFirestore = initializeShiftFirebase();
-    }
-    
-    const maldivesNow = getMaldivesTime();
-    console.log("Maldives time:", maldivesNow.toISOString());
-    console.log("Date key:", getDateKey(maldivesNow));
-    
-    const todayKey = getDateKey(maldivesNow);
-    const todayDocId = `shift_${todayKey}`;
-    
-    console.log("Today's document ID:", todayDocId);
-    
-    try {
-        console.log("📖 Reading today's document...");
-        const startTime = Date.now();
-        const doc = await shiftFirestore.collection("shifts").doc(todayDocId).get();
-        const endTime = Date.now();
-        
-        console.log("Read time:", endTime - startTime, "ms");
-        console.log("Document exists:", doc.exists);
-        
-        if (doc.exists) {
-            const data = doc.data();
-            console.log("Document data keys:", Object.keys(data));
-            console.log("Morning shift:", data.morning ? data.morning.status : "N/A");
-            console.log("Evening shift:", data.evening ? data.evening.status : "N/A");
-        }
-        
-    } catch (error) {
-        console.error("Debug read error:", error);
-    }
-};
-
 // Export current shift info for payment page
 window.getCurrentShiftInfo = function() {
     const cachedData = loadShiftFromLocalStorage();
@@ -1321,6 +1202,20 @@ window.getCurrentShiftInfo = function() {
         return cachedData.currentShiftInfo;
     }
     return null;
+};
+
+// Test the date display
+window.testDateDisplay = function() {
+    const maldivesNow = getMaldivesTime();
+    console.log("Current Maldives time:", maldivesNow);
+    console.log("Formatted:", formatMaldivesDate(maldivesNow));
+    console.log("Date key:", getDateKey(maldivesNow));
+    
+    const yesterday = new Date(maldivesNow);
+    yesterday.setDate(maldivesNow.getDate() - 1);
+    console.log("Yesterday's Maldives time:", yesterday);
+    console.log("Yesterday formatted:", formatMaldivesDate(yesterday));
+    console.log("Yesterday key:", getDateKey(yesterday));
 };
 </script>
 </body>
