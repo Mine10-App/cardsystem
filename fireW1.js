@@ -1,4 +1,4 @@
-const firebaseConfig = {
+const firebaseConfig1 = {
    apiKey: "AIzaSyBBuYwIGYYBe2SCX60W4S5SWjqUut5xVIc",
   authDomain: "kwakinsys.firebaseapp.com",
   projectId: "kwakinsys",
@@ -10,7 +10,7 @@ const firebaseConfig = {
 
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig1);
 
 // Initialize Firestore
 window.walkinDb = firebase.firestore();
