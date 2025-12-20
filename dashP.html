@@ -432,6 +432,7 @@ body {
                 <div class="shift-label">Current Shift Status</div>
                 <div class="shift-value" id="shiftStatusText">Loading shift status...</div>
                 <div class="shift-time" id="shiftTime"></div>
+                <div class="shift-date-info" id="shiftDateInfo" style="font-size: 12px; color: #777; margin-top: 3px;"></div>
                 <div class="last-updated" id="lastUpdated"></div>
             </div>
             <button class="header-btn" id="refreshBtn" onclick="refreshShiftData()">
@@ -528,7 +529,8 @@ function getMaldivesTime() {
     return new Date(now.getTime() + MALDIVES_OFFSET);
 }
 
-function formatMaldivesDate(date) {
+function formatShiftDate(date) {
+    // Format date as "Thursday, December 19, 2024"
     const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
     return maldivesDate.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -700,16 +702,18 @@ async function fetchShiftData() {
         
         // Get current Maldives time
         const maldivesNow = getMaldivesTime();
+        const todayKey = getDateKey(maldivesNow);
         
-        // Try today first
-        let currentDate = maldivesNow;
+        console.log("📅 Today's Maldives date key:", todayKey);
+        console.log("📅 Today's date:", formatShiftDate(maldivesNow));
+        
+        // Try today first, then yesterday, then day before
         let foundShiftData = null;
         let foundDate = null;
         let foundDateKey = null;
         let shiftCheck = null;
         let daysBack = 0;
         
-        // Check up to 2 previous days (today + yesterday + day before)
         for (let i = 0; i < 3; i++) {
             // Calculate date to check (today - i days)
             const checkDate = new Date(maldivesNow);
@@ -719,7 +723,7 @@ async function fetchShiftData() {
             const checkDateKey = getDateKey(checkDate);
             const docId = `shift_${checkDateKey}`;
             
-            console.log(`📅 Checking date ${i} day(s) back: ${checkDateKey}`);
+            console.log(`📅 Checking ${i} day(s) back: ${checkDateKey} (${formatShiftDate(checkDate)})`);
             
             try {
                 // SINGLE READ per date
@@ -753,14 +757,14 @@ async function fetchShiftData() {
             return {
                 success: false,
                 message: "No open shift found",
-                date: formatMaldivesDate(maldivesNow),
+                date: formatShiftDate(maldivesNow),
                 isActive: false,
                 timestamp: new Date().toISOString()
             };
         }
         
-        // Format the result
-        const displayDate = formatMaldivesDate(foundDate);
+        // Format the SHIFT DATE (not current date!)
+        const shiftDateDisplay = formatShiftDate(foundDate);
         let dateIndicator = "";
         
         if (daysBack === 1) {
@@ -771,11 +775,22 @@ async function fetchShiftData() {
             dateIndicator = ` (${daysBack} days ago)`;
         }
         
+        // Get current date for comparison
+        const currentDate = formatShiftDate(maldivesNow);
+        const isDifferentDay = shiftDateDisplay !== currentDate;
+        
+        console.log("📊 Date comparison:");
+        console.log("  - Shift date:", shiftDateDisplay);
+        console.log("  - Current date:", currentDate);
+        console.log("  - Different day?", isDifferentDay);
+        console.log("  - Days back:", daysBack);
+        
         const result = {
             success: true,
             name: shiftCheck.shiftName,
-            date: displayDate + dateIndicator,
-            rawDate: foundDate, // Store the actual date object
+            // This is the ACTUAL SHIFT DATE
+            shiftDateDisplay: shiftDateDisplay + dateIndicator,
+            rawShiftDate: foundDate, // Store the actual shift date object
             foundDate: foundDate,
             foundDateKey: foundDateKey,
             isActive: shiftCheck.isActive,
@@ -792,7 +807,8 @@ async function fetchShiftData() {
                 shiftDate: foundDate.toISOString(),
                 shiftDateKey: foundDateKey,
                 shiftName: shiftCheck.shiftName,
-                isPreviousDay: daysBack > 0
+                isPreviousDay: daysBack > 0,
+                shiftDateDisplay: shiftDateDisplay
             }
         };
         
@@ -902,14 +918,28 @@ function updateUIWithShiftData(shiftData) {
         document.getElementById("lastUpdated").textContent = "Failed to load data";
         document.getElementById("shiftTime").textContent = "";
         document.getElementById("shiftDateDisplay").textContent = "Error loading date";
+        document.getElementById("shiftDateInfo").textContent = "";
         
         // Disable payment button
         disablePaymentButton();
         return;
     }
     
-    // Update shift date display - show ACTUAL SHIFT DATE, not current date
-    document.getElementById("shiftDateDisplay").textContent = shiftData.date;
+    // ========== CRITICAL FIX ==========
+    // Show the ACTUAL SHIFT DATE in the header, not current date
+    document.getElementById("shiftDateDisplay").textContent = shiftData.shiftDateDisplay;
+    
+    // Also show it in the shift status card for clarity
+    const shiftDateInfo = document.getElementById("shiftDateInfo");
+    if (shiftData.isFromPreviousDay) {
+        const currentMaldivesDate = formatShiftDate(getMaldivesTime());
+        shiftDateInfo.textContent = `Shift from: ${shiftData.shiftDateDisplay} | Today is: ${currentMaldivesDate}`;
+        shiftDateInfo.style.color = "#e74c3c";
+        shiftDateInfo.style.fontWeight = "bold";
+    } else {
+        shiftDateInfo.textContent = `Today's shift`;
+        shiftDateInfo.style.color = "#777";
+    }
     
     // Update shift display
     let displayName = shiftData.name;
@@ -938,7 +968,7 @@ function updateUIWithShiftData(shiftData) {
         document.getElementById("statusDot").className = "status-dot active";
         document.getElementById("statusDot").style.backgroundColor = "#28a745";
         enablePaymentButton();
-        showMessage(`${shiftData.name} is active. Payments can be processed.`, "success");
+        showMessage(`${shiftData.name} is active. Payments will be saved to: ${shiftData.shiftDateDisplay}`, "success");
     } else {
         document.getElementById("statusDot").className = "status-dot inactive";
         document.getElementById("statusDot").style.backgroundColor = "#e74c3c";
@@ -952,7 +982,8 @@ function updateUIWithShiftData(shiftData) {
     
     // Update payment button status
     document.getElementById("paymentStatus").textContent = shiftData.isActive ? 
-        "Ready for payments" : "Disabled - No active shift";
+        `Ready for payments (Shift date: ${shiftData.shiftDateDisplay})` : 
+        "Disabled - No active shift";
 }
 
 // ----------- PAYMENT BUTTON CONTROL -----------
@@ -974,7 +1005,6 @@ function enablePaymentButton() {
     cashDrawerBtn.classList.remove("disabled");
     cashDrawerBtn.title = "Click to open cash drawer";
     
-    document.getElementById("paymentStatus").textContent = "Ready for payments";
     console.log("✅ Payment functions ENABLED");
 }
 
@@ -1002,7 +1032,6 @@ function disablePaymentButton() {
     cashDrawerBtn.classList.add("disabled");
     cashDrawerBtn.title = "Cash drawer disabled - no active shift";
     
-    document.getElementById("paymentStatus").textContent = "Disabled - No active shift";
     console.log("⛔ Payment functions DISABLED");
 }
 
@@ -1055,6 +1084,7 @@ document.getElementById("cashDrawerBtn").addEventListener("click", function(e) {
         // Get Maldives time for display
         const maldivesNow = getMaldivesTime();
         const currentTime = formatTimeForDisplay(maldivesNow);
+        const currentDate = formatShiftDate(maldivesNow);
         
         const printContent = `
             <html>
@@ -1067,8 +1097,9 @@ document.getElementById("cashDrawerBtn").addEventListener("click", function(e) {
                     <p>Click Print to open cash drawer</p>
                     <p><small>Select EPSON TM printer</small></p>
                     <p><small>Shift: ${cachedData.name}</small></p>
-                    <p><small>Shift Date: ${cachedData.date}</small></p>
-                    ${cachedData.isFromPreviousDay ? '<p><small><i class="fas fa-history"></i> Previous day shift</small></p>' : ''}
+                    <p><small><strong>Shift Date:</strong> ${cachedData.shiftDateDisplay}</small></p>
+                    <p><small><strong>Today's Date:</strong> ${currentDate}</small></p>
+                    ${cachedData.isFromPreviousDay ? '<p><small style="color: red;"><i class="fas fa-exclamation-triangle"></i> Working with previous day shift</small></p>' : ''}
                     <p><small>Time (Maldives): ${currentTime}</small></p>
                 </body>
             </html>
@@ -1204,18 +1235,24 @@ window.getCurrentShiftInfo = function() {
     return null;
 };
 
-// Test the date display
-window.testDateDisplay = function() {
+// Test function to verify dates
+window.testDates = function() {
     const maldivesNow = getMaldivesTime();
+    console.log("=== DATE TEST ===");
     console.log("Current Maldives time:", maldivesNow);
-    console.log("Formatted:", formatMaldivesDate(maldivesNow));
-    console.log("Date key:", getDateKey(maldivesNow));
+    console.log("Formatted current date:", formatShiftDate(maldivesNow));
     
+    // Test yesterday
     const yesterday = new Date(maldivesNow);
     yesterday.setDate(maldivesNow.getDate() - 1);
-    console.log("Yesterday's Maldives time:", yesterday);
-    console.log("Yesterday formatted:", formatMaldivesDate(yesterday));
-    console.log("Yesterday key:", getDateKey(yesterday));
+    console.log("Yesterday's date:", formatShiftDate(yesterday));
+    
+    // Test day before
+    const dayBefore = new Date(maldivesNow);
+    dayBefore.setDate(maldivesNow.getDate() - 2);
+    console.log("Day before:", formatShiftDate(dayBefore));
+    
+    alert(`Today: ${formatShiftDate(maldivesNow)}\nYesterday: ${formatShiftDate(yesterday)}\nDay before: ${formatShiftDate(dayBefore)}`);
 };
 </script>
 </body>
