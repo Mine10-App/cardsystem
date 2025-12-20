@@ -1,5 +1,8 @@
+// fireW1.js - Transaction Firebase Configuration
+// For kwakinsys project (payments)
+
 const firebaseConfig1 = {
-   apiKey: "AIzaSyBBuYwIGYYBe2SCX60W4S5SWjqUut5xVIc",
+  apiKey: "AIzaSyBBuYwIGYYBe2SCX60W4S5SWjqUut5xVIc",
   authDomain: "kwakinsys.firebaseapp.com",
   projectId: "kwakinsys",
   storageBucket: "kwakinsys.firebasestorage.app",
@@ -8,14 +11,13 @@ const firebaseConfig1 = {
   measurementId: "G-7LS5BPNVS1"
 };
 
+// Initialize Firebase for transactions
+const transactionApp = firebase.initializeApp(firebaseConfig1, "transactionApp");
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig1);
+// Initialize Firestore for transactions
+window.walkinDb = firebase.firestore(transactionApp);
 
-// Initialize Firestore
-window.walkinDb = firebase.firestore();
-
-console.log("Firebase initialized successfully");
+console.log("Transaction Firebase (kwakinsys) initialized successfully");
 
 // Initialize receipt counter
 async function initializeReceiptCounter() {
