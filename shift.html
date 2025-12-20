@@ -466,9 +466,6 @@ let shiftData = {
 // Track if any shift is open globally
 let isAnyShiftOpen = false;
 
-// Track if data needs to be saved to Firebase
-let needsFirebaseSave = false;
-
 // ==================== DOM ELEMENTS ====================
 const currentDateEl = document.getElementById('current-date');
 const currentYearEl = document.getElementById('current-year');
@@ -669,7 +666,7 @@ async function checkForOpenShifts() {
 // ==================== DELETE YESTERDAY'S DATA ====================
 async function deleteYesterdaysData() {
     try {
-        console.log("🗑️ Deleting yesterday's shift data...");
+        console.log("🗑️ Checking for yesterday's document to delete...");
         
         // Calculate yesterday's date
         const yesterday = new Date(currentDate);
@@ -677,34 +674,120 @@ async function deleteYesterdaysData() {
         
         const yesterdayDocId = `shift_${formatDateForDocument(yesterday)}`;
         
-        console.log(`Attempting to delete yesterday's document: ${yesterdayDocId}`);
+        console.log(`Checking for yesterday's document: ${yesterdayDocId}`);
         
         const yesterdayDocRef = db.collection('shifts').doc(yesterdayDocId);
         const yesterdayDoc = await yesterdayDocRef.get();
         
         if (yesterdayDoc.exists) {
-            // Check if all shifts are closed in yesterday's data
             const yesterdayData = yesterdayDoc.data();
-            const allShiftsClosed = 
-                (yesterdayData.morning.status === 'closed' || yesterdayData.morning.status === 'skipped') &&
-                (yesterdayData.evening.status === 'closed' || yesterdayData.evening.status === 'skipped');
+            console.log("✅ Found yesterday's document with data:", yesterdayData);
             
-            if (allShiftsClosed) {
+            // Check if yesterday's document has any data fields
+            const hasData = (
+                (yesterdayData.morning && 
+                 (yesterdayData.morning.open || 
+                  yesterdayData.morning.close || 
+                  yesterdayData.morning.status !== 'not_started')) ||
+                (yesterdayData.evening && 
+                 (yesterdayData.evening.open || 
+                  yesterdayData.evening.close || 
+                  yesterdayData.evening.status !== 'not_available'))
+            );
+            
+            if (hasData) {
+                console.log("🗑️ Yesterday's document has data, deleting...");
+                
                 // Delete yesterday's document
                 await yesterdayDocRef.delete();
                 console.log(`✅ Deleted yesterday's document: ${yesterdayDocId}`);
                 return true;
             } else {
-                console.log(`⚠️ Yesterday's shifts not all closed, not deleting: ${yesterdayDocId}`);
+                console.log(`➡️ Yesterday's document exists but has no data fields, keeping it`);
                 return false;
             }
         } else {
-            console.log(`No yesterday document found: ${yesterdayDocId}`);
+            console.log(`➡️ No yesterday document found: ${yesterdayDocId}`);
             return false;
         }
         
     } catch (error) {
         console.error("Error deleting yesterday's data:", error);
+        return false;
+    }
+}
+
+// ==================== DELETE ALL YESTERDAY'S PASSENGER DATA ====================
+async function deleteYesterdaysPassengerData() {
+    try {
+        console.log("🗑️ Checking for yesterday's passenger data to delete...");
+        
+        // Calculate yesterday's date
+        const yesterday = new Date(currentDate);
+        yesterday.setDate(currentDate.getDate() - 1);
+        const yesterdayDateStr = formatDate(yesterday);
+        
+        console.log(`Looking for passenger data from: ${yesterdayDateStr}`);
+        
+        // Check if passengerDb is available (from fireC1.js)
+        if (typeof window.passengerDb === 'undefined') {
+            console.log("❌ passengerDb not available, skipping passenger data cleanup");
+            return false;
+        }
+        
+        // Query passengers collection for yesterday's date
+        const passengersRef = window.passengerDb.collection('passengers');
+        const querySnapshot = await passengersRef
+            .where('date', '==', yesterdayDateStr)
+            .get();
+        
+        console.log(`Found ${querySnapshot.size} passenger documents from yesterday`);
+        
+        if (querySnapshot.size > 0) {
+            // Delete all passenger documents from yesterday
+            const batch = window.passengerDb.batch();
+            querySnapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+            });
+            
+            await batch.commit();
+            console.log(`✅ Deleted ${querySnapshot.size} passenger documents from yesterday`);
+            return true;
+        } else {
+            console.log(`➡️ No passenger data found for yesterday: ${yesterdayDateStr}`);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error("Error deleting yesterday's passenger data:", error);
+        return false;
+    }
+}
+
+// ==================== CLEANUP YESTERDAY'S DATA ====================
+async function cleanupYesterdaysData() {
+    try {
+        console.log("🧹 Starting cleanup of yesterday's data...");
+        
+        // Delete yesterday's shift document
+        const shiftDeleted = await deleteYesterdaysData();
+        
+        // Delete yesterday's passenger data if passengerDb is available
+        let passengerDeleted = false;
+        if (typeof window.passengerDb !== 'undefined') {
+            passengerDeleted = await deleteYesterdaysPassengerData();
+        }
+        
+        if (shiftDeleted || passengerDeleted) {
+            console.log("✅ Cleanup completed successfully");
+            return true;
+        } else {
+            console.log("➡️ No data to cleanup from yesterday");
+            return false;
+        }
+        
+    } catch (error) {
+        console.error("Error during cleanup:", error);
         return false;
     }
 }
@@ -791,9 +874,30 @@ async function openShift(shiftType) {
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
         button.disabled = true;
         
-        // Delete yesterday's data if all shifts are closed
-        await deleteYesterdaysData();
+        // Step 1: Cleanup yesterday's data (delete if exists)
+        const cleanupResult = await cleanupYesterdaysData();
+        if (cleanupResult) {
+            console.log("✅ Yesterday's data cleaned up");
+        }
         
+        // Step 2: Get or create today's document
+        const dateString = formatDate(currentDate);
+        const docId = `shift_${formatDateForDocument(currentDate)}`;
+        
+        const docRef = db.collection('shifts').doc(docId);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+            // Auto-create document with default values
+            shiftData = {
+                date: dateString,
+                morning: { open: null, close: null, status: 'not_started' },
+                evening: { open: null, close: null, status: 'not_available' },
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        // Step 3: Open the shift
         const now = new Date();
         const timeString = now.toLocaleTimeString('en-US', { 
             hour12: true, 
@@ -802,7 +906,6 @@ async function openShift(shiftType) {
             second: '2-digit'
         });
         
-        // Update shift data
         shiftData[shiftType].open = timeString;
         shiftData[shiftType].status = 'open';
         isAnyShiftOpen = true;
@@ -818,20 +921,25 @@ async function openShift(shiftType) {
             }
         }
         
-        // Update last updated timestamp
+        // Step 4: Save the changes
         shiftData.lastUpdated = new Date().toISOString();
+        await docRef.set(shiftData);
         
-        // SAVE TO FIREBASE (Open button requires save)
-        await saveShiftData();
-        
-        // Update UI
+        // Step 5: Update UI and show success
         updateUI();
         
+        let message = '';
         if (shiftType === 'morning') {
-            showMessage(`🌅 Morning Shift opened and saved to Firebase!`, "success");
+            message = `🌅 Morning Shift opened!`;
         } else if (shiftType === 'evening') {
-            showMessage(`🌙 Evening Shift opened and saved to Firebase!`, "success");
+            message = `🌙 Evening Shift opened!`;
         }
+        
+        if (cleanupResult) {
+            message += ` Yesterday's data cleaned up.`;
+        }
+        
+        showMessage(message, "success");
         
     } catch (error) {
         console.error("Error opening shift:", error);
