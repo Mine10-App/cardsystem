@@ -701,345 +701,350 @@
     <!-- Include Co.js for company information -->
     <script src="./Co.js"></script>
     <script src="./fireC1.js"></script>
-    <script>
-        // ==================== DOM ELEMENTS ====================
-        const dateFilter = document.getElementById('dateFilter');
-        const shiftFilter = document.getElementById('shiftFilter');
-        const generateBtn = document.getElementById('generateBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const printBtn = document.getElementById('printBtn');
-        const backToFilters = document.getElementById('backToFilters');
-        const reportContainer = document.getElementById('reportContainer');
-        const noDataMessage = document.getElementById('noDataMessage');
-        const statusMessage = document.getElementById('statusMessage');
-        const printControls = document.getElementById('printControls');
-        const companyInfoElement = document.getElementById('companyInfo');
+    
+        <script>
+    // ==================== DOM ELEMENTS ====================
+    const dateFilter = document.getElementById('dateFilter');
+    const shiftFilter = document.getElementById('shiftFilter');
+    const generateBtn = document.getElementById('generateBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const printBtn = document.getElementById('printBtn');
+    const backToFilters = document.getElementById('backToFilters');
+    const reportContainer = document.getElementById('reportContainer');
+    const noDataMessage = document.getElementById('noDataMessage');
+    const statusMessage = document.getElementById('statusMessage');
+    const printControls = document.getElementById('printControls');
+    const companyInfoElement = document.getElementById('companyInfo');
 
-        // ==================== GLOBAL VARIABLES ====================
-        let currentReportData = null;
-        let companyInfo = {
-            name: "Koveli Lounge",
-            address: "Velana International Airport",
-            phone: "+960 304 6677"
-        };
+    // ==================== GLOBAL VARIABLES ====================
+    let currentReportData = null;
+    let companyData = {  // Changed variable name to avoid conflict
+        name: "Koveli Lounge",
+        address: "Velana International Airport",
+        phone: "+960 304 6677"
+    };
 
-        // ==================== INITIALIZATION ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load company info from Co.js if available
-            if (typeof window.companyInfo !== 'undefined') {
-                companyInfo = window.companyInfo;
+    // ==================== INITIALIZATION ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load company info from Co.js if available
+        if (typeof window.companyInfo !== 'undefined') {
+            companyData = window.companyInfo;
+        } else if (typeof companyInfo !== 'undefined') {
+            // Check for global companyInfo variable (from Co.js)
+            companyData = companyInfo;
+        }
+        
+        // Display company info
+        displayCompanyInfo();
+        
+        // Set default date to today
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+        dateFilter.value = todayString;
+        
+        // Setup event listeners
+        setupEventListeners();
+    });
+
+    // ==================== DISPLAY COMPANY INFO ====================
+    function displayCompanyInfo() {
+        companyInfoElement.innerHTML = `
+            <div class="company-name">${companyData.name}</div>
+            <div class="company-address">${companyData.address}</div>
+            <div class="company-phone">${companyData.phone}</div>
+        `;
+    }
+
+    // ==================== EVENT LISTENERS ====================
+    function setupEventListeners() {
+        generateBtn.addEventListener('click', generateReport);
+        resetBtn.addEventListener('click', resetFilters);
+        exportBtn.addEventListener('click', exportToExcel);
+        printBtn.addEventListener('click', printReport);
+        backToFilters.addEventListener('click', showFilters);
+    }
+
+    // ==================== REPORT GENERATION ====================
+    async function generateReport() {
+        try {
+            const date = dateFilter.value;
+            const shift = shiftFilter.value;
+            
+            if (!date) {
+                showMessage("Please select a date", "error");
+                return;
             }
             
-            // Display company info
-            displayCompanyInfo();
-            
-            // Set default date to today
-            const today = new Date();
-            const todayString = today.toISOString().split('T')[0];
-            dateFilter.value = todayString;
-            
-            // Setup event listeners
-            setupEventListeners();
-        });
-
-        // ==================== DISPLAY COMPANY INFO ====================
-        function displayCompanyInfo() {
-            companyInfoElement.innerHTML = `
-                <div class="company-name">${companyInfo.name}</div>
-                <div class="company-address">${companyInfo.address}</div>
-                <div class="company-phone">${companyInfo.phone}</div>
+            // Show loading state
+            reportContainer.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading transactions for ${date}...</p>
+                </div>
             `;
-        }
-
-        // ==================== EVENT LISTENERS ====================
-        function setupEventListeners() {
-            generateBtn.addEventListener('click', generateReport);
-            resetBtn.addEventListener('click', resetFilters);
-            exportBtn.addEventListener('click', exportToExcel);
-            printBtn.addEventListener('click', printReport);
-            backToFilters.addEventListener('click', showFilters);
-        }
-
-        // ==================== REPORT GENERATION ====================
-        async function generateReport() {
-            try {
-                const date = dateFilter.value;
-                const shift = shiftFilter.value;
-                
-                if (!date) {
-                    showMessage("Please select a date", "error");
-                    return;
-                }
-                
-                // Show loading state
-                reportContainer.innerHTML = `
-                    <div class="loading">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading transactions for ${date}...</p>
-                    </div>
-                `;
-                
-                noDataMessage.style.display = 'none';
-                printControls.style.display = 'none';
-                exportBtn.style.display = 'none';
-                
-                // Build query
-                let query = window.passengerDb
-                    .collection('passengers')
-                    .where('approved', '==', true)
-                    .where('date', '==', date);
-                
-                // Add shift filter if not "all"
-                if (shift !== 'all') {
-                    query = query.where('shift', '==', shift);
-                }
-                
-                // Execute query
-                const querySnapshot = await query.get();
-                
-                if (querySnapshot.empty) {
-                    reportContainer.innerHTML = `
-                        <div class="no-data">
-                            <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 20px; color: var(--gold-light);"></i>
-                            <h3 style="color: var(--gold-darker);">No Data Found</h3>
-                            <p>No transactions for Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift}</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                // Process data
-                const transactions = [];
-                querySnapshot.forEach(doc => {
-                    transactions.push({ id: doc.id, ...doc.data() });
-                });
-                
-                console.log(`Found ${transactions.length} transactions`);
-                
-                // Group data by flight
-                const flightData = groupDataByFlight(transactions);
-                
-                // Store current report data
-                currentReportData = {
-                    date: date,
-                    shift: shift,
-                    transactions: transactions,
-                    flightData: flightData
-                };
-                
-                // Generate and display report
-                generateReportHTML(flightData, date, shift);
-                
-                // Show export button and print controls
-                exportBtn.style.display = 'flex';
-                printControls.style.display = 'flex';
-                
-                showMessage(`Report generated: ${flightData.totalFlights} flights, ${flightData.totalTransactions} transactions`, "success");
-                
-            } catch (error) {
-                console.error("Error generating report:", error);
-                reportContainer.innerHTML = `
-                    <div class="error">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 36px; margin-bottom: 15px; color: var(--error);"></i>
-                        <h3 style="color: var(--error);">Error Loading Report</h3>
-                        <p>${error.message}</p>
-                    </div>
-                `;
-                showMessage("Error generating report: " + error.message, "error");
+            
+            noDataMessage.style.display = 'none';
+            printControls.style.display = 'none';
+            exportBtn.style.display = 'none';
+            
+            // Build query
+            let query = window.passengerDb
+                .collection('passengers')
+                .where('approved', '==', true)
+                .where('date', '==', date);
+            
+            // Add shift filter if not "all"
+            if (shift !== 'all') {
+                query = query.where('shift', '==', shift);
             }
-        }
-
-        // ==================== GROUP DATA BY FLIGHT ====================
-        function groupDataByFlight(transactions) {
-            const flightMap = new Map();
-            let totalTransactions = 0;
-            let totalPax = 0;
             
-            transactions.forEach(transaction => {
-                const airline = transaction.airline || 'Unknown';
-                const flightNo = transaction.flightNo || 'Unknown';
-                const key = `${airline}_${flightNo}`;
-                const numPax = transaction.numPax || 1;
-                
-                if (!flightMap.has(key)) {
-                    flightMap.set(key, {
-                        airline: airline,
-                        flightNo: flightNo,
-                        transactions: 0,
-                        pax: 0
-                    });
-                }
-                
-                const flight = flightMap.get(key);
-                flight.transactions++;
-                flight.pax += numPax;
-                totalTransactions++;
-                totalPax += numPax;
+            // Execute query
+            const querySnapshot = await query.get();
+            
+            if (querySnapshot.empty) {
+                reportContainer.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 20px; color: var(--gold-light);"></i>
+                        <h3 style="color: var(--gold-darker);">No Data Found</h3>
+                        <p>No transactions for Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Process data
+            const transactions = [];
+            querySnapshot.forEach(doc => {
+                transactions.push({ id: doc.id, ...doc.data() });
             });
             
-            // Convert Map to sorted array
-            const flights = Array.from(flightMap.values()).sort((a, b) => {
-                if (a.airline === b.airline) {
-                    return a.flightNo.localeCompare(b.flightNo);
-                }
-                return a.airline.localeCompare(b.airline);
-            });
+            console.log(`Found ${transactions.length} transactions`);
             
-            return {
-                flights: flights,
-                totalTransactions: totalTransactions,
-                totalPax: totalPax,
-                totalFlights: flights.length
+            // Group data by flight
+            const flightData = groupDataByFlight(transactions);
+            
+            // Store current report data
+            currentReportData = {
+                date: date,
+                shift: shift,
+                transactions: transactions,
+                flightData: flightData
             };
-        }
-
-        // ==================== GENERATE REPORT HTML ====================
-        function generateReportHTML(flightData, date, shift) {
-            // Format date
-            const formattedDate = new Date(date).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                weekday: 'short'
-            });
             
-            // Format time
-            const generatedTime = new Date().toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+            // Generate and display report
+            generateReportHTML(flightData, date, shift);
             
-            // Generate report HTML
-            let reportHTML = `
-                <div class="a4-report">
-                    <div class="report-header">
-                        <div class="report-company">
-                            <div class="report-company-name">${companyInfo.name}</div>
-                            <div class="report-company-address">${companyInfo.address}</div>
-                            <div class="report-company-phone">${companyInfo.phone}</div>
-                        </div>
-                        <div class="report-title">SHIFT TRANSACTIONS SUMMARY</div>
-                        <div class="report-date">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)} Shift</div>
-                    </div>
-                    
-                    <table class="summary-table">
-                        <thead>
-                            <tr>
-                                <th width="40%">Airline</th>
-                                <th width="30%">Flight No</th>
-                                <th width="15%">Transactions</th>
-                                <th width="15%">Total Pax</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+            // Show export button and print controls
+            exportBtn.style.display = 'flex';
+            printControls.style.display = 'flex';
+            
+            showMessage(`Report generated: ${flightData.totalFlights} flights, ${flightData.totalTransactions} transactions`, "success");
+            
+        } catch (error) {
+            console.error("Error generating report:", error);
+            reportContainer.innerHTML = `
+                <div class="error">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 36px; margin-bottom: 15px; color: var(--error);"></i>
+                    <h3 style="color: var(--error);">Error Loading Report</h3>
+                    <p>${error.message}</p>
+                </div>
             `;
+            showMessage("Error generating report: " + error.message, "error");
+        }
+    }
+
+    // ==================== GROUP DATA BY FLIGHT ====================
+    function groupDataByFlight(transactions) {
+        const flightMap = new Map();
+        let totalTransactions = 0;
+        let totalPax = 0;
+        
+        transactions.forEach(transaction => {
+            const airline = transaction.airline || 'Unknown';
+            const flightNo = transaction.flightNo || 'Unknown';
+            const key = `${airline}_${flightNo}`;
+            const numPax = transaction.numPax || 1;
+            
+            if (!flightMap.has(key)) {
+                flightMap.set(key, {
+                    airline: airline,
+                    flightNo: flightNo,
+                    transactions: 0,
+                    pax: 0
+                });
+            }
+            
+            const flight = flightMap.get(key);
+            flight.transactions++;
+            flight.pax += numPax;
+            totalTransactions++;
+            totalPax += numPax;
+        });
+        
+        // Convert Map to sorted array
+        const flights = Array.from(flightMap.values()).sort((a, b) => {
+            if (a.airline === b.airline) {
+                return a.flightNo.localeCompare(b.flightNo);
+            }
+            return a.airline.localeCompare(b.airline);
+        });
+        
+        return {
+            flights: flights,
+            totalTransactions: totalTransactions,
+            totalPax: totalPax,
+            totalFlights: flights.length
+        };
+    }
+
+    // ==================== GENERATE REPORT HTML ====================
+    function generateReportHTML(flightData, date, shift) {
+        // Format date
+        const formattedDate = new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            weekday: 'short'
+        });
+        
+        // Format time
+        const generatedTime = new Date().toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Generate report HTML
+        let reportHTML = `
+            <div class="a4-report">
+                <div class="report-header">
+                    <div class="report-company">
+                        <div class="report-company-name">${companyData.name}</div>
+                        <div class="report-company-address">${companyData.address}</div>
+                        <div class="report-company-phone">${companyData.phone}</div>
+                    </div>
+                    <div class="report-title">SHIFT TRANSACTIONS SUMMARY</div>
+                    <div class="report-date">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)} Shift</div>
+                </div>
+                
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th width="40%">Airline</th>
+                            <th width="30%">Flight No</th>
+                            <th width="15%">Transactions</th>
+                            <th width="15%">Total Pax</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        // Add flight rows
+        flightData.flights.forEach(flight => {
+            reportHTML += `
+                <tr>
+                    <td>${flight.airline}</td>
+                    <td>${flight.flightNo}</td>
+                    <td class="transactions-count">${flight.transactions}</td>
+                    <td class="pax-count">${flight.pax}</td>
+                </tr>
+            `;
+        });
+        
+        // Add grand total row
+        reportHTML += `
+                <tr class="grand-total">
+                    <td colspan="2"><strong>GRAND TOTAL (${flightData.totalFlights} Flights)</strong></td>
+                    <td><strong>${flightData.totalTransactions}</strong></td>
+                    <td><strong>${flightData.totalPax}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="report-footer">
+            <p>Report generated on ${new Date().toLocaleDateString()} at ${generatedTime}</p>
+            <p>Total: ${flightData.totalFlights} flights | ${flightData.totalTransactions} transactions | ${flightData.totalPax} pax</p>
+        </div>
+    </div>
+        `;
+        
+        reportContainer.innerHTML = reportHTML;
+    }
+
+    // ==================== EXPORT TO EXCEL ====================
+    function exportToExcel() {
+        if (!currentReportData) return;
+        
+        try {
+            const { flightData, date, shift } = currentReportData;
+            
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Airline,Flight No,Transactions,Total Pax\n";
             
             // Add flight rows
             flightData.flights.forEach(flight => {
-                reportHTML += `
-                    <tr>
-                        <td>${flight.airline}</td>
-                        <td>${flight.flightNo}</td>
-                        <td class="transactions-count">${flight.transactions}</td>
-                        <td class="pax-count">${flight.pax}</td>
-                    </tr>
-                `;
+                csvContent += `${flight.airline},${flight.flightNo},${flight.transactions},${flight.pax}\n`;
             });
             
-            // Add grand total row
-            reportHTML += `
-                    <tr class="grand-total">
-                        <td colspan="2"><strong>GRAND TOTAL (${flightData.totalFlights} Flights)</strong></td>
-                        <td><strong>${flightData.totalTransactions}</strong></td>
-                        <td><strong>${flightData.totalPax}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+            // Add grand total
+            csvContent += `GRAND TOTAL,,${flightData.totalTransactions},${flightData.totalPax}\n`;
             
-            <div class="report-footer">
-                <p>Report generated on ${new Date().toLocaleDateString()} at ${generatedTime}</p>
-                <p>Total: ${flightData.totalFlights} flights | ${flightData.totalTransactions} transactions | ${flightData.totalPax} pax</p>
-            </div>
-        </div>
-            `;
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${companyData.name.replace(/\s+/g, '_')}_transactions_${date}_${shift}.csv`);
+            document.body.appendChild(link);
             
-            reportContainer.innerHTML = reportHTML;
+            // Download file
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage("Data exported successfully", "success");
+            
+        } catch (error) {
+            console.error("Error exporting:", error);
+            showMessage("Error exporting: " + error.message, "error");
         }
+    }
 
-        // ==================== EXPORT TO EXCEL ====================
-        function exportToExcel() {
-            if (!currentReportData) return;
-            
-            try {
-                const { flightData, date, shift } = currentReportData;
-                
-                // Create CSV content
-                let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Airline,Flight No,Transactions,Total Pax\n";
-                
-                // Add flight rows
-                flightData.flights.forEach(flight => {
-                    csvContent += `${flight.airline},${flight.flightNo},${flight.transactions},${flight.pax}\n`;
-                });
-                
-                // Add grand total
-                csvContent += `GRAND TOTAL,,${flightData.totalTransactions},${flightData.totalPax}\n`;
-                
-                // Create download link
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `${companyInfo.name.replace(/\s+/g, '_')}_transactions_${date}_${shift}.csv`);
-                document.body.appendChild(link);
-                
-                // Download file
-                link.click();
-                document.body.removeChild(link);
-                
-                showMessage("Data exported successfully", "success");
-                
-            } catch (error) {
-                console.error("Error exporting:", error);
-                showMessage("Error exporting: " + error.message, "error");
-            }
-        }
+    // ==================== PRINT REPORT ====================
+    function printReport() {
+        window.print();
+    }
 
-        // ==================== PRINT REPORT ====================
-        function printReport() {
-            window.print();
-        }
+    // ==================== SHOW FILTERS ====================
+    function showFilters() {
+        printControls.style.display = 'none';
+        reportContainer.innerHTML = '';
+        noDataMessage.style.display = 'block';
+        exportBtn.style.display = 'none';
+    }
 
-        // ==================== SHOW FILTERS ====================
-        function showFilters() {
-            printControls.style.display = 'none';
-            reportContainer.innerHTML = '';
-            noDataMessage.style.display = 'block';
-            exportBtn.style.display = 'none';
-        }
+    // ==================== RESET FILTERS ====================
+    function resetFilters() {
+        const today = new Date();
+        const todayString = today.toISOString().split('T')[0];
+        
+        dateFilter.value = todayString;
+        shiftFilter.value = 'all';
+        
+        showFilters();
+        showMessage("Filters reset to default", "info");
+    }
 
-        // ==================== RESET FILTERS ====================
-        function resetFilters() {
-            const today = new Date();
-            const todayString = today.toISOString().split('T')[0];
-            
-            dateFilter.value = todayString;
-            shiftFilter.value = 'all';
-            
-            showFilters();
-            showMessage("Filters reset to default", "info");
-        }
-
-        // ==================== UTILITY FUNCTIONS ====================
-        function showMessage(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message ${type}`;
-            statusMessage.style.display = 'block';
-            
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 3000);
-        }
-    </script>
+    // ==================== UTILITY FUNCTIONS ====================
+    function showMessage(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message ${type}`;
+        statusMessage.style.display = 'block';
+        
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 3000);
+    }
+</script>
+   
 </body>
 </html>
