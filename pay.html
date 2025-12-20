@@ -1895,7 +1895,8 @@ function getCurrentShiftInfo() {
         }
     }
     
-    // Default fallback
+    // Default fallback - THIS IS IMPORTANT!
+    // If no shift is found, use today's date but allow user to proceed
     const maldivesNow = getMaldivesTime();
     const todayDate = maldivesNow.toISOString().split('T')[0];
     
@@ -1927,14 +1928,14 @@ async function refreshShiftData(showNotification = true) {
             return result;
         } else {
             if (showNotification) {
-                showMessage("No active shift found", "warning");
+                showMessage("No active shift found. Using today's date.", "warning");
             }
             return result;
         }
     } catch (error) {
         console.error("Error refreshing shift data:", error);
         if (showNotification) {
-            showMessage("Failed to refresh shift data", "error");
+            showMessage("Failed to refresh shift data. Using today's date.", "warning");
         }
         return null;
     }
@@ -2421,7 +2422,163 @@ async function savePayment(data) {
   }
 }
 
-// ======== UPDATE SAVE NOW FUNCTION WITH SHIFT CHECK ========
+// ======== DYNAMIC PRICING ========
+function updatePricing(){
+  const adults = parseInt(document.getElementById("adults").value) || 0;
+  const kids = parseInt(document.getElementById("kids").value) || 0;
+  const rateType = document.getElementById("rateType").value;
+  const currency = document.getElementById("currency").value;
+
+  // Check if rates are available from rate.js
+  if (!window.rates) {
+    console.error("Rates not loaded from rate.js");
+    document.getElementById("subtotal").value = "0.00";
+    document.getElementById("gst").value = "0.00";
+    document.getElementById("total").value = "0.00";
+    return;
+  }
+
+  const adultKey = `Adult${rateType}${currency}`;
+  const kidKey = `Kids${rateType}${currency}`;
+  
+  if(!window.rates[adultKey] || !window.rates[kidKey]) {
+    console.error("Rate not found for:", adultKey, kidKey);
+    return;
+  }
+
+  // Calculate prices
+  const adultRate = window.rates[adultKey];
+  const kidRate = window.rates[kidKey];
+  
+  const subtotal = (adults * adultRate.price) + (kids * kidRate.price);
+  const gst = subtotal * (adultRate.GST / 100);
+  const total = subtotal + gst;
+
+  // Update display
+  document.getElementById("subtotal").value = subtotal.toFixed(2);
+  document.getElementById("gst").value = gst.toFixed(2);
+  document.getElementById("total").value = total.toFixed(2);
+  
+  // Update paid amount and balance for cash payments
+  updateCashFields();
+  
+  // Update expiry time
+  calculateExpiryTime();
+}
+
+// ======== UPDATE CASH PAYMENT FIELDS ========
+function updateCashFields() {
+  const paymentType = document.getElementById("paymentType").value;
+  const total = parseFloat(document.getElementById("total").value) || 0;
+  
+  if (paymentType === "Cash") {
+    const paidAmount = parseFloat(document.getElementById("paidAmount").value) || 0;
+    const balance = paidAmount - total;
+    
+    document.getElementById("balance").value = balance.toFixed(2);
+    
+    // Style balance based on value
+    const balanceField = document.getElementById("balance");
+    balanceField.className = "summary-value";
+    if (balance > 0) {
+      balanceField.classList.add("positive");
+    } else if (balance < 0) {
+      balanceField.classList.add("negative");
+    } else {
+      balanceField.classList.add("zero");
+    }
+  }
+}
+
+// ======== TOGGLE PAYMENT FIELDS ========
+function togglePaymentFields() {
+  const paymentType = document.getElementById("paymentType").value;
+  const cashFields = document.getElementById("cashPaymentFields");
+  
+  if (paymentType === "Cash") {
+    // Show cash fields
+    cashFields.style.display = "block";
+    
+    // Set paid amount to total by default
+    const total = parseFloat(document.getElementById("total").value) || 0;
+    document.getElementById("paidAmount").value = total.toFixed(2);
+    updateCashFields();
+  } else {
+    // Hide cash fields (for all card/QR payments)
+    cashFields.style.display = "none";
+  }
+}
+
+// ======== CALCULATE EXPIRY TIME ========
+function calculateExpiryTime() {
+  const now = getMaldivesTime(); // Use Maldives time for expiry
+  const expiry = new Date(now.getTime() + 3 * 60 * 60 * 1000); // 3 hours from now
+  
+  // Format as HH:MM AM/PM in Maldives timezone
+  let hours = expiry.getUTCHours();
+  let minutes = expiry.getUTCMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  minutes = minutes < 10 ? '0' + minutes : minutes;
+  
+  const expiryTime = `${hours}:${minutes} ${ampm}`;
+  
+  // Update header
+  document.getElementById("headerExpiryTime").textContent = expiryTime;
+  
+  return {
+    time: expiry,
+    formatted: expiryTime,
+    timestamp: expiry.getTime()
+  };
+}
+
+// ======== PARSE BOARDING PASS ========
+function parseCode(){
+  const code = document.getElementById("codeInput").value.trim().toUpperCase();
+  if(!code) return;
+  const parts = code.split(/\s+/);
+
+  // Name + PNR
+  const idxMLE = code.indexOf('MLE');
+  let name='', pnr='';
+  if(idxMLE!==-1){
+    let fullNamePart = code.substring(0,idxMLE).trim();
+    if(fullNamePart.length>8){
+      name = fullNamePart.substring(2, fullNamePart.length-6).trim();
+      pnr = fullNamePart.substring(fullNamePart.length-6).trim();
+    }
+  }
+
+  // Flight No
+  let flightNo=''; let flightTokenIndex=-1;
+  for(let i=0;i<parts.length;i++){
+    if(parts[i].includes('MLE')){
+      flightTokenIndex=i;
+      const mleToken = parts[i];
+      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
+      break;
+    }
+  }
+
+  // Seat No
+  let seatNo='';
+  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
+    let seatToken = parts[flightTokenIndex+2];
+    if(seatToken.length>9){
+      seatNo = seatToken.substring(5, seatToken.length-4);
+    }
+  }
+
+  document.getElementById("name").value = name;
+  document.getElementById("flightNo").value = flightNo;
+  document.getElementById("seatNo").value = seatNo;
+
+  updatePricing();
+}
+
+// ======== SAVE PAYMENT (FAST LOCAL FIRST) ========
 async function saveNow(){
   // Check if rates are loaded
   if (!window.rates) {
@@ -2548,6 +2705,24 @@ async function saveNow(){
   }
 }
 
+function resetFormForNextEntry() {
+  // Clear boarding pass input
+  document.getElementById("codeInput").value = "";
+  document.getElementById("name").value = "";
+  document.getElementById("flightNo").value = "";
+  document.getElementById("seatNo").value = "";
+  
+  // Reset counts
+  document.getElementById("adults").value = 1;
+  document.getElementById("kids").value = 0;
+  
+  // Keep other selections as they are
+  updatePricing();
+  
+  // Focus on boarding pass input for next entry
+  document.getElementById("codeInput").focus();
+}
+
 // ======== AUTO EVENT LISTENERS ========
 window.onload = async function(){
   // Initialize company info
@@ -2569,10 +2744,22 @@ window.onload = async function(){
     updateShiftDisplay(cachedShiftData);
     console.log("Using cached shift data");
   } else {
-    // Fetch fresh shift data
+    // Fetch fresh shift data (but don't block the page if no shift is found)
     console.log("No cached shift data, fetching from Firebase...");
     showNotification("Loading shift data...", "info", 2000);
-    await refreshShiftData(false);
+    try {
+      await refreshShiftData(false);
+    } catch (error) {
+      console.log("Could not load shift data, using today's date:", error);
+      // Use today's date as fallback
+      const todayDate = getMaldivesTime().toISOString().split('T')[0];
+      updateShiftDisplay({
+        firebaseDate: todayDate,
+        name: "Morning Shift (Fallback)",
+        isActive: true,
+        timestamp: new Date().toISOString()
+      });
+    }
   }
   
   updatePricing();
