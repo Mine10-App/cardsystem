@@ -1187,7 +1187,7 @@
   <script src="Co.js"></script>
   <script src="fireshift.js"></script>
 
-  <script>
+ <script>
 // ======== GLOBAL VARIABLES ========
 let currentPaymentData = null;
 let currentUser = null;
@@ -1234,7 +1234,32 @@ function getDateKey(date) {
 // ======== SHIFT MANAGEMENT ========
 async function loadCurrentShift() {
   try {
-    // First check localStorage for active shift
+    console.log("Loading current shift...");
+    
+    // Check if fireshift.js is loaded and has shift data
+    if (window.fireShift && window.fireShift.currentShift && window.fireShift.currentShiftDate) {
+      console.log("Shift found in fireShift.js:", window.fireShift.currentShift);
+      currentShift = window.fireShift.currentShift;
+      currentShiftDate = new Date(window.fireShift.currentShiftDate);
+      updateShiftDisplay();
+      saveShiftToLocalStorage();
+      return;
+    }
+    
+    // If fireShift exists but doesn't have data, try to load it
+    if (window.fireShift && typeof window.fireShift.loadCurrentShiftFromFirebase === 'function') {
+      console.log("fireShift found but no data, loading from Firebase...");
+      const success = await window.fireShift.loadCurrentShiftFromFirebase();
+      if (success && window.fireShift.currentShift) {
+        currentShift = window.fireShift.currentShift;
+        currentShiftDate = new Date(window.fireShift.currentShiftDate);
+        updateShiftDisplay();
+        saveShiftToLocalStorage();
+        return;
+      }
+    }
+    
+    // Check localStorage for saved shift
     const savedShift = localStorage.getItem('currentShift');
     const savedShiftDate = localStorage.getItem('currentShiftDate');
     
@@ -1248,34 +1273,40 @@ async function loadCurrentShift() {
         currentShift = savedShift;
         currentShiftDate = savedDate;
         updateShiftDisplay();
+        console.log("Using saved shift from localStorage:", currentShift);
         return;
       }
     }
     
-    // If no valid shift in localStorage, check Firebase for open shifts
+    // Try to fetch from Firebase directly
     if (window.walkinDb) {
+      console.log("Attempting to fetch shift from Firebase directly...");
       const now = getMaldivesTime();
       const todayKey = getDateKey(now);
-      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const yesterdayKey = getDateKey(yesterday);
       
-      // Try today's date first
+      // Try today's date
       let shiftDoc = await window.walkinDb.collection("shifts")
         .doc(todayKey)
         .get();
       
       if (shiftDoc.exists) {
         const shiftData = shiftDoc.data();
+        console.log("Firebase shift data:", shiftData);
+        
         if (shiftData.isOpen) {
           currentShift = shiftData.shiftType || 'Morning';
-          currentShiftDate = new Date(shiftData.openedAt);
+          currentShiftDate = shiftData.openedAt.toDate ? shiftData.openedAt.toDate() : new Date(shiftData.openedAt);
           saveShiftToLocalStorage();
           updateShiftDisplay();
+          console.log("Shift loaded from Firebase:", currentShift);
           return;
         }
       }
       
       // Try yesterday's date
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const yesterdayKey = getDateKey(yesterday);
+      
       shiftDoc = await window.walkinDb.collection("shifts")
         .doc(yesterdayKey)
         .get();
@@ -1284,19 +1315,21 @@ async function loadCurrentShift() {
         const shiftData = shiftDoc.data();
         if (shiftData.isOpen) {
           currentShift = shiftData.shiftType || 'Morning';
-          currentShiftDate = new Date(shiftData.openedAt);
+          currentShiftDate = shiftData.openedAt.toDate ? shiftData.openedAt.toDate() : new Date(shiftData.openedAt);
           saveShiftToLocalStorage();
           updateShiftDisplay();
+          console.log("Shift loaded from yesterday:", currentShift);
           return;
         }
       }
     }
     
-    // If no open shift found, create a new one for today
+    // Default to today's morning shift
     currentShift = 'Morning';
     currentShiftDate = getMaldivesTime();
     saveShiftToLocalStorage();
     updateShiftDisplay();
+    console.log("Using default shift:", currentShift);
     
   } catch (error) {
     console.error("Error loading shift:", error);
@@ -1311,6 +1344,12 @@ async function loadCurrentShift() {
 function saveShiftToLocalStorage() {
   localStorage.setItem('currentShift', currentShift);
   localStorage.setItem('currentShiftDate', currentShiftDate.toISOString());
+  
+  // Also update the fireShift object if it exists
+  if (window.fireShift) {
+    window.fireShift.currentShift = currentShift;
+    window.fireShift.currentShiftDate = currentShiftDate;
+  }
 }
 
 function updateShiftDisplay() {
@@ -1670,6 +1709,7 @@ async function getPaymentsForCurrentShift() {
       const snapshot = await window.walkinDb.collection("payments")
         .where("shiftDateKey", "==", shiftDateKey)
         .where("shift", "==", currentShift)
+        .orderBy("timestamp", "desc")
         .limit(50)
         .get();
       
@@ -1688,7 +1728,7 @@ async function getPaymentsForCurrentShift() {
     return payments.filter(p => 
       p.shiftDateKey === shiftDateKey && 
       p.shift === currentShift
-    );
+    ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     
   } catch (error) {
     console.error("Error fetching payments:", error);
@@ -1697,7 +1737,7 @@ async function getPaymentsForCurrentShift() {
     return payments.filter(p => 
       p.shiftDateKey === shiftDateKey && 
       p.shift === currentShift
-    );
+    ).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
   }
 }
 
@@ -1801,7 +1841,8 @@ async function saveCardDetails() {
       paymentType: paymentMethod,
       batchNo: batchNo,
       approvalCode: approvalCode,
-      cardDetailsAdded: true
+      cardDetailsAdded: true,
+      cardDetailsAddedAt: getMaldivesTime().toISOString()
     };
     
     // Update localStorage
@@ -1941,6 +1982,13 @@ function displaySearchResult(payment) {
           <input type="text" readonly value="${payment.staff}">
         </div>
       </div>
+      
+      <div class="row">
+        <div class="input-group">
+          <label>Status</label>
+          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.cardDetailsAdded ? 'COMPLETED' : 'PENDING')}">
+        </div>
+      </div>
     </div>
   `;
   
@@ -1957,6 +2005,11 @@ function closeSearchModal() {
 function printFoundReceipt() {
   if (!foundReceiptData) return;
   
+  if (foundReceiptData.voided) {
+    showNotification("Cannot print voided receipt", "error");
+    return;
+  }
+  
   if (foundReceiptData.paymentType !== 'Cash' && foundReceiptData.cardDetailsAdded) {
     printReceipt('final', foundReceiptData);
   } else if (foundReceiptData.paymentType === 'Cash') {
@@ -1971,6 +2024,11 @@ function printFoundReceipt() {
 function addCardDetailsToFoundReceipt() {
   if (!foundReceiptData) return;
   
+  if (foundReceiptData.voided) {
+    showNotification("Cannot add details to voided receipt", "error");
+    return;
+  }
+  
   if (foundReceiptData.paymentType !== 'Cash' && !foundReceiptData.cardDetailsAdded) {
     addCardDetails(foundReceiptData.receiptNo);
     closeSearchModal();
@@ -1982,6 +2040,11 @@ function addCardDetailsToFoundReceipt() {
 async function reprintPayment(receiptNo) {
   const payment = await findPaymentByReceiptNo(receiptNo);
   if (payment) {
+    if (payment.voided) {
+      showNotification("Cannot print voided receipt", "error");
+      return;
+    }
+    
     if (payment.paymentType !== 'Cash' && payment.cardDetailsAdded) {
       printReceipt('final', payment);
     } else {
@@ -2034,11 +2097,24 @@ function printReceipt(type = 'first', paymentData = null) {
     document.getElementById("r_balance").textContent = (payment.balance || 0).toFixed(2);
   }
   
+  // Update receipt header based on type
+  const header = document.getElementById("r_header");
+  if (payment.voided) {
+    header.textContent = "VOIDED RECEIPT";
+    header.style.color = "#e74c3c";
+  } else if (type === 'final') {
+    header.textContent = "FINAL PAYMENT RECEIPT";
+    header.style.color = "#000000";
+  } else {
+    header.textContent = "PASSENGER PAYMENT RECEIPT";
+    header.style.color = "#000000";
+  }
+  
   // Print the receipt
   printThermalReceipt();
   
   // Show notification
-  const receiptType = type === 'final' ? 'Final' : 'First';
+  const receiptType = payment.voided ? 'Void' : (type === 'final' ? 'Final' : 'First');
   showNotification(`Printed ${receiptType} Receipt: ${receiptNo}`, "success");
 }
 
@@ -2095,6 +2171,8 @@ function printThermalReceipt() {
 
 // ======== INITIALIZATION ========
 window.onload = async function() {
+  console.log("Initializing Passenger Payment POS...");
+  
   // Initialize company info
   if (!window.companyInfo) {
     window.companyInfo = {
@@ -2107,7 +2185,7 @@ window.onload = async function() {
   // Get current user
   getCurrentUser();
   
-  // Load current shift
+  // Load current shift (will use fireshift.js if available)
   await loadCurrentShift();
   
   // Initialize pricing
@@ -2153,8 +2231,14 @@ window.onload = async function() {
   // Initialize expiry time
   calculateExpiryTime();
   
-  showNotification("System ready. Current shift: " + currentShift, "success");
+  // Load any existing payments
+  setTimeout(() => {
+    loadPayments();
+  }, 1000);
+  
+  showNotification(`System ready. Current shift: ${currentShift}`, "success");
+  console.log("System initialization complete. Shift:", currentShift);
 };
-  </script>
+</script>
 </body>
 </html>
