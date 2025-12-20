@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -953,17 +952,44 @@ let shiftDb = null;
 let backgroundSaveQueue = [];
 let isBackgroundSaving = false;
 
+// ----- Maldives Timezone Functions -----
+function getMaldivesTime() {
+  // Maldives Time = UTC+5
+  const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+  const maldivesTime = new Date(utc + (5 * 3600000)); // UTC+5
+  return maldivesTime;
+}
+
+function formatDateToYYYYMMDD(date) {
+  // Always use Maldives time for date formatting
+  const maldivesDate = getMaldivesTime();
+  const year = maldivesDate.getFullYear();
+  const month = String(maldivesDate.getMonth() + 1).padStart(2, '0');
+  const day = String(maldivesDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getMaldivesTimeString() {
+  const maldivesTime = getMaldivesTime();
+  return maldivesTime.toTimeString().split(' ')[0].slice(0, 5);
+}
+
+function getMaldivesDateTimeISO() {
+  return getMaldivesTime().toISOString();
+}
+
 // ----- Optimized Caching Systems -----
 
-// Flight Status Cache with TTL
+// Flight Status Cache with TTL - REDUCED TTL for less memory
 const flightStatusCache = new Map();
-const FLIGHT_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache
+const FLIGHT_CACHE_TTL = 10 * 60 * 1000; // Reduced from 30 to 10 minutes
 
-// Shift Data Cache
+// Shift Data Cache - Only store active shift
 const shiftCache = {
   data: null,
   timestamp: 0,
-  ttl: 10 * 60 * 1000, // 10 minutes
+  ttl: 5 * 60 * 1000, // Reduced from 10 to 5 minutes
   dateKey: ''
 };
 
@@ -989,17 +1015,9 @@ let approvedEntriesCache = {};
 
 // ----- DATE FORMAT FUNCTIONS -----
 
-// Format date to YYYY-MM-DD
-function formatDateToYYYYMMDD(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// Parse date from various formats to YYYY-MM-DD
+// Parse date from various formats to YYYY-MM-DD (using Maldives timezone)
 function parseDateToYYYYMMDD(dateString) {
-  if (!dateString) return formatDateToYYYYMMDD(new Date());
+  if (!dateString) return formatDateToYYYYMMDD(getMaldivesTime());
   
   try {
     // Try to parse the date string
@@ -1013,7 +1031,6 @@ function parseDateToYYYYMMDD(dateString) {
       
       for (let i = 0; i < monthNames.length; i++) {
         if (dateLower.includes(monthNames[i])) {
-          // Try to extract date parts
           const match = dateString.match(/([A-Za-z]{3})\s+(\d{1,2}),?\s+(\d{4})/);
           if (match) {
             const [, monthStr, day, year] = match;
@@ -1033,16 +1050,19 @@ function parseDateToYYYYMMDD(dateString) {
           const [, year, month, day] = match;
           date = new Date(`${year}-${month}-${day}`);
         } else {
-          // Default to today
-          date = new Date();
+          // Default to Maldives today
+          date = getMaldivesTime();
         }
       }
     }
     
-    return formatDateToYYYYMMDD(date);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   } catch (error) {
     console.error('Error parsing date:', error);
-    return formatDateToYYYYMMDD(new Date());
+    return formatDateToYYYYMMDD(getMaldivesTime());
   }
 }
 
@@ -1054,7 +1074,7 @@ function formatDateForDocumentId(date) {
   return `${year}_${month}_${day}`;
 }
 
-// Format date for display: Month Day, Year
+// Format date for display: Month Day, Year (using Maldives time)
 function formatDateForDisplay(dateString) {
   if (!dateString) return '-';
   try {
@@ -1088,14 +1108,14 @@ function formatDateForDisplay(dateString) {
   }
 }
 
-// Get current date in YYYY-MM-DD format
+// Get current date in YYYY-MM-DD format (Maldives time)
 function getCurrentDate(){ 
-  return formatDateToYYYYMMDD(new Date());
+  return formatDateToYYYYMMDD(getMaldivesTime());
 }
 
-// Get current time in HH:MM format
+// Get current time in HH:MM format (Maldives time)
 function getCurrentTime(){ 
-  return new Date().toTimeString().split(' ')[0].slice(0,5); 
+  return getMaldivesTimeString(); 
 }
 
 // ----- Convert existing data to YYYY-MM-DD format -----
@@ -1253,70 +1273,67 @@ function checkForOpenShift(shiftData) {
   return result;
 }
 
-// Search previous dates for open shift - OPTIMIZED VERSION
-async function findOpenShiftInPreviousDates(startDate) {
+// Check previous day for open shift - OPTIMIZED: Only check yesterday
+async function findOpenShiftInPreviousDay() {
   try {
-    // REDUCED: Search only 1 previous day (yesterday) instead of 7
-    for (let i = 1; i <= 1; i++) {
-      // Go back i days
-      const previousDate = new Date(startDate);
-      previousDate.setDate(startDate.getDate() - i);
+    const todayMaldives = getMaldivesTime();
+    const yesterday = new Date(todayMaldives);
+    yesterday.setDate(todayMaldives.getDate() - 1);
+    
+    // Format for document ID: YYYY_MM_DD
+    const yesterdayForDocId = formatDateForDocumentId(yesterday);
+    const yesterdayDocId = `shift_${yesterdayForDocId}`;
+    
+    // Format for YYYY-MM-DD
+    const yesterdayForYYYYMMDD = formatDateToYYYYMMDD(yesterday);
+    
+    console.log(`📅 Checking previous day (yesterday): ${yesterdayForDocId}`);
+    
+    try {
+      const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
+      readCounter.shift++;
+      readCounter.total++;
       
-      // Format for document ID: YYYY_MM_DD
-      const previousDateForDocId = formatDateForDocumentId(previousDate);
-      const previousDocId = `shift_${previousDateForDocId}`;
-      
-      // Format for YYYY-MM-DD
-      const previousDateForYYYYMMDD = formatDateToYYYYMMDD(previousDate);
-      
-      console.log(`📅 Checking previous date ${i} day(s) ago: ${previousDateForDocId}`);
-      
-      try {
-        const previousDoc = await shiftDb.collection("shifts").doc(previousDocId).get();
-        readCounter.shift++;
-        readCounter.total++;
+      if (yesterdayDoc.exists) {
+        const shiftData = yesterdayDoc.data();
+        console.log(`✅ Found document for ${yesterdayDocId}`);
         
-        if (previousDoc.exists) {
-          const shiftData = previousDoc.data();
-          console.log(`✅ Found document for ${previousDocId}`);
+        // Check if this document has an open shift
+        const shiftCheck = checkForOpenShift(shiftData);
+        
+        if (shiftCheck.isActive) {
+          console.log(`🎉 Found open shift in previous day: ${yesterdayForYYYYMMDD}`);
           
-          // Check if this document has an open shift
-          const shiftCheck = checkForOpenShift(shiftData);
+          // Update cache
+          shiftCache.data = shiftData;
+          shiftCache.timestamp = Date.now();
+          shiftCache.dateKey = yesterdayForYYYYMMDD;
           
-          if (shiftCheck.isActive) {
-            console.log(`🎉 Found open shift in previous date: ${previousDateForYYYYMMDD}`);
-            
-            // Update cache
-            shiftCache.data = shiftData;
-            shiftCache.timestamp = Date.now();
-            shiftCache.dateKey = previousDateForYYYYMMDD;
-            
-            return {
-              success: true,
-              shiftData: shiftData,
-              foundDate: previousDateForYYYYMMDD,
-              foundDateForDocId: previousDateForDocId,
-              shiftCheck: shiftCheck
-            };
-          } else {
-            console.log(`➡️ No open shift in ${previousDateForYYYYMMDD}, continuing search...`);
-          }
+          return {
+            success: true,
+            shiftData: shiftData,
+            foundDate: yesterdayForYYYYMMDD,
+            foundDateForDocId: yesterdayForDocId,
+            shiftCheck: shiftCheck
+          };
         } else {
-          console.log(`➡️ No document for ${previousDateForYYYYMMDD}, continuing...`);
+          console.log(`➡️ No open shift in ${yesterdayForYYYYMMDD}`);
         }
-      } catch (error) {
-        console.error(`❌ Error checking ${previousDateForYYYYMMDD}:`, error);
+      } else {
+        console.log(`➡️ No document for ${yesterdayForYYYYMMDD}`);
       }
+    } catch (error) {
+      console.error(`❌ Error checking ${yesterdayForYYYYMMDD}:`, error);
     }
     
     console.log("🔍 No open shift found in previous day");
     return {
       success: false,
-      message: "No open shift found in previous dates"
+      message: "No open shift found in previous day"
     };
     
   } catch (error) {
-    console.error("❌ Error searching previous dates:", error);
+    console.error("❌ Error searching previous day:", error);
     return {
       success: false,
       message: "Error: " + error.message
@@ -1373,22 +1390,21 @@ async function isFlightClosedOptimized(flightNo, date) {
   }
 }
 
-// Fetch current open shift with caching
+// Fetch current open shift with caching - OPTIMIZED: Minimal reads
 async function fetchCurrentOpenShift() {
   try {
     refreshShiftBtn.innerHTML = '<div class="spinner"></div>';
     refreshShiftBtn.disabled = true;
     
-    // Check cache first
-    const todayKey = formatDateToYYYYMMDD(new Date());
+    // Check cache first (reduced TTL)
+    const now = Date.now();
     if (shiftCache.data && 
-        shiftCache.dateKey === todayKey && 
-        (Date.now() - shiftCache.timestamp < shiftCache.ttl)) {
+        (now - shiftCache.timestamp < shiftCache.ttl)) {
       console.log('Using cached shift data');
       
       const shiftCheck = checkForOpenShift(shiftCache.data);
       if (shiftCheck.isActive) {
-        updateShiftUI(shiftCheck, todayKey, false);
+        updateShiftUI(shiftCheck, shiftCache.dateKey, shiftCache.dateKey !== getCurrentDate());
         refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
         refreshShiftBtn.disabled = false;
         return;
@@ -1404,14 +1420,14 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    // Get today's date
-    const today = new Date();
+    // Get Maldives time
+    const todayMaldives = getMaldivesTime();
     
     // Format for document ID: YYYY_MM_DD
-    const todayDateForDocId = formatDateForDocumentId(today);
+    const todayDateForDocId = formatDateForDocumentId(todayMaldives);
     
     // Format for YYYY-MM-DD
-    const todayDateForYYYYMMDD = formatDateToYYYYMMDD(today);
+    const todayDateForYYYYMMDD = formatDateToYYYYMMDD(todayMaldives);
     
     console.log("📅 Today's date for document ID:", todayDateForDocId);
     console.log("📅 Today's date for YYYY-MM-DD:", todayDateForYYYYMMDD);
@@ -1420,7 +1436,7 @@ async function fetchCurrentOpenShift() {
     const todayDocId = `shift_${todayDateForDocId}`;
     console.log("🔍 Looking for today's shift document:", todayDocId);
     
-    // Get today's shift document
+    // Get today's shift document - ONLY 1 READ
     const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
     readCounter.shift++;
     readCounter.total++;
@@ -1439,7 +1455,7 @@ async function fetchCurrentOpenShift() {
       
       // Update cache
       shiftCache.data = shiftData;
-      shiftCache.timestamp = Date.now();
+      shiftCache.timestamp = now;
       shiftCache.dateKey = documentDate;
       
       // Check if today has any open shift
@@ -1450,17 +1466,22 @@ async function fetchCurrentOpenShift() {
         foundDate = documentDate;
         foundDateForDocId = todayDateForDocId;
       } else {
-        console.log("⚠️ No open shift found in today's document. Searching previous dates...");
+        console.log("⚠️ No open shift found in today's document. Checking previous day...");
         
-        // Search for open shift in previous dates (optimized to only check yesterday)
-        const previousOpenShift = await findOpenShiftInPreviousDates(today);
+        // Check previous day - ONLY 1 MORE READ (if needed)
+        const previousOpenShift = await findOpenShiftInPreviousDay();
         
         if (previousOpenShift.success) {
-          console.log(`✓ Found open shift in previous date: ${previousOpenShift.foundDate}`);
+          console.log(`✓ Found open shift in previous day: ${previousOpenShift.foundDate}`);
           shiftData = previousOpenShift.shiftData;
           foundDate = previousOpenShift.foundDate;
           foundDateForDocId = previousOpenShift.foundDateForDocId;
           shiftCheck = previousOpenShift.shiftCheck;
+          
+          // Update cache with previous day's data
+          shiftCache.data = shiftData;
+          shiftCache.timestamp = now;
+          shiftCache.dateKey = foundDate;
         } else {
           console.log("⚠️ No open shift found in any date, using today's data");
           // Keep today's data even if no shift is open
@@ -1469,19 +1490,24 @@ async function fetchCurrentOpenShift() {
     } else {
       console.log("❌ No shift document found for today:", todayDocId);
       
-      // Search for open shift in previous dates (optimized to only check yesterday)
-      const previousOpenShift = await findOpenShiftInPreviousDates(today);
+      // Check previous day - ONLY 1 MORE READ
+      const previousOpenShift = await findOpenShiftInPreviousDay();
       
       if (previousOpenShift.success) {
-        console.log(`✓ Found open shift in previous date: ${previousOpenShift.foundDate}`);
+        console.log(`✓ Found open shift in previous day: ${previousOpenShift.foundDate}`);
         shiftData = previousOpenShift.shiftData;
         foundDate = previousOpenShift.foundDate;
         foundDateForDocId = previousOpenShift.foundDateForDocId;
         shiftCheck = previousOpenShift.shiftCheck;
+        
+        // Update cache with previous day's data
+        shiftCache.data = shiftData;
+        shiftCache.timestamp = now;
+        shiftCache.dateKey = foundDate;
       } else {
         console.log("⚠️ No shift data found at all");
         showNoShiftMessage();
-        showAlert("No shift data found for today or previous dates", true);
+        showAlert("No shift data found for today or previous day", true);
         refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
         refreshShiftBtn.disabled = false;
         return;
@@ -1498,6 +1524,7 @@ async function fetchCurrentOpenShift() {
     }
     
     console.log("📊 Final shift analysis:", shiftCheck);
+    console.log("📈 Firebase reads used:", readCounter);
     
     // Update UI
     updateShiftUI(shiftCheck, foundDate, foundDate !== todayDateForYYYYMMDD);
@@ -1526,8 +1553,10 @@ function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay) {
   
   if (isFromPreviousDay) {
     const foundDateObj = new Date(foundDate);
-    const todayObj = new Date(getCurrentDate());
-    const daysDiff = Math.floor((todayObj - foundDateObj) / (1000 * 60 * 60 * 24));
+    const todayMaldives = getMaldivesTime();
+    const todayDateStr = formatDateToYYYYMMDD(todayMaldives);
+    const todayDateObj = new Date(todayDateStr);
+    const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
     
     if (daysDiff === 1) {
       dateIndicator = " (Yesterday)";
@@ -1556,8 +1585,8 @@ function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFro
     shiftDate: foundDate, // YYYY-MM-DD format
     shiftStatus: shiftStatus,
     isFromPreviousDay: isFromPreviousDay,
-    lastUpdated: new Date().toISOString(),
-    fetchedAt: new Date().toLocaleTimeString()
+    lastUpdated: getMaldivesDateTimeISO(),
+    fetchedAt: getMaldivesTimeString()
   };
   
   localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
@@ -1573,7 +1602,7 @@ function loadCurrentShiftFromLocalStorage() {
       
       // Check if shift is still fresh (less than 5 minutes old)
       const lastUpdated = new Date(shiftInfo.lastUpdated);
-      const now = new Date();
+      const now = getMaldivesTime();
       const minutesDiff = (now - lastUpdated) / (1000 * 60);
       
       if (minutesDiff < 5 && shiftInfo.shiftStatus === 'open') {
@@ -1585,8 +1614,10 @@ function loadCurrentShiftFromLocalStorage() {
         let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
         if (shiftInfo.isFromPreviousDay) {
           const shiftDateObj = new Date(shiftInfo.shiftDate);
-          const todayObj = new Date();
-          const daysDiff = Math.floor((todayObj - shiftDateObj) / (1000 * 60 * 60 * 24));
+          const todayMaldives = getMaldivesTime();
+          const todayDateStr = formatDateToYYYYMMDD(todayMaldives);
+          const todayDateObj = new Date(todayDateStr);
+          const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
           
           if (daysDiff === 1) {
             displayDate += " (Yesterday)";
@@ -1760,14 +1791,14 @@ function markAsSyncedInLocalStorage(localId) {
         return {
           ...item,
           synced: true,
-          syncedAt: new Date().toISOString()
+          syncedAt: getMaldivesDateTimeISO()
         };
       }
       return item;
     });
     
     // Remove synced items older than 7 days
-    const sevenDaysAgo = new Date();
+    const sevenDaysAgo = getMaldivesTime();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const sevenDaysAgoStr = formatDateToYYYYMMDD(sevenDaysAgo);
     
@@ -1795,7 +1826,7 @@ function loadApprovedEntriesCache() {
       approvedEntriesCache = JSON.parse(cacheData);
       
       const today = getCurrentDate();
-      const sevenDaysAgo = new Date();
+      const sevenDaysAgo = getMaldivesTime();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const sevenDaysAgoStr = formatDateToYYYYMMDD(sevenDaysAgo);
       
@@ -1828,7 +1859,7 @@ function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
         flight: flightUpper,
         name: nameUpper,
         seat: seatUpper || '',
-        cachedAt: new Date().toISOString(),
+        cachedAt: getMaldivesDateTimeISO(),
         docId: docId,
         timestamp: timestamp
       };
@@ -1839,7 +1870,7 @@ function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
       date: date,
       flight: flightUpper,
       seat: seatUpper,
-      cachedAt: new Date().toISOString(),
+      cachedAt: getMaldivesDateTimeISO(),
       docId: docId
     };
     
@@ -1850,7 +1881,7 @@ function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
         flight: flightUpper,
         seat: seatUpper,
         name: nameUpper,
-        cachedAt: new Date().toISOString(),
+        cachedAt: getMaldivesDateTimeISO(),
         docId: docId
       };
     }
@@ -2261,7 +2292,7 @@ async function approveEntry(index) {
       shift: currentShiftType,
       timeAdded: getCurrentTime(),
       approvedBy: userData ? userData.name : 'Unknown',
-      approvedAt: new Date().toISOString(),
+      approvedAt: getMaldivesDateTimeISO(),
       localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` // Unique ID for tracking
     };
 
