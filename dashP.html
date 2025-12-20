@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
+/* All CSS styles remain the same as before */
 :root {
     --gold: #D4AF37;
     --gold-light: #F5E8B8;
@@ -529,10 +530,46 @@ function getMaldivesTime() {
     return new Date(now.getTime() + MALDIVES_OFFSET);
 }
 
+function parseFirebaseDate(dateString) {
+    // Parse Firebase date string like "2025-12-19"
+    // IMPORTANT: Firebase stores dates as strings in "YYYY-MM-DD" format
+    // We need to parse this as LOCAL DATE in Maldives timezone
+    if (!dateString) return new Date();
+    
+    console.log("Parsing Firebase date:", dateString);
+    
+    // Split the date string
+    const parts = dateString.split('-');
+    if (parts.length !== 3) {
+        console.error("Invalid date format:", dateString);
+        return new Date();
+    }
+    
+    const year = parseInt(parts[0]);
+    const month = parseInt(parts[1]) - 1; // Months are 0-indexed in JS
+    const day = parseInt(parts[2]);
+    
+    // Create date in LOCAL timezone (Maldives)
+    // This creates a date at 00:00:00 in local time
+    const localDate = new Date(year, month, day);
+    
+    // Adjust for Maldives timezone (UTC+5)
+    // Since Firebase stores dates as local dates (not UTC), we need to handle carefully
+    const maldivesDate = new Date(localDate.getTime() - MALDIVES_OFFSET);
+    
+    console.log("Parsed date results:");
+    console.log("  - Input string:", dateString);
+    console.log("  - Local date:", localDate.toISOString());
+    console.log("  - Maldives adjusted:", maldivesDate.toISOString());
+    console.log("  - Local date string:", localDate.toLocaleDateString());
+    
+    return localDate; // Return local date as is
+}
+
 function formatShiftDate(date) {
-    // Format date as "Thursday, December 19, 2024"
-    const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
-    return maldivesDate.toLocaleDateString('en-US', {
+    // Format date as "Thursday, December 19, 2025"
+    // IMPORTANT: Use the date as stored in Firebase, don't apply timezone offset
+    return date.toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -540,12 +577,10 @@ function formatShiftDate(date) {
     });
 }
 
-function getDateKey(date) {
-    const maldivesDate = new Date(date.getTime() + MALDIVES_OFFSET);
-    const year = maldivesDate.getUTCFullYear();
-    const month = String(maldivesDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(maldivesDate.getUTCDate()).padStart(2, '0');
-    return `${year}_${month}_${day}`;
+function getDateKeyFromFirebaseDate(dateString) {
+    // Convert Firebase date string "2025-12-19" to key "2025_12_19"
+    if (!dateString) return '';
+    return dateString.replace(/-/g, '_');
 }
 
 function formatTimeForDisplay(date) {
@@ -633,7 +668,8 @@ function checkForOpenShift(shiftData) {
         shiftName: "No Shift Open",
         shiftType: "",
         openTime: "",
-        details: {}
+        details: {},
+        firebaseDate: shiftData?.date || "" // Get the date field from Firebase
     };
     
     if (!shiftData) {
@@ -702,15 +738,15 @@ async function fetchShiftData() {
         
         // Get current Maldives time
         const maldivesNow = getMaldivesTime();
-        const todayKey = getDateKey(maldivesNow);
+        const todayMaldivesDate = maldivesNow.toISOString().split('T')[0]; // YYYY-MM-DD
         
-        console.log("📅 Today's Maldives date key:", todayKey);
-        console.log("📅 Today's date:", formatShiftDate(maldivesNow));
+        console.log("📅 Today's Maldives date (ISO):", todayMaldivesDate);
+        console.log("📅 Full Maldives time:", maldivesNow.toISOString());
         
         // Try today first, then yesterday, then day before
         let foundShiftData = null;
-        let foundDate = null;
-        let foundDateKey = null;
+        let foundFirebaseDate = null; // Store the Firebase date string
+        let foundDate = null; // Store as Date object
         let shiftCheck = null;
         let daysBack = 0;
         
@@ -718,12 +754,11 @@ async function fetchShiftData() {
             // Calculate date to check (today - i days)
             const checkDate = new Date(maldivesNow);
             checkDate.setDate(maldivesNow.getDate() - i);
-            
-            // Get date key for Firebase document
-            const checkDateKey = getDateKey(checkDate);
+            const checkDateString = checkDate.toISOString().split('T')[0]; // YYYY-MM-DD
+            const checkDateKey = checkDateString.replace(/-/g, '_');
             const docId = `shift_${checkDateKey}`;
             
-            console.log(`📅 Checking ${i} day(s) back: ${checkDateKey} (${formatShiftDate(checkDate)})`);
+            console.log(`📅 Checking ${i} day(s) back: ${checkDateString} (doc: ${docId})`);
             
             try {
                 // SINGLE READ per date
@@ -731,7 +766,8 @@ async function fetchShiftData() {
                 
                 if (shiftDoc.exists) {
                     const shiftData = shiftDoc.data();
-                    console.log(`✅ Found document for ${checkDateKey}`);
+                    console.log(`✅ Found document for ${checkDateString}`);
+                    console.log("📄 Document data:", shiftData);
                     
                     // Check if this document has an open shift
                     const checkResult = checkForOpenShift(shiftData);
@@ -739,15 +775,15 @@ async function fetchShiftData() {
                     if (checkResult.isActive) {
                         console.log(`🎉 Found open shift ${i} day(s) back`);
                         foundShiftData = shiftData;
-                        foundDate = checkDate;
-                        foundDateKey = checkDateKey;
+                        foundFirebaseDate = shiftData.date || checkDateString; // Use Firebase date field
+                        foundDate = parseFirebaseDate(foundFirebaseDate);
                         shiftCheck = checkResult;
                         daysBack = i;
                         break; // Stop searching when we find an open shift
                     }
                 }
             } catch (error) {
-                console.error(`❌ Error checking ${checkDateKey}:`, error);
+                console.error(`❌ Error checking ${checkDateString}:`, error);
                 // Continue to next date
             }
         }
@@ -757,16 +793,30 @@ async function fetchShiftData() {
             return {
                 success: false,
                 message: "No open shift found",
-                date: formatShiftDate(maldivesNow),
+                date: todayMaldivesDate,
                 isActive: false,
                 timestamp: new Date().toISOString()
             };
         }
         
-        // Format the SHIFT DATE (not current date!)
-        const shiftDateDisplay = formatShiftDate(foundDate);
-        let dateIndicator = "";
+        // ========== CRITICAL: Use Firebase date, not calculated date ==========
+        const shiftDateObj = parseFirebaseDate(foundFirebaseDate);
+        const shiftDateDisplay = formatShiftDate(shiftDateObj);
         
+        // Get current date for comparison
+        const currentDateObj = parseFirebaseDate(todayMaldivesDate);
+        const currentDateDisplay = formatShiftDate(currentDateObj);
+        
+        console.log("📊 DATE COMPARISON:");
+        console.log("  - Firebase date string:", foundFirebaseDate);
+        console.log("  - Shift date object:", shiftDateObj);
+        console.log("  - Shift date display:", shiftDateDisplay);
+        console.log("  - Current date object:", currentDateObj);
+        console.log("  - Current date display:", currentDateDisplay);
+        console.log("  - Days back:", daysBack);
+        console.log("  - Same day?", shiftDateDisplay === currentDateDisplay);
+        
+        let dateIndicator = "";
         if (daysBack === 1) {
             dateIndicator = " (Yesterday)";
         } else if (daysBack === 2) {
@@ -775,39 +825,31 @@ async function fetchShiftData() {
             dateIndicator = ` (${daysBack} days ago)`;
         }
         
-        // Get current date for comparison
-        const currentDate = formatShiftDate(maldivesNow);
-        const isDifferentDay = shiftDateDisplay !== currentDate;
-        
-        console.log("📊 Date comparison:");
-        console.log("  - Shift date:", shiftDateDisplay);
-        console.log("  - Current date:", currentDate);
-        console.log("  - Different day?", isDifferentDay);
-        console.log("  - Days back:", daysBack);
+        const isDifferentDay = shiftDateDisplay !== currentDateDisplay;
         
         const result = {
             success: true,
             name: shiftCheck.shiftName,
-            // This is the ACTUAL SHIFT DATE
+            // Use the Firebase date for display
             shiftDateDisplay: shiftDateDisplay + dateIndicator,
-            rawShiftDate: foundDate, // Store the actual shift date object
-            foundDate: foundDate,
-            foundDateKey: foundDateKey,
+            rawShiftDate: shiftDateObj,
+            firebaseDate: foundFirebaseDate,
+            foundDateKey: getDateKeyFromFirebaseDate(foundFirebaseDate),
             isActive: shiftCheck.isActive,
             openTime: shiftCheck.openTime,
             shiftType: shiftCheck.shiftType,
             fullData: foundShiftData,
-            isFromPreviousDay: daysBack > 0,
+            isFromPreviousDay: isDifferentDay,
             daysBack: daysBack,
             timestamp: new Date().toISOString(),
-            documentId: `shift_${foundDateKey}`,
+            documentId: `shift_${getDateKeyFromFirebaseDate(foundFirebaseDate)}`,
             // Store this for payment page
             currentShiftInfo: {
                 shift: shiftCheck.shiftType,
-                shiftDate: foundDate.toISOString(),
-                shiftDateKey: foundDateKey,
+                shiftDate: foundFirebaseDate, // Store as string "2025-12-19"
+                shiftDateKey: getDateKeyFromFirebaseDate(foundFirebaseDate),
                 shiftName: shiftCheck.shiftName,
-                isPreviousDay: daysBack > 0,
+                isPreviousDay: isDifferentDay,
                 shiftDateDisplay: shiftDateDisplay
             }
         };
@@ -925,19 +967,26 @@ function updateUIWithShiftData(shiftData) {
         return;
     }
     
-    // ========== CRITICAL FIX ==========
-    // Show the ACTUAL SHIFT DATE in the header, not current date
+    // ========== CRITICAL: Show Firebase date in header ==========
     document.getElementById("shiftDateDisplay").textContent = shiftData.shiftDateDisplay;
     
-    // Also show it in the shift status card for clarity
+    // Show comparison info
     const shiftDateInfo = document.getElementById("shiftDateInfo");
     if (shiftData.isFromPreviousDay) {
-        const currentMaldivesDate = formatShiftDate(getMaldivesTime());
-        shiftDateInfo.textContent = `Shift from: ${shiftData.shiftDateDisplay} | Today is: ${currentMaldivesDate}`;
-        shiftDateInfo.style.color = "#e74c3c";
-        shiftDateInfo.style.fontWeight = "bold";
+        const maldivesNow = getMaldivesTime();
+        const currentDate = formatShiftDate(parseFirebaseDate(maldivesNow.toISOString().split('T')[0]));
+        shiftDateInfo.innerHTML = `
+            <span style="color: #e74c3c; font-weight: bold;">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Working with shift from: ${shiftData.shiftDateDisplay}
+            </span>
+            <br>
+            <span style="color: #777; font-size: 11px;">
+                Today is: ${currentDate}
+            </span>
+        `;
     } else {
-        shiftDateInfo.textContent = `Today's shift`;
+        shiftDateInfo.textContent = "Today's shift";
         shiftDateInfo.style.color = "#777";
     }
     
@@ -968,7 +1017,7 @@ function updateUIWithShiftData(shiftData) {
         document.getElementById("statusDot").className = "status-dot active";
         document.getElementById("statusDot").style.backgroundColor = "#28a745";
         enablePaymentButton();
-        showMessage(`${shiftData.name} is active. Payments will be saved to: ${shiftData.shiftDateDisplay}`, "success");
+        showMessage(`${shiftData.name} is active. Payments will be saved to: ${shiftData.firebaseDate}`, "success");
     } else {
         document.getElementById("statusDot").className = "status-dot inactive";
         document.getElementById("statusDot").style.backgroundColor = "#e74c3c";
@@ -976,13 +1025,13 @@ function updateUIWithShiftData(shiftData) {
         showMessage(`${shiftData.name} is not active. Payments are disabled.`, "warning");
     }
     
-    // Update last updated time (Maldives time)
+    // Update last updated time
     const updatedTime = formatTimeForDisplay(new Date(shiftData.timestamp));
     document.getElementById("lastUpdated").textContent = `Updated: ${updatedTime}`;
     
     // Update payment button status
     document.getElementById("paymentStatus").textContent = shiftData.isActive ? 
-        `Ready for payments (Shift date: ${shiftData.shiftDateDisplay})` : 
+        `Ready for payments (Shift date: ${shiftData.firebaseDate})` : 
         "Disabled - No active shift";
 }
 
@@ -1081,10 +1130,10 @@ document.getElementById("cashDrawerBtn").addEventListener("click", function(e) {
     }
     
     try {
-        // Get Maldives time for display
+        // Get current date in Maldives time
         const maldivesNow = getMaldivesTime();
         const currentTime = formatTimeForDisplay(maldivesNow);
-        const currentDate = formatShiftDate(maldivesNow);
+        const currentDate = formatShiftDate(parseFirebaseDate(maldivesNow.toISOString().split('T')[0]));
         
         const printContent = `
             <html>
@@ -1097,9 +1146,12 @@ document.getElementById("cashDrawerBtn").addEventListener("click", function(e) {
                     <p>Click Print to open cash drawer</p>
                     <p><small>Select EPSON TM printer</small></p>
                     <p><small>Shift: ${cachedData.name}</small></p>
-                    <p><small><strong>Shift Date:</strong> ${cachedData.shiftDateDisplay}</small></p>
+                    <p><small><strong>Shift Date (Firebase):</strong> ${cachedData.firebaseDate}</small></p>
+                    <p><small><strong>Shift Display:</strong> ${cachedData.shiftDateDisplay}</small></p>
                     <p><small><strong>Today's Date:</strong> ${currentDate}</small></p>
-                    ${cachedData.isFromPreviousDay ? '<p><small style="color: red;"><i class="fas fa-exclamation-triangle"></i> Working with previous day shift</small></p>' : ''}
+                    ${cachedData.isFromPreviousDay ? 
+                        '<p><small style="color: red; font-weight: bold;"><i class="fas fa-exclamation-triangle"></i> ATTENTION: Working with previous day shift</small></p>' : 
+                        ''}
                     <p><small>Time (Maldives): ${currentTime}</small></p>
                 </body>
             </html>
@@ -1226,33 +1278,28 @@ window.clearShiftCache = function() {
     refreshShiftData();
 };
 
-// Export current shift info for payment page
-window.getCurrentShiftInfo = function() {
-    const cachedData = loadShiftFromLocalStorage();
-    if (cachedData && cachedData.currentShiftInfo) {
-        return cachedData.currentShiftInfo;
-    }
-    return null;
-};
-
-// Test function to verify dates
-window.testDates = function() {
+// Test function to debug date parsing
+window.debugDateParsing = function() {
+    console.log("=== DEBUG DATE PARSING ===");
+    
+    const testDate = "2025-12-19";
+    console.log("Test date string:", testDate);
+    
+    const parsed = parseFirebaseDate(testDate);
+    console.log("Parsed date:", parsed);
+    console.log("Formatted:", formatShiftDate(parsed));
+    console.log("ISO string:", parsed.toISOString());
+    console.log("Locale string:", parsed.toLocaleString());
+    
+    // Get current time
+    const now = new Date();
     const maldivesNow = getMaldivesTime();
-    console.log("=== DATE TEST ===");
-    console.log("Current Maldives time:", maldivesNow);
-    console.log("Formatted current date:", formatShiftDate(maldivesNow));
+    console.log("\nCurrent time comparison:");
+    console.log("Local time:", now);
+    console.log("Maldives time:", maldivesNow);
+    console.log("Maldives date string:", maldivesNow.toISOString().split('T')[0]);
     
-    // Test yesterday
-    const yesterday = new Date(maldivesNow);
-    yesterday.setDate(maldivesNow.getDate() - 1);
-    console.log("Yesterday's date:", formatShiftDate(yesterday));
-    
-    // Test day before
-    const dayBefore = new Date(maldivesNow);
-    dayBefore.setDate(maldivesNow.getDate() - 2);
-    console.log("Day before:", formatShiftDate(dayBefore));
-    
-    alert(`Today: ${formatShiftDate(maldivesNow)}\nYesterday: ${formatShiftDate(yesterday)}\nDay before: ${formatShiftDate(dayBefore)}`);
+    alert(`Test date: ${testDate}\nParsed as: ${formatShiftDate(parsed)}\nCurrent Maldives: ${formatShiftDate(parseFirebaseDate(maldivesNow.toISOString().split('T')[0]))}`);
 };
 </script>
 </body>
