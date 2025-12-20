@@ -1229,11 +1229,10 @@ function formatMaldivesDateTime(date) {
 function formatShiftDate(date) {
   // Format for shift date display - use shift date, not current date
   const d = new Date(date);
-  return d.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function getDateKey(date) {
@@ -1244,38 +1243,39 @@ function getDateKey(date) {
 // ======== SHIFT MANAGEMENT ========
 async function loadCurrentShift() {
   try {
-    console.log("Loading current shift from fireshift.js...");
+    console.log("Loading current shift...");
     
-    // IMPORTANT: First check if fireshift.js is loaded properly
+    // First, check if fireshift.js is properly loaded
     if (typeof window.fireShift === 'undefined') {
-      console.error("fireshift.js not loaded properly!");
-      // Wait a bit and try again
+      console.error("fireshift.js not loaded!");
+      // Wait and try again
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     
-    // Check if fireShift has shift data
-    if (window.fireShift && window.fireShift.currentShift && window.fireShift.currentShiftDate) {
-      console.log("Shift found in fireShift.js:", window.fireShift.currentShift, window.fireShift.currentShiftDate);
-      currentShift = window.fireShift.currentShift;
-      currentShiftDate = new Date(window.fireShift.currentShiftDate);
-      console.log("Parsed shift date:", currentShiftDate);
-      updateShiftDisplay();
-      saveShiftToLocalStorage();
-      return true;
-    }
-    
-    // If fireShift exists but doesn't have data, wait and check again
+    // Try to get shift from fireshift.js
     if (window.fireShift) {
-      console.log("fireShift object exists but no shift data yet");
-      // Wait for fireshift.js to finish loading
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log("fireshift.js loaded, checking for shift data...");
       
+      // If fireShift has data, use it
       if (window.fireShift.currentShift && window.fireShift.currentShiftDate) {
         currentShift = window.fireShift.currentShift;
         currentShiftDate = new Date(window.fireShift.currentShiftDate);
+        console.log("Using shift from fireshift.js:", currentShift, "Date:", formatShiftDate(currentShiftDate));
         updateShiftDisplay();
         saveShiftToLocalStorage();
-        return true;
+        return;
+      }
+      
+      // If no data, try to load it
+      console.log("No shift data in fireShift, loading from Firebase...");
+      const loaded = await window.fireShift.loadCurrentShiftFromFirebase();
+      if (loaded && window.fireShift.currentShift) {
+        currentShift = window.fireShift.currentShift;
+        currentShiftDate = new Date(window.fireShift.currentShiftDate);
+        console.log("Loaded shift via fireShift:", currentShift, "Date:", formatShiftDate(currentShiftDate));
+        updateShiftDisplay();
+        saveShiftToLocalStorage();
+        return;
       }
     }
     
@@ -1288,25 +1288,27 @@ async function loadCurrentShift() {
       currentShiftDate = new Date(savedShiftDate);
       updateShiftDisplay();
       console.log("Using saved shift from localStorage:", currentShift);
-      return true;
+      return;
     }
     
     // Default fallback
-    console.warn("No shift found, using fallback");
-    currentShift = 'Morning';
-    currentShiftDate = getMaldivesTime();
+    console.warn("No shift found anywhere, using fallback");
+    const today = new Date();
+    const todayKey = today.toISOString().split('T')[0];
+    currentShift = "Morning";
+    currentShiftDate = new Date(todayKey); // Use today's date, not current time
     saveShiftToLocalStorage();
     updateShiftDisplay();
-    return false;
     
   } catch (error) {
     console.error("Error loading shift:", error);
     // Default to today's morning shift
-    currentShift = 'Morning';
-    currentShiftDate = getMaldivesTime();
+    const today = new Date();
+    const todayKey = today.toISOString().split('T')[0];
+    currentShift = "Morning";
+    currentShiftDate = new Date(todayKey);
     saveShiftToLocalStorage();
     updateShiftDisplay();
-    return false;
   }
 }
 
@@ -1327,6 +1329,7 @@ function updateShiftDisplay() {
     return;
   }
   
+  // Set shift type
   if (currentShift === 'Morning') {
     shiftDot.className = 'shift-dot shift-morning-dot';
     shiftType.textContent = 'Morning Shift';
@@ -1338,9 +1341,10 @@ function updateShiftDisplay() {
     shiftType.textContent = currentShift;
   }
   
-  // CRITICAL FIX: Use shift date, not current date
-  shiftDate.textContent = formatShiftDate(currentShiftDate);
-  console.log("Shift display updated:", currentShift, formatShiftDate(currentShiftDate));
+  // Format and display the shift date (not current date!)
+  const formattedDate = formatShiftDate(currentShiftDate);
+  shiftDate.textContent = formattedDate;
+  console.log("Shift display updated. Type:", currentShift, "Date:", formattedDate);
 }
 
 function showShiftInfo() {
@@ -1349,9 +1353,18 @@ function showShiftInfo() {
     return;
   }
   
+  const formattedDate = formatShiftDate(currentShiftDate);
+  const fullDate = currentShiftDate.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
   const info = `Current Shift: ${currentShift}\n` +
-               `Shift Date: ${formatShiftDate(currentShiftDate)}\n` +
-               `Date in Firebase: ${formatMaldivesDateTime(currentShiftDate)}`;
+               `Shift Date: ${formattedDate}\n` +
+               `Full Date: ${fullDate}\n` +
+               `Data Source: ${window.fireShift && window.fireShift.shiftData ? 'Firebase' : 'Local/Default'}`;
   alert(info);
 }
 
@@ -1474,7 +1487,7 @@ function togglePaymentFields() {
 function calculateExpiryTime() {
   // CRITICAL: Use shift date as base for expiry calculation
   const baseDate = currentShiftDate || getMaldivesTime();
-  console.log("Calculating expiry based on shift date:", baseDate);
+  console.log("Calculating expiry based on shift date:", formatShiftDate(baseDate));
   
   const expiry = new Date(baseDate.getTime() + 3 * 60 * 60 * 1000);
   
@@ -2190,14 +2203,17 @@ window.onload = async function() {
   // Get current user
   getCurrentUser();
   
+  // Wait a moment for fireshift.js to load
+  console.log("Waiting for fireshift.js to load...");
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
   // Load current shift from fireshift.js
   console.log("Loading shift from fireshift.js...");
   await loadCurrentShift();
   
   // Debug: Check what shift was loaded
   console.log("Final shift loaded:", currentShift);
-  console.log("Final shift date:", currentShiftDate);
-  console.log("Formatted shift date:", formatShiftDate(currentShiftDate));
+  console.log("Final shift date:", currentShiftDate ? formatShiftDate(currentShiftDate) : "No date");
   
   // Initialize pricing
   updatePricing();
