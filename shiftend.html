@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shift End Report</title>
+  <style>
+    /* ======== PROFESSIONAL REPORT THEME ======== */
+    :root {
+      --primary-dark: #2c3e50;
+      --primary-light: #34495e;
+      --secondary-dark: #16a085;
+      --secondary-light: #1abc9c;
+      --accent: #3498db;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --success: #27ae60;
+      --light-bg: #ecf0f1;
+      --light-border: #bdc3c7;
+      --text-dark: #2c3e50;
+      --text-light: #7f8c8d;
+      --white: #ffffff;
+      --void-color: #95a5a6;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--light-bg) 0%, #f5f7fa 100%);
+      min-height: 100vh;
+      color: var(--text-dark);
+      font-size: 13px; /* Smaller font size */
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Header Styles */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 20px 25px;
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-light) 100%);
+      color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(44, 62, 80, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .header-left h1 {
+      margin: 0;
+      font-size: 22px; /* Smaller */
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    
+    .header-left p {
+      margin: 6px 0 0;
+      opacity: 0.9;
+      font-size: 12px; /* Smaller */
+      font-weight: 300;
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .user-display {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px; /* Smaller */
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      min-width: 140px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+    
+    /* Control Panel */
+    .control-panel {
+      background: var(--white);
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--light-border);
+    }
+    
+    .control-row {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .control-group {
+      flex: 1;
+      min-width: 220px;
+    }
+    
+    .control-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      font-size: 12px; /* Smaller */
+    }
+    
+    .control-group select, 
+    .control-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--light-border);
+      border-radius: 5px;
+      font-size: 12px; /* Smaller */
+      box-sizing: border-box;
+      transition: all 0.3s;
+      background-color: var(--white);
+      color: var(--text-dark);
+    }
+    
+    .control-group select:focus, 
+    .control-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+    
+    /* Void Filter Options */
+    .void-filter-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .void-filter-btn {
+      padding: 6px 12px;
+      border: 1px solid var(--light-border);
+      border-radius: 4px;
+      background: var(--white);
+      color: var(--text-dark);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .void-filter-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    .void-filter-btn:hover:not(.active) {
+      background: var(--light-bg);
+    }
+    
+    /* Button Styles */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      font-size: 12px; /* Smaller */
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-width: 110px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2980b9 0%, #1f639b 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 12px rgba(52, 152, 219, 0.3);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 12px rgba(39, 174, 96, 0.3);
+    }
+    
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+      color: white;
+    }
+    
+    .btn-warning:hover {
+      background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 12px rgba(243, 156, 18, 0.3);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 12px rgba(231, 76, 60, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: linear-gradient(135deg, #7f8c8d 0%, #636e72 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 3px 12px rgba(127, 140, 141, 0.3);
+    }
+    
+    /* Action Buttons Container */
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    /* Report Summary Cards */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .summary-card {
+      background: var(--white);
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--light-border);
+    }
+    
+    .summary-card h3 {
+      margin-top: 0;
+      color: var(--primary-dark);
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--accent);
+      font-size: 14px; /* Smaller */
+      font-weight: 600;
+    }
+    
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--light-border);
+    }
+    
+    .summary-item:last-child {
+      border-bottom: none;
+    }
+    
+    .summary-label {
+      font-weight: 500;
+      color: var(--text-light);
+      font-size: 11px; /* Smaller */
+    }
+    
+    .summary-value {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 12px; /* Smaller */
+    }
+    
+    .summary-total {
+      font-weight: 700;
+      color: var(--primary-dark);
+      font-size: 13px; /* Smaller */
+      padding-top: 6px;
+      margin-top: 6px;
+      border-top: 2px solid var(--light-border);
+    }
+    
+    /* Currency Badges */
+    .currency-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+      color: white;
+      border-radius: 3px;
+      font-size: 10px; /* Smaller */
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    
+    .currency-usd {
+      background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+    }
+    
+    .currency-mvr {
+      background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+    }
+    
+    /* Payment Method Badges */
+    .payment-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10px; /* Smaller */
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    
+    .payment-cash {
+      background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+      color: white;
+    }
+    
+    .payment-card {
+      background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+      color: white;
+    }
+    
+    .payment-amex {
+      background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+      color: white;
+    }
+    
+    /* Card Details Badge */
+    .card-details-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+      color: white;
+      border-radius: 3px;
+      font-size: 9px; /* Smaller */
+      font-weight: 600;
+      margin-left: 4px;
+      cursor: help;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Shift Badges */
+    .shift-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 10px; /* Smaller */
+      font-weight: 600;
+    }
+    
+    .shift-morning {
+      background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+      color: white;
+    }
+    
+    .shift-evening {
+      background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+      color: white;
+    }
+    
+    /* Sync Status Badges */
+    .sync-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px; /* Smaller */
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    
+    .sync-synced {
+      background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+      color: white;
+    }
+    
+    .sync-pending {
+      background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+      color: white;
+    }
+    
+    .sync-failed {
+      background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+      color: white;
+    }
+    
+    /* Void Status Badges */
+    .void-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 9px; /* Smaller */
+      font-weight: 600;
+      margin-left: 4px;
+    }
+    
+    .void-yes {
+      background: linear-gradient(135deg, var(--void-color) 0%, #7f8c8d 100%);
+      color: white;
+    }
+    
+    /* Data Table */
+    .data-table-container {
+      background: var(--white);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+      border: 1px solid var(--light-border);
+    }
+    
+    .table-header {
+      padding: 15px;
+      border-bottom: 1px solid var(--light-border);
+    }
+    
+    .table-header h3 {
+      margin: 0;
+      color: var(--primary-dark);
+      font-size: 15px; /* Smaller */
+      font-weight: 600;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px; /* Smaller */
+    }
+    
+    th {
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px; /* Smaller */
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--light-border);
+      font-size: 11px; /* Smaller */
+      vertical-align: top;
+    }
+    
+    tr:hover {
+      background-color: rgba(52, 152, 219, 0.05);
+    }
+    
+    /* Voided row styling */
+    tr.voided-row {
+      background-color: rgba(149, 165, 166, 0.1);
+      color: var(--text-light);
+    }
+    
+    tr.voided-row:hover {
+      background-color: rgba(149, 165, 166, 0.2);
+    }
+    
+    tr.voided-row td {
+      opacity: 0.8;
+    }
+    
+    tr.voided-row .summary-value {
+      color: var(--text-light);
+    }
+    
+    .text-right {
+      text-align: right;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    /* Loading and Empty States */
+    .loading-state, .empty-state {
+      text-align: center;
+      padding: 30px 15px;
+      color: var(--text-light);
+    }
+    
+    .loading-state i {
+      font-size: 32px;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    
+    .empty-state i {
+      font-size: 32px;
+      color: var(--light-border);
+      margin-bottom: 12px;
+    }
+    
+    /* Card Details Tooltip */
+    .card-details-tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .card-details-tooltip .tooltip-text {
+      visibility: hidden;
+      width: 250px;
+      background-color: var(--primary-dark);
+      color: white;
+      text-align: left;
+      border-radius: 4px;
+      padding: 8px;
+      position: absolute;
+      z-index: 1000;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -125px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 11px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .card-details-tooltip .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: var(--primary-dark) transparent transparent transparent;
+    }
+    
+    .card-details-tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    /* Void Details Tooltip */
+    .void-details-tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .void-details-tooltip .tooltip-text {
+      visibility: hidden;
+      width: 250px;
+      background-color: var(--void-color);
+      color: white;
+      text-align: left;
+      border-radius: 4px;
+      padding: 8px;
+      position: absolute;
+      z-index: 1000;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -125px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 11px;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .void-details-tooltip .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: var(--void-color) transparent transparent transparent;
+    }
+    
+    .void-details-tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    /* Stats Highlight */
+    .stats-highlight {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, var(--secondary-light) 0%, var(--secondary-dark) 100%);
+      color: white;
+      padding: 12px 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    
+    .stat-item {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .stat-value {
+      font-size: 22px; /* Smaller */
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 10px; /* Smaller */
+      opacity: 0.9;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-divider {
+      width: 1px;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Currency Summary Table */
+    .currency-summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    
+    .currency-summary-table th {
+      background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+      color: white;
+      padding: 6px 8px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 10px;
+    }
+    
+    .currency-summary-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid var(--light-border);
+      font-size: 10px;
+    }
+    
+    .currency-summary-table .payment-type-header {
+      background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
+      color: white;
+      font-weight: bold;
+    }
+    
+    .currency-summary-table .subtotal-row {
+      background-color: rgba(52, 152, 219, 0.05);
+      font-weight: 600;
+    }
+    
+    .currency-summary-table .grand-total-row {
+      background-color: rgba(39, 174, 96, 0.1);
+      font-weight: 700;
+      border-top: 2px solid var(--success);
+    }
+    
+    .currency-summary-table .void-row {
+      background-color: rgba(149, 165, 166, 0.05);
+      color: var(--text-light);
+    }
+    
+    .currency-summary-table .void-total-row {
+      background-color: rgba(149, 165, 166, 0.1);
+      font-weight: 700;
+      border-top: 2px solid var(--void-color);
+    }
+    
+    /* Notification Styles */
+    .notification {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      padding: 10px 15px;
+      border-radius: 5px;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+      z-index: 1001;
+      animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
+      max-width: 280px;
+      font-size: 12px;
+    }
+    
+    .notification.success {
+      background: linear-gradient(135deg, var(--success) 0%, #229954 100%);
+    }
+    
+    .notification.warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #e67e22 100%);
+    }
+    
+    .notification.error {
+      background: linear-gradient(135deg, var(--danger) 0%, #c0392b 100%);
+    }
+    
+    .notification.info {
+      background: linear-gradient(135deg, var(--accent) 0%, #2980b9 100%);
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+        font-size: 12px;
+      }
+      
+      .header {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        padding: 15px;
+      }
+      
+      .header-right {
+        flex-direction: column;
+        width: 100%;
+      }
+      
+      .user-display {
+        width: 100%;
+      }
+      
+      .control-row {
+        flex-direction: column;
+      }
+      
+      .control-group {
+        min-width: 100%;
+      }
+      
+      .void-filter-options {
+        justify-content: center;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+      }
+      
+      .stats-highlight {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .stat-divider {
+        display: none;
+      }
+      
+      th, td {
+        padding: 6px 8px;
+        font-size: 10px;
+      }
+      
+      table {
+        font-size: 10px;
+      }
+    }
+    
+    /* Print Styles */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        font-size: 10px;
+      }
+      
+      .header {
+        box-shadow: none;
+        border: none;
+        margin-bottom: 15px;
+      }
+      
+      .control-panel,
+      .action-buttons,
+      .btn,
+      .void-filter-options {
+        display: none;
+      }
+      
+      .summary-cards {
+        break-inside: avoid;
+        margin-bottom: 15px;
+      }
+      
+      .data-table-container {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+      
+      tr {
+        break-inside: avoid;
+      }
+    }
+    
+    /* Icons */
+    .icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-size: contain;
+      background-repeat: no-repeat;
+      vertical-align: middle;
+    }
+    
+    .icon-filter { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>'); }
+    .icon-print { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>'); }
+    .icon-refresh { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>'); }
+    .icon-download { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>'); }
+    .icon-back { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>'); }
+    .icon-void { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'); }
+    
+    /* Compact table cell */
+    .compact-cell {
+      max-width: 100px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Shift End Report</h1>
+        <p>Koveli Lounge - Payment Transaction Analysis (Including Voids)</p>
+      </div>
+      <div class="header-right">
+        <div class="user-display" id="userDisplay">
+          <span id="currentUser">Loading...</span>
+        </div>
+        <button class="btn btn-secondary" onclick="goToPOS()">
+          <span class="icon icon-back"></span>Back to POS
+        </button>
+      </div>
+    </div>
+    
+    <!-- CONTROL PANEL -->
+    <div class="control-panel">
+      <div class="control-row">
+        <div class="control-group">
+          <label for="reportDate">Report Date</label>
+          <input type="date" id="reportDate" value="">
+        </div>
+        <div class="control-group">
+          <label for="shiftSelect">Shift</label>
+          <select id="shiftSelect">
+            <option value="All">All Shifts</option>
+            <option value="Morning">Morning Shift</option>
+            <option value="Evening">Evening Shift</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="staffSelect">Staff Member</label>
+          <select id="staffSelect">
+            <option value="All">All Staff</option>
+            <!-- Staff options will be populated dynamically -->
+          </select>
+        </div>
+      </div>
+      
+      <div class="control-row">
+        <div class="control-group">
+          <label>Void Status Filter</label>
+          <div class="void-filter-options">
+            <button class="void-filter-btn active" onclick="setVoidFilter('all')">All Transactions</button>
+            <button class="void-filter-btn" onclick="setVoidFilter('valid')">Valid Only</button>
+            <button class="void-filter-btn" onclick="setVoidFilter('voided')">Voided Only</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="loadReport()">
+          <span class="icon icon-filter"></span>Generate Report
+        </button>
+        <button class="btn btn-success" onclick="printReport()">
+          <span class="icon icon-print"></span>Print Report
+        </button>
+        <button class="btn btn-warning" onclick="exportToExcel()">
+          <span class="icon icon-download"></span>Export to Excel
+        </button>
+        <button class="btn btn-secondary" onclick="clearFilters()">
+          <span class="icon icon-refresh"></span>Clear Filters
+        </button>
+      </div>
+    </div>
+    
+    <!-- STATS HIGHLIGHT -->
+    <div class="stats-highlight" id="statsHighlight" style="display: none;">
+      <div class="stat-item">
+        <div class="stat-value" id="totalTransactions">0</div>
+        <div class="stat-label">Total Transactions</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value" id="totalAmountUSD">$0.00</div>
+        <div class="stat-label">Total USD</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value" id="totalAmountMVR">MVR 0.00</div>
+        <div class="stat-label">Total MVR</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-value" id="voidTransactions">0</div>
+        <div class="stat-label">Void Transactions</div>
+      </div>
+    </div>
+    
+    <!-- SUMMARY CARDS -->
+    <div class="summary-cards">
+      <!-- Payment Method Summary -->
+      <div class="summary-card">
+        <h3>Payment Method Summary</h3>
+        <div id="paymentMethodSummary">
+          <div class="summary-item">
+            <span class="summary-label">Cash Payments:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Card/Visa/MasterCard:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Amex Payments:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Card with Details:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Void Transactions:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item summary-total">
+            <span class="summary-label">Total Transactions:</span>
+            <span class="summary-value">0</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Currency Summary by Payment Type -->
+      <div class="summary-card">
+        <h3>Currency Summary by Payment Type</h3>
+        <div id="currencySummaryByPaymentType">
+          <p style="text-align: center; color: var(--text-light); font-size: 11px;">
+            Generate report to view currency breakdown
+          </p>
+        </div>
+      </div>
+      
+      <!-- Sync Status & Void Summary -->
+      <div class="summary-card">
+        <h3>Sync & Void Summary</h3>
+        <div id="syncStatusSummary">
+          <div class="summary-item">
+            <span class="summary-label">Synced to Firebase:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Pending Sync:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Sync Failed:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Void Transactions:</span>
+            <span class="summary-value">0</span>
+          </div>
+          <div class="summary-item summary-total">
+            <span class="summary-label">Total Transactions:</span>
+            <span class="summary-value">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- DETAILED DATA TABLE -->
+    <div class="data-table-container">
+      <div class="table-header">
+        <h3>Transaction Details</h3>
+      </div>
+      <div id="dataTableContainer">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>Receipt No</th>
+              <th>Date & Time</th>
+              <th>Shift</th>
+              <th>Flight No</th>
+              <th>Seat</th>
+              <th>A</th>
+              <th>K</th>
+              <th>Currency</th>
+              <th>Payment Type</th>
+              <th>Card Details</th>
+              <th>Void Status</th>
+              <th>Sync Status</th>
+              <th>Staff</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Data will be populated here -->
+          </tbody>
+        </table>
+        <div class="empty-state" id="emptyState">
+          <i>📊</i>
+          <p>No transaction data found. Generate a report to view data.</p>
+        </div>
+        <div class="loading-state" id="loadingState" style="display: none;">
+          <i>⏳</i>
+          <p>Loading report data...</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- GRAND TOTALS -->
+    <div class="summary-card" style="margin-top: 15px;">
+      <h3>Grand Totals</h3>
+      <div id="grandTotals">
+        <div class="summary-item">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Passengers:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (USD):</span>
+          <span class="summary-value">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (MVR):</span>
+          <span class="summary-value">MVR 0.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Container -->
+  <div id="notificationContainer"></div>
+
+  <!-- Add Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="fireW1.js"></script>
+
+  <script>
+    // ======== GLOBAL VARIABLES ========
+    let allTransactions = [];
+    let filteredTransactions = [];
+    let uniqueStaffMembers = new Set();
+    let voidFilter = 'all'; // 'all', 'valid', or 'voided'
+    
+    // ======== NOTIFICATION SYSTEM ========
+    function showNotification(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('notificationContainer');
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      notification.style.animationDuration = `${duration/1000}s`;
+      
+      container.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, duration);
+    }
+    
+    // ======== USER MANAGEMENT ========
+    function getCurrentUser() {
+      const userData = JSON.parse(localStorage.getItem("loggedInUser"));
+      
+      if (!userData) {
+        window.location.href = "login.html";
+        return null;
+      }
+      
+      const userName = userData.name || userData.username;
+      document.getElementById('currentUser').textContent = userName;
+      
+      return userData;
+    }
+    
+    // ======== DATE HANDLING ========
+    function setDefaultDate() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('reportDate').value = today;
+    }
+    
+    // ======== VOID FILTER MANAGEMENT ========
+    function setVoidFilter(filter) {
+      voidFilter = filter;
+      
+      // Update button states
+      document.querySelectorAll('.void-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      event.target.classList.add('active');
+      
+      // Reload report with new filter
+      if (allTransactions.length > 0) {
+        loadReport();
+      }
+    }
+    
+    // ======== STAFF LIST MANAGEMENT ========
+    async function loadStaffMembers() {
+      try {
+        if (!window.walkinDb) {
+          console.error("Firebase not initialized");
+          return;
+        }
+        
+        // Get all transactions to extract unique staff members
+        const snapshot = await window.walkinDb.collection("payments")
+          .orderBy("timestamp", "desc")
+          .limit(1000)
+          .get();
+        
+        uniqueStaffMembers.clear();
+        uniqueStaffMembers.add("All");
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.staff) {
+            uniqueStaffMembers.add(data.staff);
+          }
+        });
+        
+        // Populate staff dropdown
+        const staffSelect = document.getElementById('staffSelect');
+        staffSelect.innerHTML = '';
+        
+        Array.from(uniqueStaffMembers).sort().forEach(staff => {
+          const option = document.createElement('option');
+          option.value = staff;
+          option.textContent = staff;
+          staffSelect.appendChild(option);
+        });
+        
+      } catch (error) {
+        console.error("Error loading staff members:", error);
+      }
+    }
+    
+    // ======== LOAD TRANSACTIONS FROM FIREBASE ONLY ========
+    async function loadAllTransactions() {
+      try {
+        showLoading(true);
+        
+        if (!window.walkinDb) {
+          showNotification("Firebase not initialized. Cannot load data.", "error");
+          allTransactions = [];
+          return;
+        }
+        
+        // Get transactions ONLY from Firebase
+        const snapshot = await window.walkinDb.collection("payments")
+          .orderBy("timestamp", "desc")
+          .limit(1000)
+          .get();
+        
+        allTransactions = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          // Convert Firestore timestamp to Date
+          const timestamp = data.timestamp ? data.timestamp.toDate() : 
+                           data.lastUpdated ? new Date(data.lastUpdated) : 
+                           new Date();
+          
+          // Parse voidedAt string to Date if it exists
+          let voidedAt = null;
+          if (data.voidedAt) {
+            voidedAt = new Date(data.voidedAt);
+          }
+          
+          allTransactions.push({
+            id: doc.id,
+            ...data,
+            timestamp: timestamp,
+            voidedAt: voidedAt,
+            // Ensure voided is boolean
+            voided: data.voided === true
+          });
+        });
+        
+        // Debug: Log all transactions to see void status
+        console.log("Firebase transactions loaded with void status:", allTransactions.map(t => ({
+          receiptNo: t.receiptNo,
+          voided: t.voided,
+          voidReason: t.voidReason,
+          voidedAt: t.voidedAt,
+          voidedBy: t.voidedBy
+        })));
+        
+        // Load staff members after getting transactions
+        loadStaffMembers();
+        
+        showNotification("Transactions loaded successfully from Firebase", "success");
+        
+      } catch (error) {
+        console.error("Error loading transactions from Firebase:", error);
+        showNotification("Error loading transactions from Firebase", "error");
+        allTransactions = [];
+      } finally {
+        showLoading(false);
+      }
+    }
+    
+    // ======== FILTER TRANSACTIONS ========
+    function filterTransactions() {
+      const selectedDate = document.getElementById('reportDate').value;
+      const selectedShift = document.getElementById('shiftSelect').value;
+      const selectedStaff = document.getElementById('staffSelect').value;
+      
+      // Filter by date
+      let filtered = allTransactions.filter(transaction => {
+        const transactionDate = transaction.timestamp.toISOString().split('T')[0];
+        return transactionDate === selectedDate;
+      });
+      
+      // Filter by shift
+      if (selectedShift !== 'All') {
+        filtered = filtered.filter(transaction => transaction.shift === selectedShift);
+      }
+      
+      // Filter by staff
+      if (selectedStaff !== 'All') {
+        filtered = filtered.filter(transaction => transaction.staff === selectedStaff);
+      }
+      
+      // Filter by void status
+      if (voidFilter === 'valid') {
+        filtered = filtered.filter(transaction => !transaction.voided);
+      } else if (voidFilter === 'voided') {
+        filtered = filtered.filter(transaction => transaction.voided === true);
+      }
+      
+      filteredTransactions = filtered;
+      return filtered;
+    }
+    
+    // ======== GENERATE REPORT ========
+    async function loadReport() {
+      try {
+        if (allTransactions.length === 0) {
+          await loadAllTransactions();
+        }
+        
+        const filteredData = filterTransactions();
+        displayReport(filteredData);
+        updateSummaryCards(filteredData);
+        updateCurrencySummaryByPaymentType(filteredData);
+        updateStatsHighlight(filteredData);
+        updateGrandTotals(filteredData);
+        
+        const count = filteredData.length;
+        showNotification(`Report generated: ${count} transaction${count !== 1 ? 's' : ''} found`, "success");
+        
+      } catch (error) {
+        console.error("Error generating report:", error);
+        showNotification("Error generating report", "error");
+      }
+    }
+    
+    // ======== DISPLAY REPORT IN TABLE ========
+    function displayReport(transactions) {
+      const tableBody = document.getElementById('tableBody');
+      const emptyState = document.getElementById('emptyState');
+      
+      if (transactions.length === 0) {
+        tableBody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+      
+      emptyState.style.display = 'none';
+      
+      // Sort transactions by timestamp (newest first)
+      const sortedTransactions = [...transactions].sort((a, b) => b.timestamp - a.timestamp);
+      
+      let html = '';
+      
+      sortedTransactions.forEach(transaction => {
+        const receiptNo = transaction.receiptNo || 'N/A';
+        
+        // Show only time, not date in each transaction
+        const time = transaction.timestamp ? 
+          transaction.timestamp.toLocaleString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          }) : 'N/A';
+        
+        const shift = transaction.shift || 'N/A';
+        const shiftBadge = shift === 'Morning' ? 
+          '<span class="shift-badge shift-morning">M</span>' :
+          '<span class="shift-badge shift-evening">E</span>';
+        
+        const staff = transaction.staff || 'Unknown';
+        const flightNo = transaction.flightNo || 'N/A';
+        const seatNo = transaction.seatNo || 'N/A';
+        const adults = transaction.adults || 0;
+        const kids = transaction.kids || 0;
+        const currency = transaction.currency || 'USD';
+        const currencyBadge = currency === 'USD' ? 
+          '<span class="currency-badge currency-usd">USD</span>' :
+          '<span class="currency-badge currency-mvr">MVR</span>';
+        
+        // Use the actual paymentType from Firebase data
+        let paymentType = transaction.paymentType || 'Cash';
+        
+        let paymentBadge = '';
+        if (paymentType.toLowerCase() === 'cash') {
+          paymentBadge = '<span class="payment-badge payment-cash">Cash</span>';
+        } else if (paymentType.toLowerCase() === 'amex') {
+          paymentBadge = '<span class="payment-badge payment-amex">Amex</span>';
+        } else if (paymentType.toLowerCase() === 'visa' || paymentType.toLowerCase() === 'mastercard' || 
+                   paymentType.toLowerCase() === 'master card' || paymentType.toLowerCase() === 'card') {
+          paymentBadge = '<span class="payment-badge payment-card">' + paymentType + '</span>';
+        } else {
+          // For any other payment type (like "Visa", "MasterCard", etc.)
+          paymentBadge = `<span class="payment-badge payment-card">${paymentType}</span>`;
+        }
+        
+        // Card details
+        let cardDetailsHTML = '—';
+        if (paymentType.toLowerCase() !== 'cash') {
+          const batchNo = transaction.batchNo || '';
+          const approvalCode = transaction.approvalCode || '';
+          const cardDetailsAdded = transaction.cardDetailsAdded || false;
+          
+          if ((batchNo && approvalCode) || cardDetailsAdded) {
+            cardDetailsHTML = `
+              <div class="card-details-tooltip">
+                <span class="card-details-badge" title="Click to view card details">✅</span>
+                <div class="tooltip-text">
+                  ${batchNo ? `<div><strong>Batch No:</strong> ${batchNo}</div>` : ''}
+                  ${approvalCode ? `<div><strong>Approval Code:</strong> ${approvalCode}</div>` : ''}
+                  ${transaction.expiryFormatted ? `<div><strong>Expiry:</strong> ${transaction.expiryFormatted}</div>` : ''}
+                </div>
+              </div>
+            `;
+          } else {
+            cardDetailsHTML = '<span style="color:#e74c3c;font-size:10px;">Pending</span>';
+          }
+        }
+        
+        // Void status
+        const isVoided = transaction.voided === true;
+        let voidBadge = '';
+        if (isVoided) {
+          const voidReason = transaction.voidReason || 'No reason provided';
+          const voidedBy = transaction.voidedBy || 'Unknown';
+          const voidedAt = transaction.voidedAt ? 
+            transaction.voidedAt.toLocaleString('en-US', {
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }) : 'N/A';
+          
+          voidBadge = `
+            <div class="void-details-tooltip">
+              <span class="void-badge void-yes" title="Voided transaction">VOID</span>
+              <div class="tooltip-text">
+                <div><strong>Reason:</strong> ${voidReason}</div>
+                <div><strong>Voided By:</strong> ${voidedBy}</div>
+                <div><strong>Voided At:</strong> ${voidedAt}</div>
+              </div>
+            </div>
+          `;
+        } else {
+          voidBadge = '—';
+        }
+        
+        // Sync status - this should always be 'synced' since we're loading from Firebase
+        const syncStatus = transaction.syncStatus || 'synced';
+        let syncBadge = '';
+        if (syncStatus === 'synced') {
+          syncBadge = '<span class="sync-badge sync-synced">Synced</span>';
+        } else if (syncStatus === 'failed') {
+          syncBadge = '<span class="sync-badge sync-failed">Failed</span>';
+        } else {
+          syncBadge = '<span class="sync-badge sync-pending">Pending</span>';
+        }
+        
+        const total = transaction.total || 0;
+        const totalFormatted = currency === 'USD' ? 
+          `$${total.toFixed(2)}` : 
+          `MVR ${total.toFixed(2)}`;
+        
+        // Add voided row class for styling
+        const rowClass = isVoided ? 'class="voided-row"' : '';
+        
+        html += `
+          <tr ${rowClass}>
+            <td><strong>${receiptNo}</strong></td>
+            <td>${time}</td>
+            <td>${shiftBadge}</td>
+            <td>${flightNo}</td>
+            <td>${seatNo}</td>
+            <td class="text-center">${adults}</td>
+            <td class="text-center">${kids}</td>
+            <td>${currencyBadge}</td>
+            <td>${paymentBadge}</td>
+            <td class="text-center">${cardDetailsHTML}</td>
+            <td class="text-center">${voidBadge}</td>
+            <td class="text-center">${syncBadge}</td>
+            <td class="compact-cell">${staff}</td>
+            <td class="text-right"><strong>${totalFormatted}</strong></td>
+          </tr>
+        `;
+      });
+      
+      tableBody.innerHTML = html;
+    }
+    
+    // ======== UPDATE SUMMARY CARDS ========
+    function updateSummaryCards(transactions) {
+      if (transactions.length === 0) {
+        resetSummaryCards();
+        return;
+      }
+      
+      // Count payment types based on actual paymentType field from Firebase
+      const cashPayments = transactions.filter(t => 
+        !t.paymentType || t.paymentType.toLowerCase() === 'cash'
+      ).length;
+      
+      const amexPayments = transactions.filter(t => 
+        t.paymentType && t.paymentType.toLowerCase() === 'amex'
+      ).length;
+      
+      // Count all other card types (Visa, MasterCard, Card, etc.)
+      const cardPayments = transactions.filter(t => {
+        if (!t.paymentType) return false;
+        const pt = t.paymentType.toLowerCase();
+        return pt !== 'cash' && pt !== 'amex';
+      }).length;
+      
+      const cardWithDetails = transactions.filter(t => 
+        t.paymentType && t.paymentType.toLowerCase() !== 'cash' && 
+        (t.cardDetailsAdded || (t.batchNo && t.approvalCode))
+      ).length;
+      
+      // Count void transactions
+      const voidTransactions = transactions.filter(t => t.voided === true).length;
+      
+      console.log(`Summary: Cash=${cashPayments}, Card/Visa/MasterCard=${cardPayments}, Amex=${amexPayments}, CardWithDetails=${cardWithDetails}, Void=${voidTransactions}`);
+      
+      document.getElementById('paymentMethodSummary').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Cash Payments:</span>
+          <span class="summary-value">${cashPayments}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Card/Visa/MasterCard:</span>
+          <span class="summary-value">${cardPayments}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Amex Payments:</span>
+          <span class="summary-value">${amexPayments}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Card with Details:</span>
+          <span class="summary-value">${cardWithDetails}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">${voidTransactions}</span>
+        </div>
+        <div class="summary-item summary-total">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">${transactions.length}</span>
+        </div>
+      `;
+      
+      // Sync Status Summary - All should be synced since we're loading from Firebase
+      const syncedTransactions = transactions.filter(t => t.syncStatus === 'synced').length;
+      const pendingTransactions = transactions.filter(t => 
+        !t.syncStatus || t.syncStatus === 'pending' || t.syncStatus === ''
+      ).length;
+      const failedTransactions = transactions.filter(t => t.syncStatus === 'failed').length;
+      
+      document.getElementById('syncStatusSummary').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Synced to Firebase:</span>
+          <span class="summary-value">${syncedTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Pending Sync:</span>
+          <span class="summary-value">${pendingTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Sync Failed:</span>
+          <span class="summary-value">${failedTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">${voidTransactions}</span>
+        </div>
+        <div class="summary-item summary-total">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">${transactions.length}</span>
+        </div>
+      `;
+    }
+    
+    // ======== UPDATE CURRENCY SUMMARY BY PAYMENT TYPE ========
+    function updateCurrencySummaryByPaymentType(transactions) {
+      if (transactions.length === 0) {
+        document.getElementById('currencySummaryByPaymentType').innerHTML = 
+          '<p style="text-align: center; color: var(--text-light); font-size: 11px;">No transaction data available</p>';
+        return;
+      }
+      
+      // Group transactions by payment type and void status
+      const paymentTypeGroups = {};
+      let voidTotalUSD = 0;
+      let voidTotalMVR = 0;
+      let voidCount = 0;
+      
+      transactions.forEach(transaction => {
+        const isVoided = transaction.voided === true;
+        const paymentType = transaction.paymentType || 'Cash';
+        const currency = transaction.currency || 'USD';
+        const total = transaction.total || 0;
+        
+        if (isVoided) {
+          if (currency === 'USD') {
+            voidTotalUSD += total;
+          } else if (currency === 'MVR') {
+            voidTotalMVR += total;
+          }
+          voidCount++;
+          return; // Skip voided transactions from regular payment type groups
+        }
+        
+        if (!paymentTypeGroups[paymentType]) {
+          paymentTypeGroups[paymentType] = {
+            usdCount: 0,
+            usdTotal: 0,
+            mvrCount: 0,
+            mvrTotal: 0,
+            totalCount: 0,
+            totalAmount: 0
+          };
+        }
+        
+        if (currency === 'USD') {
+          paymentTypeGroups[paymentType].usdCount++;
+          paymentTypeGroups[paymentType].usdTotal += total;
+        } else if (currency === 'MVR') {
+          paymentTypeGroups[paymentType].mvrCount++;
+          paymentTypeGroups[paymentType].mvrTotal += total;
+        }
+        
+        paymentTypeGroups[paymentType].totalCount++;
+        paymentTypeGroups[paymentType].totalAmount += total;
+      });
+      
+      // Calculate totals for valid transactions
+      let totalUSD = 0;
+      let totalMVR = 0;
+      let totalValidTransactions = 0;
+      let totalValidAmount = 0;
+      
+      Object.values(paymentTypeGroups).forEach(group => {
+        totalUSD += group.usdTotal;
+        totalMVR += group.mvrTotal;
+        totalValidTransactions += group.totalCount;
+        totalValidAmount += group.totalAmount;
+      });
+      
+      // Sort payment types (Cash first, then alphabetical)
+      const sortedPaymentTypes = Object.keys(paymentTypeGroups).sort((a, b) => {
+        if (a.toLowerCase() === 'cash') return -1;
+        if (b.toLowerCase() === 'cash') return 1;
+        return a.localeCompare(b);
+      });
+      
+      // Generate HTML table
+      let html = `
+        <table class="currency-summary-table">
+          <thead>
+            <tr>
+              <th>Payment Type</th>
+              <th>Currency</th>
+              <th class="text-right">Transactions</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Add rows for each payment type (valid transactions only)
+      sortedPaymentTypes.forEach(paymentType => {
+        const group = paymentTypeGroups[paymentType];
+        
+        // Payment type header row
+        html += `
+          <tr class="payment-type-header">
+            <td colspan="2"><strong>${paymentType}</strong></td>
+            <td class="text-right"><strong>${group.totalCount}</strong></td>
+            <td class="text-right"></td>
+          </tr>
+        `;
+        
+        // USD row
+        if (group.usdCount > 0) {
+          html += `
+            <tr>
+              <td></td>
+              <td>USD</td>
+              <td class="text-right">${group.usdCount}</td>
+              <td class="text-right">$${group.usdTotal.toFixed(2)}</td>
+            </tr>
+          `;
+        }
+        
+        // MVR row
+        if (group.mvrCount > 0) {
+          html += `
+            <tr>
+              <td></td>
+              <td>MVR</td>
+              <td class="text-right">${group.mvrCount}</td>
+              <td class="text-right">MVR ${group.mvrTotal.toFixed(2)}</td>
+            </tr>
+          `;
+        }
+        
+        // Subtotal row
+        html += `
+          <tr class="subtotal-row">
+            <td colspan="2"><em>${paymentType} Subtotal</em></td>
+            <td class="text-right"><em>${group.totalCount}</em></td>
+            <td class="text-right">
+              <em>
+                ${group.usdTotal > 0 ? `$${group.usdTotal.toFixed(2)}` : ''}
+                ${group.usdTotal > 0 && group.mvrTotal > 0 ? ' + ' : ''}
+                ${group.mvrTotal > 0 ? `MVR ${group.mvrTotal.toFixed(2)}` : ''}
+              </em>
+            </td>
+          </tr>
+        `;
+      });
+      
+      // Add void transactions row if there are any
+      if (voidCount > 0) {
+        html += `
+          <tr class="void-total-row">
+            <td colspan="2"><strong>VOID TRANSACTIONS</strong></td>
+            <td class="text-right"><strong>${voidCount}</strong></td>
+            <td class="text-right">
+              <strong style="color: var(--void-color);">
+                ${voidTotalUSD > 0 ? `$${voidTotalUSD.toFixed(2)}` : ''}
+                ${voidTotalUSD > 0 && voidTotalMVR > 0 ? ' + ' : ''}
+                ${voidTotalMVR > 0 ? `MVR ${voidTotalMVR.toFixed(2)}` : ''}
+              </strong>
+            </td>
+          </tr>
+        `;
+      }
+      
+      // Grand total row (valid transactions only)
+      html += `
+        <tr class="grand-total-row">
+          <td colspan="2"><strong>VALID TRANSACTIONS TOTAL</strong></td>
+          <td class="text-right"><strong>${totalValidTransactions}</strong></td>
+          <td class="text-right">
+            <strong>
+              ${totalUSD > 0 ? `$${totalUSD.toFixed(2)}` : ''}
+              ${totalUSD > 0 && totalMVR > 0 ? ' + ' : ''}
+              ${totalMVR > 0 ? `MVR ${totalMVR.toFixed(2)}` : ''}
+            </strong>
+          </td>
+        </tr>
+      `;
+      
+      // Overall total (including voids in count)
+      const overallTransactions = transactions.length;
+      html += `
+        <tr class="summary-total-row" style="background-color: rgba(44, 62, 80, 0.1);">
+          <td colspan="2"><strong>OVERALL TOTAL (ALL TRANSACTIONS)</strong></td>
+          <td class="text-right"><strong>${overallTransactions}</strong></td>
+          <td class="text-right">
+            <strong>
+              ${totalUSD + voidTotalUSD > 0 ? `$${(totalUSD + voidTotalUSD).toFixed(2)}` : ''}
+              ${(totalUSD + voidTotalUSD > 0 && totalMVR + voidTotalMVR > 0) ? ' + ' : ''}
+              ${totalMVR + voidTotalMVR > 0 ? `MVR ${(totalMVR + voidTotalMVR).toFixed(2)}` : ''}
+            </strong>
+          </td>
+        </tr>
+      `;
+      
+      html += `
+          </tbody>
+        </table>
+      `;
+      
+      document.getElementById('currencySummaryByPaymentType').innerHTML = html;
+    }
+    
+    function resetSummaryCards() {
+      document.getElementById('paymentMethodSummary').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Cash Payments:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Card/Visa/MasterCard:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Amex Payments:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Card with Details:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item summary-total">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+      `;
+      
+      document.getElementById('currencySummaryByPaymentType').innerHTML = 
+        '<p style="text-align: center; color: var(--text-light); font-size: 11px;">Generate report to view currency breakdown</p>';
+      
+      document.getElementById('syncStatusSummary').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Synced to Firebase:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Pending Sync:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Sync Failed:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item summary-total">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+      `;
+    }
+    
+    // ======== UPDATE STATS HIGHLIGHT ========
+    function updateStatsHighlight(transactions) {
+      const statsHighlight = document.getElementById('statsHighlight');
+      
+      if (transactions.length === 0) {
+        statsHighlight.style.display = 'none';
+        return;
+      }
+      
+      statsHighlight.style.display = 'flex';
+      
+      // Calculate stats
+      const totalTransactions = transactions.length;
+      
+      // Calculate total amount in USD and MVR separately (including voids)
+      let totalAmountUSD = 0;
+      let totalAmountMVR = 0;
+      let voidTransactions = 0;
+      
+      transactions.forEach(t => {
+        if (t.currency === 'USD') {
+          totalAmountUSD += t.total || 0;
+        } else if (t.currency === 'MVR') {
+          totalAmountMVR += t.total || 0;
+        }
+        
+        if (t.voided === true) {
+          voidTransactions++;
+        }
+      });
+      
+      // Update display
+      document.getElementById('totalTransactions').textContent = totalTransactions;
+      document.getElementById('totalAmountUSD').textContent = `$${totalAmountUSD.toFixed(2)}`;
+      document.getElementById('totalAmountMVR').textContent = `MVR ${totalAmountMVR.toFixed(2)}`;
+      document.getElementById('voidTransactions').textContent = voidTransactions;
+    }
+    
+    // ======== UPDATE GRAND TOTALS ========
+    function updateGrandTotals(transactions) {
+      if (transactions.length === 0) {
+        resetGrandTotals();
+        return;
+      }
+      
+      const totalTransactions = transactions.length;
+      const voidTransactions = transactions.filter(t => t.voided === true).length;
+      const validTransactions = totalTransactions - voidTransactions;
+      const totalPassengers = transactions.reduce((sum, t) => sum + (t.adults || 0) + (t.kids || 0), 0);
+      
+      // Calculate amounts including voids
+      const usdTransactions = transactions.filter(t => t.currency === 'USD');
+      const mvrTransactions = transactions.filter(t => t.currency === 'MVR');
+      
+      const totalAmountUSD = usdTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+      const totalAmountMVR = mvrTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+      
+      // Calculate valid amounts only
+      const validUsdTransactions = usdTransactions.filter(t => !t.voided);
+      const validMvrTransactions = mvrTransactions.filter(t => !t.voided);
+      
+      const validAmountUSD = validUsdTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+      const validAmountMVR = validMvrTransactions.reduce((sum, t) => sum + (t.total || 0), 0);
+      
+      document.getElementById('grandTotals').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">${totalTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">${voidTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Transactions:</span>
+          <span class="summary-value">${validTransactions}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Passengers:</span>
+          <span class="summary-value">${totalPassengers}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (USD):</span>
+          <span class="summary-value">$${totalAmountUSD.toFixed(2)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Amount (USD):</span>
+          <span class="summary-value">$${validAmountUSD.toFixed(2)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (MVR):</span>
+          <span class="summary-value">MVR ${totalAmountMVR.toFixed(2)}</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Amount (MVR):</span>
+          <span class="summary-value">MVR ${validAmountMVR.toFixed(2)}</span>
+        </div>
+      `;
+    }
+    
+    function resetGrandTotals() {
+      document.getElementById('grandTotals').innerHTML = `
+        <div class="summary-item">
+          <span class="summary-label">Total Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Void Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Transactions:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Passengers:</span>
+          <span class="summary-value">0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (USD):</span>
+          <span class="summary-value">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Amount (USD):</span>
+          <span class="summary-value">$0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Amount (MVR):</span>
+          <span class="summary-value">MVR 0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Valid Amount (MVR):</span>
+          <span class="summary-value">MVR 0.00</span>
+        </div>
+      `;
+    }
+    
+    // ======== LOADING STATE ========
+    function showLoading(show) {
+      const loadingState = document.getElementById('loadingState');
+      loadingState.style.display = show ? 'block' : 'none';
+    }
+    
+    // ======== CLEAR FILTERS ========
+    function clearFilters() {
+      setDefaultDate();
+      document.getElementById('shiftSelect').value = 'All';
+      document.getElementById('staffSelect').value = 'All';
+      setVoidFilter('all');
+      showNotification("Filters cleared", "info");
+    }
+    
+ // ======== PRINT REPORT ========
+function printReport() {
+  if (filteredTransactions.length === 0) {
+    showNotification("No data to print. Please generate a report first.", "warning");
+    return;
+  }
+  
+  const printContent = generatePrintContent();
+  const printWindow = window.open('', '_blank', 'width=800,height=1000');
+  
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Shift End Report - ${document.getElementById('reportDate').value}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 15px;
+            color: #333;
+            font-size: 11px;
+          }
+          .print-header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2c3e50;
+          }
+          .print-header h1 {
+            color: #2c3e50;
+            margin: 0 0 5px 0;
+            font-size: 16px;
+          }
+          .print-header .subtitle {
+            color: #7f8c8d;
+            font-size: 11px;
+            margin-bottom: 5px;
+          }
+          .print-header .report-date {
+            font-size: 12px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 5px 0;
+          }
+          .print-currency-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            font-size: 11px;
+          }
+          .print-currency-table th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10px;
+          }
+          .print-currency-table td {
+            padding: 5px 6px;
+            border-bottom: 1px solid #ddd;
+            font-size: 10px;
+          }
+          .print-currency-table .payment-type-header {
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+          }
+          .print-currency-table .subtotal-row {
+            background-color: #f5f5f5;
+            font-weight: 600;
+            font-size: 10px;
+          }
+          .print-currency-table .grand-total-row {
+            background-color: #e8f6ef;
+            font-weight: 700;
+            border-top: 2px solid #27ae60;
+            font-size: 11px;
+          }
+          .print-currency-table .void-row {
+            background-color: #f8f9fa;
+            color: #666;
+            font-size: 10px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 9px;
+          }
+          th {
+            background-color: #2c3e50;
+            color: white;
+            padding: 6px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 9px;
+          }
+          td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #ddd;
+            font-size: 9px;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .badge {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            color: white;
+          }
+          .badge-usd { background-color: #27ae60; }
+          .badge-mvr { background-color: #f39c12; }
+          .badge-cash { background-color: #27ae60; }
+          .badge-card { background-color: #f39c12; }
+          .badge-amex { background-color: #9b59b6; }
+          .badge-morning { background-color: #3498db; }
+          .badge-evening { background-color: #9b59b6; }
+          .badge-void { background-color: #95a5a6; }
+          .voided-row {
+            background-color: #f8f9fa;
+            color: #666;
+          }
+          .print-footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 9px;
+          }
+          .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+            padding-top: 10px;
+          }
+          .signature-box {
+            width: 30%;
+            text-align: center;
+            padding-top: 40px;
+          }
+          .signature-line {
+            border-top: 1px solid #333;
+            width: 100%;
+            margin-bottom: 5px;
+          }
+          .signature-label {
+            font-size: 9px;
+            font-weight: bold;
+            color: #2c3e50;
+          }
+          .print-info {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 9px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+          }
+          @page {
+            size: portrait;
+            margin: 10mm;
+          }
+          .print-section-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 12px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #ddd;
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+        <div class="print-footer">
+          <div class="signature-section">
+            <div class="signature-box">
+              <div class="signature-line"></div>
+              <div class="signature-label">Prepared by</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-line"></div>
+              <div class="signature-label">Checked by</div>
+            </div>
+            <div class="signature-box">
+              <div class="signature-line"></div>
+              <div class="signature-label">Handover by</div>
+            </div>
+          </div>
+          <div class="print-info">
+            Generated on ${new Date().toLocaleString()} | Koveli Lounge - Shift End Report
+          </div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(() => window.close(), 500);
+          };
+        <\/script>
+      </body>
+    </html>
+  `);
+  
+  printWindow.document.close();
+}
+
+function generatePrintContent() {
+  const reportDate = document.getElementById('reportDate').value;
+  const selectedShift = document.getElementById('shiftSelect').value;
+  const selectedStaff = document.getElementById('staffSelect').value;
+  const voidFilterText = voidFilter === 'all' ? 'All Transactions' : 
+                       voidFilter === 'valid' ? 'Valid Only' : 'Voided Only';
+  
+  // Format date for display
+  const formattedDate = new Date(reportDate).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  // Generate currency breakdown table for print
+  const currencyBreakdownHTML = generatePrintCurrencyBreakdown();
+  
+  // Generate table WITHOUT Date column, keeping only Receipt No
+  let tableHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Receipt No</th>
+          <th>Shift</th>
+          <th>Flight</th>
+          <th>Seat</th>
+          <th>A</th>
+          <th>K</th>
+          <th>Curr</th>
+          <th>Payment Type</th>
+          <th>Batch No</th>
+          <th>Approval Code</th>
+          <th>Void</th>
+          <th>Staff</th>
+          <th class="text-right">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  filteredTransactions.forEach(transaction => {
+    const receiptNo = transaction.receiptNo || 'N/A';
+    
+    const shift = transaction.shift || 'N/A';
+    const shiftBadge = shift === 'Morning' ? 
+      '<span class="badge badge-morning">M</span>' :
+      '<span class="badge badge-evening">E</span>';
+    
+    const staff = transaction.staff || 'Unknown';
+    const flightNo = transaction.flightNo || 'N/A';
+    const seatNo = transaction.seatNo || 'N/A';
+    const adults = transaction.adults || 0;
+    const kids = transaction.kids || 0;
+    const currency = transaction.currency || 'USD';
+    const currencyBadge = currency === 'USD' ? 
+      '<span class="badge badge-usd">USD</span>' :
+      '<span class="badge badge-mvr">MVR</span>';
+    
+    // Payment type for print - use what's saved in Firebase data
+    let paymentType = transaction.paymentType || 'Cash';
+    
+    let paymentBadge = '';
+    if (paymentType.toLowerCase() === 'cash') {
+      paymentBadge = '<span class="badge badge-cash">Cash</span>';
+    } else if (paymentType.toLowerCase() === 'amex') {
+      paymentBadge = '<span class="badge badge-amex">Amex</span>';
+    } else {
+      paymentBadge = '<span class="badge badge-card">' + paymentType + '</span>';
+    }
+    
+    // Card details for print - show batch number and approval code
+    const batchNo = transaction.batchNo || '';
+    const approvalCode = transaction.approvalCode || '';
+    
+    // Void status for print (simplified)
+    const isVoided = transaction.voided === true;
+    let voidDetailsHTML = '—';
+    if (isVoided) {
+      voidDetailsHTML = `
+        <span class="badge badge-void">VOID</span>
+      `;
+    }
+    
+    const total = transaction.total || 0;
+    const totalFormatted = currency === 'USD' ? 
+      `$${total.toFixed(2)}` : 
+      `MVR ${total.toFixed(2)}`;
+    
+    // Add voided row class for styling
+    const rowClass = isVoided ? 'class="voided-row"' : '';
+    
+    tableHTML += `
+      <tr ${rowClass}>
+        <td><strong>${receiptNo}</strong></td>
+        <td>${shiftBadge}</td>
+        <td>${flightNo}</td>
+        <td>${seatNo}</td>
+        <td class="text-center">${adults}</td>
+        <td class="text-center">${kids}</td>
+        <td>${currencyBadge}</td>
+        <td>${paymentBadge}</td>
+        <td class="text-center">${batchNo}</td>
+        <td class="text-center">${approvalCode}</td>
+        <td class="text-center">${voidDetailsHTML}</td>
+        <td>${staff}</td>
+        <td class="text-right"><strong>${totalFormatted}</strong></td>
+      </tr>
+    `;
+  });
+  
+  tableHTML += `
+      </tbody>
+    </table>
+  `;
+  
+  return `
+    <div class="print-header">
+      <h1>Shift End Report (Including Voids)</h1>
+      <div class="report-date">${formattedDate}</div>
+      <div class="subtitle">
+        Koveli Lounge | 
+        Shift: ${selectedShift === 'All' ? 'All Shifts' : selectedShift} |
+        Staff: ${selectedStaff === 'All' ? 'All Staff' : selectedStaff} |
+        Void Filter: ${voidFilterText}
+      </div>
+    </div>
+    
+    <div class="print-section-title">Currency Breakdown by Payment Type</div>
+    ${currencyBreakdownHTML}
+    
+    <div class="print-section-title">Transaction Details</div>
+    ${tableHTML}
+  `;
+}
+
+function generatePrintCurrencyBreakdown() {
+  const transactions = filteredTransactions;
+  
+  if (transactions.length === 0) {
+    return '<p>No transaction data available.</p>';
+  }
+  
+  // Group transactions by payment type
+  const paymentTypeGroups = {};
+  let voidTotalUSD = 0;
+  let voidTotalMVR = 0;
+  let voidCount = 0;
+  
+  transactions.forEach(transaction => {
+    const isVoided = transaction.voided === true;
+    const paymentType = transaction.paymentType || 'Cash';
+    const currency = transaction.currency || 'USD';
+    const total = transaction.total || 0;
+    
+    if (isVoided) {
+      if (currency === 'USD') {
+        voidTotalUSD += total;
+      } else if (currency === 'MVR') {
+        voidTotalMVR += total;
+      }
+      voidCount++;
+      return;
+    }
+    
+    if (!paymentTypeGroups[paymentType]) {
+      paymentTypeGroups[paymentType] = {
+        usdCount: 0,
+        usdTotal: 0,
+        mvrCount: 0,
+        mvrTotal: 0,
+        totalCount: 0,
+        totalAmount: 0
+      };
+    }
+    
+    if (currency === 'USD') {
+      paymentTypeGroups[paymentType].usdCount++;
+      paymentTypeGroups[paymentType].usdTotal += total;
+    } else if (currency === 'MVR') {
+      paymentTypeGroups[paymentType].mvrCount++;
+      paymentTypeGroups[paymentType].mvrTotal += total;
+    }
+    
+    paymentTypeGroups[paymentType].totalCount++;
+    paymentTypeGroups[paymentType].totalAmount += total;
+  });
+  
+  // Calculate totals for valid transactions
+  let totalUSD = 0;
+  let totalMVR = 0;
+  let totalValidTransactions = 0;
+  let totalValidAmount = 0;
+  
+  Object.values(paymentTypeGroups).forEach(group => {
+    totalUSD += group.usdTotal;
+    totalMVR += group.mvrTotal;
+    totalValidTransactions += group.totalCount;
+    totalValidAmount += group.totalAmount;
+  });
+  
+  // Sort payment types (Cash first, then alphabetical)
+  const sortedPaymentTypes = Object.keys(paymentTypeGroups).sort((a, b) => {
+    if (a.toLowerCase() === 'cash') return -1;
+    if (b.toLowerCase() === 'cash') return 1;
+    return a.localeCompare(b);
+  });
+  
+  // Generate HTML table
+  let html = `
+    <table class="print-currency-table">
+      <thead>
+        <tr>
+          <th>Payment Type</th>
+          <th>Currency</th>
+          <th class="text-right">Transactions</th>
+          <th class="text-right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  
+  // Add rows for each payment type
+  sortedPaymentTypes.forEach(paymentType => {
+    const group = paymentTypeGroups[paymentType];
+    
+    // Payment type header row
+    html += `
+      <tr class="payment-type-header">
+        <td colspan="2"><strong>${paymentType}</strong></td>
+        <td class="text-right"><strong>${group.totalCount}</strong></td>
+        <td class="text-right"></td>
+      </tr>
+    `;
+    
+    // USD row
+    if (group.usdCount > 0) {
+      html += `
+        <tr>
+          <td></td>
+          <td>USD</td>
+          <td class="text-right">${group.usdCount}</td>
+          <td class="text-right">$${group.usdTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+    
+    // MVR row
+    if (group.mvrCount > 0) {
+      html += `
+        <tr>
+          <td></td>
+          <td>MVR</td>
+          <td class="text-right">${group.mvrCount}</td>
+          <td class="text-right">MVR ${group.mvrTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }
+    
+    // Subtotal row
+    html += `
+      <tr class="subtotal-row">
+        <td colspan="2"><em>${paymentType} Subtotal</em></td>
+        <td class="text-right"><em>${group.totalCount}</em></td>
+        <td class="text-right">
+          <em>
+            ${group.usdTotal > 0 ? `$${group.usdTotal.toFixed(2)}` : ''}
+            ${group.usdTotal > 0 && group.mvrTotal > 0 ? ' + ' : ''}
+            ${group.mvrTotal > 0 ? `MVR ${group.mvrTotal.toFixed(2)}` : ''}
+          </em>
+        </td>
+      </tr>
+    `;
+  });
+  
+  // Add void transactions row if there are any
+  if (voidCount > 0) {
+    html += `
+      <tr class="void-row">
+        <td colspan="2"><strong>VOID TRANSACTIONS</strong></td>
+        <td class="text-right"><strong>${voidCount}</strong></td>
+        <td class="text-right">
+          <strong style="color: #95a5a6;">
+            ${voidTotalUSD > 0 ? `$${voidTotalUSD.toFixed(2)}` : ''}
+            ${voidTotalUSD > 0 && voidTotalMVR > 0 ? ' + ' : ''}
+            ${voidTotalMVR > 0 ? `MVR ${voidTotalMVR.toFixed(2)}` : ''}
+          </strong>
+        </td>
+      </tr>
+    `;
+  }
+  
+  // Grand total row (valid transactions only)
+  html += `
+    <tr class="grand-total-row">
+      <td colspan="2"><strong>VALID TRANSACTIONS TOTAL</strong></td>
+      <td class="text-right"><strong>${totalValidTransactions}</strong></td>
+      <td class="text-right">
+        <strong>
+          ${totalUSD > 0 ? `$${totalUSD.toFixed(2)}` : ''}
+          ${totalUSD > 0 && totalMVR > 0 ? ' + ' : ''}
+          ${totalMVR > 0 ? `MVR ${totalMVR.toFixed(2)}` : ''}
+        </strong>
+      </td>
+    </tr>
+  `;
+  
+  // Overall total (including voids in count)
+  const overallTransactions = transactions.length;
+  html += `
+    <tr style="background-color: #f1f2f6; font-weight: bold; font-size: 11px;">
+      <td colspan="2"><strong>OVERALL TOTAL (ALL TRANSACTIONS)</strong></td>
+      <td class="text-right"><strong>${overallTransactions}</strong></td>
+      <td class="text-right">
+        <strong>
+          ${totalUSD + voidTotalUSD > 0 ? `$${(totalUSD + voidTotalUSD).toFixed(2)}` : ''}
+          ${(totalUSD + voidTotalUSD > 0 && totalMVR + voidTotalMVR > 0) ? ' + ' : ''}
+          ${totalMVR + voidTotalMVR > 0 ? `MVR ${(totalMVR + voidTotalMVR).toFixed(2)}` : ''}
+        </strong>
+      </td>
+    </tr>
+  `;
+  
+  html += `
+      </tbody>
+    </table>
+  `;
+  
+  return html;
+}
+    
+    // ======== EXPORT TO EXCEL ========
+    function exportToExcel() {
+      if (filteredTransactions.length === 0) {
+        showNotification("No data to export. Please generate a report first.", "warning");
+        return;
+      }
+      
+      try {
+        // Create CSV content
+        let csv = 'Receipt No,Date & Time,Shift,Staff,Flight No,Seat,Adults,Kids,Currency,Payment Type,Batch No,Approval Code,Card Details Added,Void Status,Void Reason,Voided By,Voided At,Sync Status,Total Amount\n';
+        
+        filteredTransactions.forEach(transaction => {
+          const receiptNo = transaction.receiptNo || 'N/A';
+          const dateTime = transaction.timestamp ? 
+            transaction.timestamp.toLocaleString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }) : 'N/A';
+          
+          const shift = transaction.shift || 'N/A';
+          const staff = transaction.staff || 'Unknown';
+          const flightNo = transaction.flightNo || 'N/A';
+          const seatNo = transaction.seatNo || 'N/A';
+          const adults = transaction.adults || 0;
+          const kids = transaction.kids || 0;
+          const currency = transaction.currency || 'USD';
+          
+          // Use the actual paymentType from Firebase data
+          let paymentType = transaction.paymentType || 'Cash';
+          
+          const batchNo = transaction.batchNo || '';
+          const approvalCode = transaction.approvalCode || '';
+          const cardDetailsAdded = transaction.cardDetailsAdded || false;
+          
+          // Void fields
+          const isVoided = transaction.voided === true;
+          const voidStatus = isVoided ? 'VOID' : 'VALID';
+          const voidReason = transaction.voidReason || '';
+          const voidedBy = transaction.voidedBy || '';
+          const voidedAt = transaction.voidedAt ? 
+            transaction.voidedAt.toLocaleString('en-US', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }) : '';
+          
+          const syncStatus = transaction.syncStatus || 'synced';
+          const total = transaction.total || 0;
+          const totalFormatted = currency === 'USD' ? 
+            `$${total.toFixed(2)}` : 
+            `MVR ${total.toFixed(2)}`;
+          
+          // Escape commas and quotes in CSV
+          const escapeCSV = (str) => {
+            if (typeof str === 'string') {
+              if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+              }
+            }
+            return str;
+          };
+          
+          csv += `${escapeCSV(receiptNo)},${escapeCSV(dateTime)},${escapeCSV(shift)},${escapeCSV(staff)},`;
+          csv += `${escapeCSV(flightNo)},${escapeCSV(seatNo)},${adults},${kids},`;
+          csv += `${escapeCSV(currency)},${escapeCSV(paymentType)},${escapeCSV(batchNo)},${escapeCSV(approvalCode)},`;
+          csv += `${cardDetailsAdded},${escapeCSV(voidStatus)},${escapeCSV(voidReason)},${escapeCSV(voidedBy)},${escapeCSV(voidedAt)},`;
+          csv += `${escapeCSV(syncStatus)},`;
+          csv += `${escapeCSV(totalFormatted)}\n`;
+        });
+        
+        // Create download link
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `shift_report_with_voids_${document.getElementById('reportDate').value}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showNotification("Report exported to CSV successfully", "success");
+        
+      } catch (error) {
+        console.error("Error exporting to Excel:", error);
+        showNotification("Error exporting report", "error");
+      }
+    }
+    
+    // ======== NAVIGATION ========
+    function goToPOS() {
+      window.location.href = "pay.html"; // Change to your POS page filename
+    }
+    
+    // ======== INITIALIZATION ========
+    window.onload = async function() {
+      // Get current user
+      getCurrentUser();
+      
+      // Set default date
+      setDefaultDate();
+      
+      // Load initial data from Firebase only
+      await loadAllTransactions();
+      
+      // Generate initial report for today
+      await loadReport();
+      
+      // Add event listeners
+      document.getElementById('reportDate').addEventListener('change', loadReport);
+      document.getElementById('shiftSelect').addEventListener('change', loadReport);
+      document.getElementById('staffSelect').addEventListener('change', loadReport);
+      
+      showNotification("Report system ready with void tracking. Data loaded from Firebase.", "success");
+    };
+  </script>
+</body>
+</html>
