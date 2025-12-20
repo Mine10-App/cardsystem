@@ -951,6 +951,24 @@ let currentShiftStatus = 'not_started';
 let shiftDb = null;
 let backgroundSaveQueue = [];
 let isBackgroundSaving = false;
+let scannerTimer;
+let lastValue = '';
+let isScannerActive = false;
+let isProcessing = false;
+
+// ----- Shift Cache -----
+let shiftCacheInitialized = false;
+let shiftCache = {
+  data: null,
+  timestamp: 0,
+  ttl: 10 * 60 * 1000, // 10 minutes
+  dateKey: '',
+  shiftType: '',
+  openTime: ''
+};
+
+// ----- Approved Entries Cache -----
+let approvedEntriesCache = {};
 
 // ----- Maldives Timezone Functions -----
 function getMaldivesTime() {
@@ -976,316 +994,6 @@ function getMaldivesDateTimeISO() {
   return getMaldivesTime().toISOString();
 }
 
-// ----- Optimized Caching Systems -----
-
-// Flight Status Cache with TTL - 24 hour cache
-const flightStatusCache = new Map();
-const FLIGHT_CACHE_TTL = 24 * 60 * 60 * 1000;
-
-// Flight Status Batching System
-let lastFlightCheckTime = 0;
-let flightCheckCounter = 0;
-const FLIGHT_CHECK_BATCH_SIZE = 10;
-const FLIGHT_CHECK_TIME_WINDOW = 2 * 60 * 1000; // 2 minutes
-const FLIGHT_CHECK_RESET_TIME = 5 * 60 * 1000; // 5 minutes
-
-// Cache for batched flight status
-let batchedFlightCache = new Map();
-let pendingFlightChecks = new Map();
-
-// Shift Data Cache
-const shiftCache = {
-  data: null,
-  timestamp: 0,
-  ttl: 10 * 60 * 1000,
-  dateKey: '',
-  shiftType: '',
-  openTime: ''
-};
-
-let shiftCacheInitialized = false;
-let approvedEntriesCache = {};
-
-// ----- Flight Status Check with Time-Based Batching -----
-
-// Optimized flight status check with batching
-async function checkFlightStatusBatched(flightNo, date) {
-  const cacheKey = `${date}_${flightNo.toUpperCase()}`;
-  
-  // 1. Check if already in long-term cache (24-hour cache)
-  const cached = flightStatusCache.get(cacheKey);
-  if (cached) {
-    return cached.isClosed;
-  }
-  
-  // 2. Check if already in batched cache (recent batch)
-  if (batchedFlightCache.has(cacheKey)) {
-    return batchedFlightCache.get(cacheKey);
-  }
-  
-  // 3. Check if a batch check is already pending for this flight
-  if (pendingFlightChecks.has(cacheKey)) {
-    return pendingFlightChecks.get(cacheKey).promise;
-  }
-  
-  const now = Date.now();
-  const timeSinceLastCheck = now - lastFlightCheckTime;
-  
-  // 4. Check if we should do immediate check or batch
-  if (timeSinceLastCheck > FLIGHT_CHECK_RESET_TIME) {
-    // First check after 5+ minutes - do immediate check
-    console.log(`🔄 Immediate flight status check for ${flightNo}`);
-    return await doSingleFlightStatusCheck(flightNo, date, cacheKey);
-  }
-  
-  // 5. Check if we've reached batch size
-  flightCheckCounter++;
-  if (flightCheckCounter >= FLIGHT_CHECK_BATCH_SIZE) {
-    // Do batch check for all pending flights
-    console.log(`📦 Batch flight status check triggered (counter: ${flightCheckCounter})`);
-    return await doBatchFlightStatusCheck(flightNo, date, cacheKey);
-  }
-  
-  // 6. Add to pending batch
-  console.log(`⏳ Queueing flight ${flightNo} for batch check (counter: ${flightCheckCounter})`);
-  return await addToPendingBatch(flightNo, date, cacheKey);
-}
-
-// Do single flight status check
-async function doSingleFlightStatusCheck(flightNo, date, cacheKey) {
-  resetFlightCheckCounter();
-  
-  try {
-    if (!window.passengerDb) return false;
-    
-    const isClosed = await checkFlightStatusDirect(flightNo, date);
-    
-    // Cache results
-    flightStatusCache.set(cacheKey, {
-      isClosed,
-      timestamp: Date.now()
-    });
-    
-    return isClosed;
-  } catch (error) {
-    console.error('Single flight status check error:', error);
-    return false;
-  }
-}
-
-// Do batch flight status check
-async function doBatchFlightStatusCheck(flightNo, date, cacheKey) {
-  try {
-    // Add current flight to pending if not already
-    if (!pendingFlightChecks.has(cacheKey)) {
-      const { promise, resolve } = createDeferredPromise();
-      pendingFlightChecks.set(cacheKey, {
-        promise,
-        resolve,
-        flightNo,
-        date
-      });
-    }
-    
-    // Get all pending flights
-    const flightsToCheck = Array.from(pendingFlightChecks.entries())
-      .map(([key, data]) => ({
-        cacheKey: key,
-        flightNo: data.flightNo,
-        date: data.date,
-        resolver: data.resolve
-      }));
-    
-    if (flightsToCheck.length === 0) {
-      return false;
-    }
-    
-    console.log(`🚀 Executing batch check for ${flightsToCheck.length} flights`);
-    
-    // Reset counter and timer
-    resetFlightCheckCounter();
-    
-    // Batch query to Firebase
-    if (!window.passengerDb) {
-      // Resolve all as not closed if no Firebase
-      flightsToCheck.forEach(({ cacheKey, resolver }) => {
-        resolver(false);
-        batchedFlightCache.set(cacheKey, false);
-      });
-      pendingFlightChecks.clear();
-      return false;
-    }
-    
-    // Group flights by date for more efficient querying
-    const flightsByDate = {};
-    flightsToCheck.forEach(({ flightNo, date }) => {
-      if (!flightsByDate[date]) {
-        flightsByDate[date] = [];
-      }
-      flightsByDate[date].push(flightNo.toUpperCase());
-    });
-    
-    // Process each date group
-    for (const [checkDate, flightList] of Object.entries(flightsByDate)) {
-      try {
-        // Query for multiple flights at once on the same date
-        const querySnapshot = await window.passengerDb
-          .collection('flightinfo')
-          .where('date', '==', checkDate)
-          .where('flightNo', 'in', flightList.slice(0, 10))
-          .get();
-        
-        // Process results
-        const closedFlights = new Set();
-        querySnapshot.docs.forEach(doc => {
-          const data = doc.data();
-          if (data.status === 'Closed' || data.status === 'Completed' || data.status === 'Departed') {
-            closedFlights.add(data.flightNo.toUpperCase());
-          }
-        });
-        
-        // Update cache and resolve promises
-        flightList.forEach(flightNo => {
-          const flightKey = `${checkDate}_${flightNo}`;
-          const isClosed = closedFlights.has(flightNo);
-          
-          // Update long-term cache
-          flightStatusCache.set(flightKey, {
-            isClosed,
-            timestamp: Date.now()
-          });
-          
-          // Update batch cache
-          batchedFlightCache.set(flightKey, isClosed);
-          
-          // Resolve pending promises
-          if (pendingFlightChecks.has(flightKey)) {
-            pendingFlightChecks.get(flightKey).resolve(isClosed);
-            pendingFlightChecks.delete(flightKey);
-          }
-        });
-        
-      } catch (error) {
-        console.error(`Batch check error for date ${checkDate}:`, error);
-        // On error, resolve all flights in this date group as not closed
-        flightList.forEach(flightNo => {
-          const flightKey = `${checkDate}_${flightNo}`;
-          if (pendingFlightChecks.has(flightKey)) {
-            pendingFlightChecks.get(flightKey).resolve(false);
-            pendingFlightChecks.delete(flightKey);
-          }
-        });
-      }
-    }
-    
-    // Get result for current flight
-    const result = await pendingFlightChecks.get(cacheKey)?.promise || false;
-    
-    // Clear pending checks
-    pendingFlightChecks.clear();
-    
-    return result;
-    
-  } catch (error) {
-    console.error('Batch flight status check error:', error);
-    
-    // On error, resolve all pending as not closed
-    pendingFlightChecks.forEach(({ resolve }) => {
-      resolve(false);
-    });
-    pendingFlightChecks.clear();
-    
-    return false;
-  }
-}
-
-// Add flight to pending batch
-async function addToPendingBatch(flightNo, date, cacheKey) {
-  const { promise, resolve } = createDeferredPromise();
-  
-  pendingFlightChecks.set(cacheKey, {
-    promise,
-    resolve,
-    flightNo,
-    date,
-    timeout: null
-  });
-  
-  // Set up timeout for batch execution
-  const batchTimeout = setTimeout(async () => {
-    if (pendingFlightChecks.has(cacheKey)) {
-      console.log(`⏰ Batch timeout triggered for ${flightNo}`);
-      await doBatchFlightStatusCheck(flightNo, date, cacheKey);
-    }
-  }, FLIGHT_CHECK_TIME_WINDOW);
-  
-  // Store timeout for cleanup
-  pendingFlightChecks.get(cacheKey).timeout = batchTimeout;
-  
-  return promise;
-}
-
-// Direct flight status check
-async function checkFlightStatusDirect(flightNo, date) {
-  try {
-    const querySnapshot = await window.passengerDb
-      .collection('flightinfo')
-      .where('flightNo', '==', flightNo.toUpperCase())
-      .where('date', '==', date)
-      .limit(1)
-      .get();
-    
-    return !querySnapshot.empty && 
-      (querySnapshot.docs[0].data().status === 'Closed' || 
-       querySnapshot.docs[0].data().status === 'Completed' || 
-       querySnapshot.docs[0].data().status === 'Departed');
-  } catch (error) {
-    console.error('Direct flight status check error:', error);
-    return false;
-  }
-}
-
-// Reset flight check counter and timer
-function resetFlightCheckCounter() {
-  flightCheckCounter = 0;
-  lastFlightCheckTime = Date.now();
-}
-
-// Create deferred promise
-function createDeferredPromise() {
-  let resolve;
-  const promise = new Promise((res) => {
-    resolve = res;
-  });
-  return { promise, resolve };
-}
-
-// ----- DATE FORMAT FUNCTIONS -----
-function parseDateToYYYYMMDD(dateString) {
-  if (!dateString) return formatDateToYYYYMMDD(getMaldivesTime());
-  
-  try {
-    let date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-      const match = dateString.match(/(\d{4})[_\-\/](\d{2})[_\-\/](\d{2})/);
-      if (match) {
-        const [, year, month, day] = match;
-        date = new Date(`${year}-${month}-${day}`);
-      } else {
-        date = getMaldivesTime();
-      }
-    }
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  } catch (error) {
-    return formatDateToYYYYMMDD(getMaldivesTime());
-  }
-}
-
 function formatDateForDocumentId(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1293,6 +1001,15 @@ function formatDateForDocumentId(date) {
   return `${year}_${month}_${day}`;
 }
 
+function getCurrentDate() {
+  return formatDateToYYYYMMDD(getMaldivesTime());
+}
+
+function getCurrentTime() {
+  return getMaldivesTimeString();
+}
+
+// ----- Date Format Functions -----
 function formatDateForDisplay(dateString) {
   if (!dateString) return '-';
   try {
@@ -1309,367 +1026,6 @@ function formatDateForDisplay(dateString) {
   } catch (error) {
     return dateString;
   }
-}
-
-function getCurrentDate(){ 
-  return formatDateToYYYYMMDD(getMaldivesTime());
-}
-
-function getCurrentTime(){ 
-  return getMaldivesTimeString(); 
-}
-
-// ----- SHIFT MANAGEMENT FUNCTIONS -----
-
-function initializeShiftFirebase() {
-  try {
-    if (typeof shiftFirebaseConfig === 'undefined') {
-      console.error("shiftFirebaseConfig is not defined in fireshift.js");
-      showAlert("Shift system configuration not found", true);
-      return false;
-    }
-    
-    if (!firebase.apps.some(app => app.name === 'shiftSystem')) {
-      const shiftApp = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
-      shiftDb = firebase.firestore(shiftApp);
-    } else {
-      shiftDb = firebase.app('shiftSystem').firestore();
-    }
-    
-    shiftCacheInitialized = true;
-    return true;
-  } catch (error) {
-    console.error("Error initializing shift Firebase:", error);
-    showAlert("Shift system connection error", true);
-    return false;
-  }
-}
-
-function checkForOpenShift(shiftData) {
-  let result = {
-    success: false,
-    isActive: false,
-    shiftName: "No Shift Open",
-    shiftType: "",
-    openTime: "",
-    details: {}
-  };
-  
-  if (!shiftData) return result;
-  
-  // Check morning shift
-  if (shiftData.morning && shiftData.morning.status === 'open') {
-    result.success = true;
-    result.isActive = true;
-    result.shiftName = "Morning Shift";
-    result.shiftType = "morning";
-    result.openTime = shiftData.morning.open || "";
-    result.details = shiftData.morning;
-    return result;
-  }
-  
-  // Check evening shift
-  if (shiftData.evening && shiftData.evening.status === 'open') {
-    result.success = true;
-    result.isActive = true;
-    result.shiftName = "Evening Shift";
-    result.shiftType = "evening";
-    result.openTime = shiftData.evening.open || "";
-    result.details = shiftData.evening;
-    return result;
-  }
-  
-  result.success = true;
-  return result;
-}
-
-async function checkPreviousDayForOpenShift() {
-  try {
-    const todayMaldives = getMaldivesTime();
-    const yesterday = new Date(todayMaldives);
-    yesterday.setDate(todayMaldives.getDate() - 1);
-    
-    const yesterdayForDocId = formatDateForDocumentId(yesterday);
-    const yesterdayDocId = `shift_${yesterdayForDocId}`;
-    
-    console.log(`Checking previous day: ${yesterdayForDocId}`);
-    
-    try {
-      const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
-      
-      if (yesterdayDoc.exists) {
-        const shiftData = yesterdayDoc.data();
-        console.log(`Found document for ${yesterdayDocId}`);
-        
-        const shiftCheck = checkForOpenShift(shiftData);
-        
-        if (shiftCheck.isActive) {
-          const yesterdayDate = formatDateToYYYYMMDD(yesterday);
-          
-          shiftCache.data = shiftData;
-          shiftCache.timestamp = Date.now();
-          shiftCache.dateKey = yesterdayDate;
-          shiftCache.shiftType = shiftCheck.shiftType;
-          shiftCache.openTime = shiftCheck.openTime;
-          
-          return {
-            success: true,
-            shiftData: shiftData,
-            foundDate: yesterdayDate,
-            foundDateForDocId: yesterdayForDocId,
-            shiftCheck: shiftCheck,
-            isFromPreviousDay: true
-          };
-        }
-      }
-    } catch (error) {
-      console.error(`Error checking ${yesterdayForDocId}:`, error);
-    }
-    
-    return {
-      success: false,
-      message: "No open shift found in previous day"
-    };
-    
-  } catch (error) {
-    console.error("Error searching previous day:", error);
-    return {
-      success: false,
-      message: "Error: " + error.message
-    };
-  }
-}
-
-async function fetchCurrentOpenShift() {
-  try {
-    refreshShiftBtn.innerHTML = '<div class="spinner"></div>';
-    refreshShiftBtn.disabled = true;
-    
-    // Check cache first
-    const now = Date.now();
-    if (shiftCache.data && 
-        (now - shiftCache.timestamp < shiftCache.ttl) &&
-        shiftCache.dateKey) {
-      console.log('Using cached shift data');
-      
-      const shiftCheck = checkForOpenShift(shiftCache.data);
-      if (shiftCheck.isActive) {
-        updateShiftUI(shiftCheck, shiftCache.dateKey, shiftCache.dateKey !== getCurrentDate());
-        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-        refreshShiftBtn.disabled = false;
-        return;
-      }
-    }
-    
-    if (!shiftCacheInitialized) {
-      if (!initializeShiftFirebase()) {
-        showNoShiftMessage();
-        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-        refreshShiftBtn.disabled = false;
-        return;
-      }
-    }
-    
-    // Get Maldives time
-    const todayMaldives = getMaldivesTime();
-    const todayDateForYYYYMMDD = formatDateToYYYYMMDD(todayMaldives);
-    const todayDateForDocId = formatDateForDocumentId(todayMaldives);
-    const todayDocId = `shift_${todayDateForDocId}`;
-    
-    console.log("Checking today's shift:", todayDocId);
-    
-    // 1. Check today's shift
-    const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
-    
-    let shiftData = null;
-    let foundDate = todayDateForYYYYMMDD;
-    let shiftCheck = null;
-    let isFromPreviousDay = false;
-    
-    if (todayShiftDoc.exists) {
-      shiftData = todayShiftDoc.data();
-      console.log("Today's shift data found");
-      
-      shiftCheck = checkForOpenShift(shiftData);
-      
-      if (shiftCheck.isActive) {
-        console.log("Active shift found in today's document");
-      } else {
-        console.log("No active shift in today's document, checking previous day...");
-        
-        // 2. Check previous day
-        const previousOpenShift = await checkPreviousDayForOpenShift();
-        
-        if (previousOpenShift.success && previousOpenShift.shiftCheck.isActive) {
-          console.log(`Found open shift in previous day: ${previousOpenShift.foundDate}`);
-          shiftData = previousOpenShift.shiftData;
-          foundDate = previousOpenShift.foundDate;
-          shiftCheck = previousOpenShift.shiftCheck;
-          isFromPreviousDay = true;
-        } else {
-          console.log("No open shift found anywhere");
-          showNoShiftMessage();
-          showAlert("No active shift found. Please open a shift in Shift Management.", true);
-          refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-          refreshShiftBtn.disabled = false;
-          return;
-        }
-      }
-    } else {
-      console.log("No shift document for today, checking previous day...");
-      
-      // 2. Check previous day
-      const previousOpenShift = await checkPreviousDayForOpenShift();
-      
-      if (previousOpenShift.success && previousOpenShift.shiftCheck.isActive) {
-        console.log(`Found open shift in previous day: ${previousOpenShift.foundDate}`);
-        shiftData = previousOpenShift.shiftData;
-        foundDate = previousOpenShift.foundDate;
-        shiftCheck = previousOpenShift.shiftCheck;
-        isFromPreviousDay = true;
-      } else {
-        console.log("No shift data found at all");
-        showNoShiftMessage();
-        showAlert("No shift data found for today or previous day", true);
-        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-        refreshShiftBtn.disabled = false;
-        return;
-      }
-    }
-    
-    if (!shiftCheck || !shiftCheck.isActive) {
-      console.log("No active shift found");
-      showNoShiftMessage();
-      showAlert("No active shift found. Please open a shift in Shift Management.", true);
-      refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-      refreshShiftBtn.disabled = false;
-      return;
-    }
-    
-    // Update cache
-    shiftCache.data = shiftData;
-    shiftCache.timestamp = now;
-    shiftCache.dateKey = foundDate;
-    shiftCache.shiftType = shiftCheck.shiftType;
-    shiftCache.openTime = shiftCheck.openTime;
-    
-    console.log("✓ Shift loaded successfully:", {
-      date: foundDate,
-      shift: shiftCheck.shiftName,
-      isFromPreviousDay: isFromPreviousDay
-    });
-    
-    // Update UI
-    updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
-    
-  } catch (error) {
-    console.error("Error fetching shift data:", error);
-    showNoShiftMessage();
-    showAlert("Error loading shift information", true);
-  } finally {
-    refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-    refreshShiftBtn.disabled = false;
-  }
-}
-
-function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay) {
-  currentShiftType = shiftCheck.shiftType;
-  currentShiftDate = foundDate;
-  currentShiftStatus = 'open';
-  
-  const displayDate = formatDateForDisplay(foundDate);
-  
-  let dateIndicator = "";
-  if (isFromPreviousDay) {
-    const foundDateObj = new Date(foundDate);
-    const todayDateStr = getCurrentDate();
-    const todayDateObj = new Date(todayDateStr);
-    const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff === 1) {
-      dateIndicator = " (Yesterday)";
-    } else if (daysDiff > 1) {
-      dateIndicator = ` (${daysDiff} days ago)`;
-    }
-  }
-  
-  shiftDisplay.textContent = shiftCheck.shiftName;
-  dateDisplay.textContent = displayDate + dateIndicator;
-  passengerEntryCard.classList.remove("disabled");
-  
-  saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
-  updateExistingEntriesDate();
-  
-  showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
-}
-
-function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFromPreviousDay = false) {
-  const shiftInfo = {
-    shiftName: shiftName,
-    shiftType: currentShiftType,
-    shiftDate: foundDate,
-    shiftStatus: shiftStatus,
-    isFromPreviousDay: isFromPreviousDay,
-    lastUpdated: getMaldivesDateTimeISO(),
-    fetchedAt: getMaldivesTimeString()
-  };
-  
-  localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
-}
-
-function loadCurrentShiftFromLocalStorage() {
-  try {
-    const savedShift = localStorage.getItem('currentShiftInfo');
-    if (savedShift) {
-      const shiftInfo = JSON.parse(savedShift);
-      
-      const lastUpdated = new Date(shiftInfo.lastUpdated);
-      const now = getMaldivesTime();
-      const minutesDiff = (now - lastUpdated) / (1000 * 60);
-      
-      if (minutesDiff < 10 && shiftInfo.shiftStatus === 'open') {
-        currentShiftType = shiftInfo.shiftType;
-        currentShiftDate = shiftInfo.shiftDate;
-        currentShiftStatus = shiftInfo.shiftStatus;
-        
-        let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
-        if (shiftInfo.isFromPreviousDay) {
-          const shiftDateObj = new Date(shiftInfo.shiftDate);
-          const todayDateStr = getCurrentDate();
-          const todayDateObj = new Date(todayDateStr);
-          const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff === 1) {
-            displayDate += " (Yesterday)";
-          } else if (daysDiff > 1) {
-            displayDate += ` (${daysDiff} days ago)`;
-          }
-        }
-        
-        shiftDisplay.textContent = shiftInfo.shiftName;
-        dateDisplay.textContent = displayDate;
-        passengerEntryCard.classList.remove("disabled");
-        
-        console.log("Loaded OPEN shift from localStorage:", shiftInfo);
-        return true;
-      } else {
-        localStorage.removeItem('currentShiftInfo');
-      }
-    }
-  } catch (error) {
-    console.error("Error loading shift from localStorage:", error);
-    localStorage.removeItem('currentShiftInfo');
-  }
-  return false;
-}
-
-function showNoShiftMessage() {
-  shiftDisplay.textContent = "No Shift";
-  dateDisplay.textContent = "-";
-  passengerEntryCard.classList.add("disabled");
-  currentShiftType = null;
-  currentShiftDate = null;
-  currentShiftStatus = 'not_started';
 }
 
 // ----- Alert System -----
@@ -1751,6 +1107,447 @@ if (userData) {
     window.location.href = "login.html";
 }
 
+// ----- Initialize Shift Firebase -----
+function initializeShiftFirebase() {
+  try {
+    console.log("Initializing Shift Firebase...");
+    
+    // Check if fireshift.js loaded the config
+    if (typeof shiftFirebaseConfig === 'undefined') {
+      console.error("❌ Shift Firebase config not found in fireshift.js");
+      showAlert("Shift system configuration not found", true);
+      return false;
+    }
+    
+    console.log("Using Firebase config for project:", shiftFirebaseConfig.projectId);
+    
+    let app;
+    try {
+      // Try to get existing app
+      app = firebase.app('shiftSystem');
+      console.log("✅ Using existing Shift Firebase app");
+    } catch (e) {
+      // Create new app for shifts
+      app = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
+      console.log("✅ Created new Shift Firebase app");
+    }
+    
+    // Initialize Firestore
+    shiftDb = firebase.firestore(app);
+    shiftCacheInitialized = true;
+    console.log("✅ Shift Firestore initialized successfully");
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Error initializing shift Firebase:", error);
+    showAlert("Failed to initialize shift system", true);
+    return false;
+  }
+}
+
+// ----- Check for Open Shift -----
+function checkForOpenShift(shiftData) {
+  console.log("🔍 Checking for open shift in data...");
+  
+  let result = {
+    success: false,
+    isActive: false,
+    shiftName: "No Shift Open",
+    shiftType: "",
+    openTime: "",
+    details: {}
+  };
+  
+  if (!shiftData) {
+    return result;
+  }
+  
+  // Check morning shift
+  if (shiftData.morning && shiftData.morning.status === 'open') {
+    result.success = true;
+    result.isActive = true;
+    result.shiftName = "Morning Shift";
+    result.shiftType = "morning";
+    result.openTime = shiftData.morning.open || "";
+    result.details = shiftData.morning;
+    console.log("✓ Morning shift is OPEN");
+    return result;
+  }
+  
+  // Check evening shift
+  if (shiftData.evening && shiftData.evening.status === 'open') {
+    result.success = true;
+    result.isActive = true;
+    result.shiftName = "Evening Shift";
+    result.shiftType = "evening";
+    result.openTime = shiftData.evening.open || "";
+    result.details = shiftData.evening;
+    console.log("✓ Evening shift is OPEN");
+    return result;
+  }
+  
+  // If we have shift data but no open shift
+  if (shiftData.morning || shiftData.evening) {
+    result.success = true;
+    result.shiftName = "Shift Not Open";
+    console.log("⚠️ Shift exists but not open");
+  }
+  
+  return result;
+}
+
+// ----- Fetch Current Open Shift -----
+async function fetchCurrentOpenShift() {
+  console.log("🌐 Fetching current open shift...");
+  
+  try {
+    refreshShiftBtn.disabled = true;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // Initialize Firebase if not done yet
+    if (!shiftCacheInitialized) {
+      if (!initializeShiftFirebase()) {
+        showNoShiftMessage();
+        refreshShiftBtn.disabled = false;
+        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        return;
+      }
+    }
+    
+    // Check cache first
+    const now = Date.now();
+    if (shiftCache.data && (now - shiftCache.timestamp < shiftCache.ttl)) {
+      console.log("📊 Using cached shift data");
+      const shiftCheck = checkForOpenShift(shiftCache.data);
+      if (shiftCheck.isActive) {
+        updateShiftUI(shiftCheck, shiftCache.dateKey, shiftCache.dateKey !== getCurrentDate());
+        refreshShiftBtn.disabled = false;
+        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        return;
+      }
+    }
+    
+    // Get Maldives time
+    const maldivesNow = getMaldivesTime();
+    const todayDateForYYYYMMDD = formatDateToYYYYMMDD(maldivesNow);
+    const todayDateForDocId = formatDateForDocumentId(maldivesNow);
+    const todayDocId = `shift_${todayDateForDocId}`;
+    
+    console.log("📅 Today's date:", todayDateForYYYYMMDD);
+    console.log("📄 Document ID:", todayDocId);
+    
+    // Try today's shift document first
+    let shiftData = null;
+    let foundDate = todayDateForYYYYMMDD;
+    let shiftCheck = null;
+    let isFromPreviousDay = false;
+    
+    try {
+      const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
+      
+      if (todayShiftDoc.exists) {
+        shiftData = todayShiftDoc.data();
+        console.log("✅ Found today's shift document");
+        console.log("Shift data:", shiftData);
+        
+        shiftCheck = checkForOpenShift(shiftData);
+        
+        if (shiftCheck.isActive) {
+          console.log("🎉 Active shift found for today");
+        } else {
+          console.log("⚠️ No active shift today, checking previous day...");
+          // Check previous day
+          const previousResult = await checkPreviousDayForOpenShift();
+          if (previousResult.success && previousResult.shiftCheck.isActive) {
+            shiftData = previousResult.shiftData;
+            foundDate = previousResult.foundDate;
+            shiftCheck = previousResult.shiftCheck;
+            isFromPreviousDay = true;
+            console.log(`✅ Found open shift from ${foundDate} (previous day)`);
+          }
+        }
+      } else {
+        console.log("⚠️ No shift document for today, checking previous day...");
+        // Check previous day
+        const previousResult = await checkPreviousDayForOpenShift();
+        if (previousResult.success && previousResult.shiftCheck.isActive) {
+          shiftData = previousResult.shiftData;
+          foundDate = previousResult.foundDate;
+          shiftCheck = previousResult.shiftCheck;
+          isFromPreviousDay = true;
+          console.log(`✅ Found open shift from ${foundDate} (previous day)`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error fetching shift document:", error);
+      showAlert("Error fetching shift data", true);
+      refreshShiftBtn.disabled = false;
+      refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      return;
+    }
+    
+    if (!shiftCheck || !shiftCheck.isActive) {
+      console.log("❌ No active shift found anywhere");
+      showNoShiftMessage();
+      showAlert("No active shift found. Please open a shift in Shift Management.", true);
+      refreshShiftBtn.disabled = false;
+      refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      return;
+    }
+    
+    // Update cache
+    shiftCache.data = shiftData;
+    shiftCache.timestamp = now;
+    shiftCache.dateKey = foundDate;
+    shiftCache.shiftType = shiftCheck.shiftType;
+    shiftCache.openTime = shiftCheck.openTime;
+    
+    // Update UI
+    updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
+    
+    console.log("✅ Shift loaded successfully");
+    
+  } catch (error) {
+    console.error("❌ Error fetching shift data:", error);
+    showNoShiftMessage();
+    showAlert("Error loading shift information: " + error.message, true);
+  } finally {
+    refreshShiftBtn.disabled = false;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+  }
+}
+
+// ----- Check Previous Day for Open Shift -----
+async function checkPreviousDayForOpenShift() {
+  try {
+    const todayMaldives = getMaldivesTime();
+    const yesterday = new Date(todayMaldives);
+    yesterday.setDate(todayMaldives.getDate() - 1);
+    
+    const yesterdayForDocId = formatDateForDocumentId(yesterday);
+    const yesterdayDocId = `shift_${yesterdayForDocId}`;
+    const yesterdayDate = formatDateToYYYYMMDD(yesterday);
+    
+    console.log(`🔍 Checking previous day: ${yesterdayDocId} (${yesterdayDate})`);
+    
+    const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
+    
+    if (yesterdayDoc.exists) {
+      const shiftData = yesterdayDoc.data();
+      console.log(`✅ Found shift document for previous day`);
+      
+      const shiftCheck = checkForOpenShift(shiftData);
+      
+      if (shiftCheck.isActive) {
+        return {
+          success: true,
+          shiftData: shiftData,
+          foundDate: yesterdayDate,
+          foundDateForDocId: yesterdayForDocId,
+          shiftCheck: shiftCheck,
+          isFromPreviousDay: true
+        };
+      } else {
+        console.log("⚠️ Previous day shift exists but not open");
+      }
+    } else {
+      console.log("⚠️ No shift document for previous day");
+    }
+    
+    return {
+      success: false,
+      message: "No open shift found in previous day"
+    };
+    
+  } catch (error) {
+    console.error("❌ Error checking previous day:", error);
+    return {
+      success: false,
+      message: "Error: " + error.message
+    };
+  }
+}
+
+// ----- Update Shift UI -----
+function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
+  // Set global variables
+  currentShiftType = shiftCheck.shiftType;
+  currentShiftDate = foundDate;
+  currentShiftStatus = 'open';
+  
+  // Format date for display
+  const displayDate = formatDateForDisplay(foundDate);
+  
+  // Add indicator if from previous day
+  let dateIndicator = "";
+  if (isFromPreviousDay) {
+    const foundDateObj = new Date(foundDate);
+    const todayDateStr = getCurrentDate();
+    const todayDateObj = new Date(todayDateStr);
+    const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff === 1) {
+      dateIndicator = " (Yesterday)";
+    } else if (daysDiff > 1) {
+      dateIndicator = ` (${daysDiff} days ago)`;
+    }
+  }
+  
+  // Update UI elements
+  shiftDisplay.textContent = shiftCheck.shiftName;
+  dateDisplay.textContent = displayDate + dateIndicator;
+  
+  // Enable passenger entry card
+  passengerEntryCard.classList.remove("disabled");
+  
+  // Save to localStorage for persistence
+  saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
+  
+  // Update existing entries with new date if needed
+  updateExistingEntriesDate();
+  
+  // Show success message
+  showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
+  
+  console.log("✅ Shift UI updated:", {
+    shift: shiftCheck.shiftName,
+    date: foundDate,
+    isFromPreviousDay: isFromPreviousDay
+  });
+}
+
+// ----- Save Shift to LocalStorage -----
+function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFromPreviousDay = false) {
+  const shiftInfo = {
+    shiftName: shiftName,
+    shiftType: currentShiftType,
+    shiftDate: foundDate,
+    shiftStatus: shiftStatus,
+    isFromPreviousDay: isFromPreviousDay,
+    lastUpdated: getMaldivesDateTimeISO(),
+    fetchedAt: getCurrentTime()
+  };
+  
+  localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
+  console.log("💾 Shift saved to localStorage:", shiftInfo);
+}
+
+// ----- Load Shift from LocalStorage -----
+function loadCurrentShiftFromLocalStorage() {
+  try {
+    const savedShift = localStorage.getItem('currentShiftInfo');
+    if (savedShift) {
+      const shiftInfo = JSON.parse(savedShift);
+      
+      // Check if cache is fresh (less than 10 minutes old)
+      const lastUpdated = new Date(shiftInfo.lastUpdated);
+      const now = getMaldivesTime();
+      const minutesDiff = (now - lastUpdated) / (1000 * 60);
+      
+      if (minutesDiff < 10 && shiftInfo.shiftStatus === 'open') {
+        console.log("📂 Loading shift from localStorage (fresh cache)");
+        
+        currentShiftType = shiftInfo.shiftType;
+        currentShiftDate = shiftInfo.shiftDate;
+        currentShiftStatus = shiftInfo.shiftStatus;
+        
+        // Format date for display
+        let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
+        if (shiftInfo.isFromPreviousDay) {
+          const shiftDateObj = new Date(shiftInfo.shiftDate);
+          const todayDateStr = getCurrentDate();
+          const todayDateObj = new Date(todayDateStr);
+          const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff === 1) {
+            displayDate += " (Yesterday)";
+          } else if (daysDiff > 1) {
+            displayDate += ` (${daysDiff} days ago)`;
+          }
+        }
+        
+        // Update UI
+        shiftDisplay.textContent = shiftInfo.shiftName;
+        dateDisplay.textContent = displayDate;
+        passengerEntryCard.classList.remove("disabled");
+        
+        console.log("✅ Shift loaded from cache:", shiftInfo.shiftName);
+        return true;
+      } else {
+        console.log("🔄 LocalStorage cache expired, fetching fresh data");
+        localStorage.removeItem('currentShiftInfo');
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error loading shift from localStorage:", error);
+    localStorage.removeItem('currentShiftInfo');
+  }
+  return false;
+}
+
+// ----- Show No Shift Message -----
+function showNoShiftMessage() {
+  shiftDisplay.textContent = "No Shift";
+  dateDisplay.textContent = "-";
+  passengerEntryCard.classList.add("disabled");
+  currentShiftType = null;
+  currentShiftDate = null;
+  currentShiftStatus = 'not_started';
+  
+  console.log("⚠️ No active shift - system disabled");
+}
+
+// ----- Update Existing Entries Date -----
+function updateExistingEntriesDate() {
+  if (!currentShiftType || !currentShiftDate) return;
+  
+  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
+  
+  let updated = false;
+  data = data.map(entry => {
+    if (!entry.approved && entry.date !== currentShiftDate) {
+      entry.date = currentShiftDate;
+      entry.shift = currentShiftType;
+      updated = true;
+    }
+    return entry;
+  });
+  
+  if (updated) {
+    localStorage.setItem('codesData', JSON.stringify(data));
+    renderEntries();
+    console.log("📝 Updated existing entries to current shift date");
+  }
+}
+
+// ----- Refresh Shift Data -----
+async function refreshShiftData() {
+  console.log("🔄 Manual shift refresh requested");
+  
+  try {
+    refreshShiftBtn.disabled = true;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    
+    // Clear cache
+    shiftCache.data = null;
+    shiftCache.timestamp = 0;
+    localStorage.removeItem('currentShiftInfo');
+    
+    // Fetch fresh data
+    await fetchCurrentOpenShift();
+    
+    console.log("✅ Shift data refreshed");
+    
+  } catch (error) {
+    console.error("❌ Error refreshing shift:", error);
+    showAlert("Error refreshing shift data", true);
+  } finally {
+    refreshShiftBtn.disabled = false;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+  }
+}
+
 // ----- Background Save Queue Management -----
 function addToBackgroundSaveQueue(approvedEntry, docName, localId) {
   backgroundSaveQueue.push({ approvedEntry, docName, localId });
@@ -1814,10 +1611,10 @@ function loadApprovedEntriesCache() {
     const cacheData = localStorage.getItem('approvedEntriesCache');
     if (cacheData) {
       approvedEntriesCache = JSON.parse(cacheData);
-      console.log(`Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
+      console.log(`✅ Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
     }
   } catch (error) {
-    console.error('Error loading approved entries cache:', error);
+    console.error('❌ Error loading approved entries cache:', error);
     approvedEntriesCache = {};
   }
 }
@@ -1889,28 +1686,6 @@ function checkDuplicateInCache(flight, seat, date, name = null) {
   }
   
   return { isDuplicate: false };
-}
-
-// ----- Shift Management -----
-function updateExistingEntriesDate() {
-  if (!currentShiftType || !currentShiftDate) return;
-  
-  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
-  
-  let updated = false;
-  data = data.map(entry => {
-    if (!entry.approved) {
-      entry.date = currentShiftDate;
-      entry.shift = currentShiftType;
-      updated = true;
-    }
-    return entry;
-  });
-  
-  if (updated) {
-    localStorage.setItem('codesData', JSON.stringify(data));
-    renderEntries();
-  }
 }
 
 // ----- Clear input fields -----
@@ -2140,7 +1915,7 @@ function saveEditedEntry(rowIndex) {
   localStorage.setItem('codesData', JSON.stringify(data));
 }
 
-// ----- Approve Entry with Batched Flight Status Check -----
+// ----- Approve Entry -----
 async function approveEntry(index) {
   if (!currentShiftType || currentShiftStatus !== 'open') {
     showAlert('No active shift or shift not open!', true);
@@ -2229,12 +2004,6 @@ async function approveEntry(index) {
       localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    // 2. BATCHED flight status check
-    const flightClosed = await checkFlightStatusBatched(entry.flight, approvedEntry.date);
-    if (flightClosed) {
-      showAlert(`Warning: Flight ${entry.flight} appears to be closed`, true, true);
-    }
-    
     // 3. Create document name
     let docName;
     const timestamp = Date.now();
@@ -2517,11 +2286,6 @@ function parseCode(){
 }
 
 // ----- Barcode Scanner Detection -----
-let scannerTimer;
-let lastValue = '';
-let isScannerActive = false;
-let isProcessing = false;
-
 function handleScannerInput() {
   if (isProcessing) return;
   
@@ -2646,6 +2410,7 @@ function handleFieldExit() {
   }
 }
 
+// ----- Event Listeners -----
 manualSaveBtn.addEventListener('click', ()=>{
   if (isProcessing) return;
   isProcessing = true;
@@ -2675,21 +2440,31 @@ manualSaveBtn.addEventListener('click', ()=>{
   }, 1000);
 });
 
-// ----- Initialize -----
+refreshShiftBtn.addEventListener('click', refreshShiftData);
+
+// ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', function() {
+  console.log("🚀 Initializing passenger approval system...");
+  
+  // Load approved entries cache
   loadApprovedEntriesCache();
   
+  // Try to load shift from localStorage first
   const loadedFromCache = loadCurrentShiftFromLocalStorage();
   
-  refreshShiftBtn.addEventListener('click', fetchCurrentOpenShift);
-  
   if (!loadedFromCache) {
+    console.log("🔄 No fresh cache, fetching shift data from server");
     showNoShiftMessage();
+    
+    // Fetch shift data after a short delay
     setTimeout(() => {
       fetchCurrentOpenShift();
-    }, 500);
+    }, 1000);
+  } else {
+    console.log("✅ Shift loaded from cache");
   }
   
+  // Set up other event listeners
   codeInput.addEventListener('input', handleScannerInput);
   
   codeInput.addEventListener('keydown', function(e) {
@@ -2706,24 +2481,52 @@ document.addEventListener('DOMContentLoaded', function() {
   
   codeInput.addEventListener('blur', handleFieldExit);
   
+  // Render existing entries
   renderEntries();
   
-  // Clean up pending checks on page unload
-  window.addEventListener('beforeunload', () => {
-    pendingFlightChecks.forEach(({ timeout }) => {
-      if (timeout) clearTimeout(timeout);
-    });
-  });
-  
-  // Reset flight check counter periodically
+  // Set up periodic shift check (every 5 minutes)
   setInterval(() => {
-    const now = Date.now();
-    if (now - lastFlightCheckTime > FLIGHT_CHECK_RESET_TIME) {
-      resetFlightCheckCounter();
-      batchedFlightCache.clear();
+    if (currentShiftStatus === 'open') {
+      console.log("🔄 Periodic shift check");
+      fetchCurrentOpenShift();
     }
-  }, FLIGHT_CHECK_RESET_TIME);
+  }, 5 * 60 * 1000);
+  
+  // Clean up on page unload
+  window.addEventListener('beforeunload', () => {
+    console.log("🧹 Cleaning up before unload");
+  });
 });
+
+// ----- Debug Functions -----
+window.debugShiftInfo = function() {
+  console.log("=== DEBUG SHIFT INFO ===");
+  console.log("Current Shift Type:", currentShiftType);
+  console.log("Current Shift Date:", currentShiftDate);
+  console.log("Current Shift Status:", currentShiftStatus);
+  console.log("Shift Cache:", shiftCache);
+  
+  const savedShift = localStorage.getItem('currentShiftInfo');
+  console.log("LocalStorage Shift Info:", savedShift ? JSON.parse(savedShift) : "None");
+  
+  alert(`Shift Info:\n` +
+        `Type: ${currentShiftType}\n` +
+        `Date: ${currentShiftDate}\n` +
+        `Status: ${currentShiftStatus}\n` +
+        `Cache Age: ${shiftCache.timestamp ? Math.round((Date.now() - shiftCache.timestamp) / 1000) + 's' : 'None'}`);
+};
+
+window.clearShiftCache = function() {
+  shiftCache.data = null;
+  shiftCache.timestamp = 0;
+  localStorage.removeItem('currentShiftInfo');
+  localStorage.removeItem('approvedEntriesCache');
+  console.log("🧹 Cleared all shift and cache data");
+  showAlert("All cache cleared. Refreshing...", false, true);
+  setTimeout(() => {
+    fetchCurrentOpenShift();
+  }, 1000);
+};
 </script>
 </body>
 </html>
