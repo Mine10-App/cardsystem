@@ -1187,7 +1187,7 @@
   <script src="Co.js"></script>
   <script src="fireshift.js"></script>
 
- <script>
+<script>
 // ======== GLOBAL VARIABLES ========
 let currentPaymentData = null;
 let currentUser = null;
@@ -1223,6 +1223,16 @@ function formatMaldivesDateTime(date) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true
+  });
+}
+
+function formatShiftDate(date) {
+  // Format for shift date display
+  const d = new Date(date);
+  return d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
   });
 }
 
@@ -1365,12 +1375,13 @@ function updateShiftDisplay() {
     shiftType.textContent = 'Evening Shift';
   }
   
-  shiftDate.textContent = formatMaldivesDate(currentShiftDate);
+  // Use shift date, not current date
+  shiftDate.textContent = formatShiftDate(currentShiftDate);
 }
 
 function showShiftInfo() {
   const info = `Current Shift: ${currentShift}\n` +
-               `Shift Date: ${formatMaldivesDate(currentShiftDate)}\n` +
+               `Shift Date: ${formatShiftDate(currentShiftDate)}\n` +
                `Opened: ${formatMaldivesDateTime(currentShiftDate)}`;
   alert(info);
 }
@@ -1492,8 +1503,9 @@ function togglePaymentFields() {
 
 // ======== EXPIRY TIME CALCULATION ========
 function calculateExpiryTime() {
-  const now = getMaldivesTime();
-  const expiry = new Date(now.getTime() + 3 * 60 * 60 * 1000);
+  // Use shift date as base for expiry calculation
+  const baseDate = currentShiftDate || getMaldivesTime();
+  const expiry = new Date(baseDate.getTime() + 3 * 60 * 60 * 1000);
   
   let hours = expiry.getUTCHours();
   let minutes = expiry.getUTCMinutes();
@@ -1585,8 +1597,11 @@ async function saveNow() {
     return;
   }
 
-  // Calculate expiry
+  // Calculate expiry based on shift date
   const expiryData = calculateExpiryTime();
+  
+  // Use shift date for transaction date
+  const transactionDate = currentShiftDate;
   
   // Prepare payment data
   const paymentData = {
@@ -1597,6 +1612,8 @@ async function saveNow() {
     shift: currentShift,
     shiftDate: currentShiftDate.toISOString(),
     shiftDateKey: getDateKey(currentShiftDate),
+    transactionDate: transactionDate.toISOString(),
+    transactionDateKey: getDateKey(transactionDate),
     adults: parseInt(document.getElementById("adults").value),
     kids: parseInt(document.getElementById("kids").value),
     rateType: document.getElementById("rateType").value,
@@ -1608,7 +1625,7 @@ async function saveNow() {
     expiryFormatted: expiryData.formatted,
     expiryTimestamp: expiryData.timestamp,
     staff: currentUser,
-    timestamp: getMaldivesTime().toISOString(),
+    timestamp: getMaldivesTime().toISOString(), // Current timestamp for logging
     maldivesTimestamp: getMaldivesTime().toISOString(),
     cardDetailsAdded: paymentType === 'Cash',
     finalReceiptPrinted: false,
@@ -1940,7 +1957,10 @@ function displaySearchResult(payment) {
   const contentDiv = document.getElementById("searchResultContent");
   const actionsDiv = document.getElementById("searchResultActions");
   
-  const displayDate = formatMaldivesDateTime(new Date(payment.timestamp));
+  // Use shift date for display
+  const displayDate = payment.transactionDate ? 
+    formatMaldivesDateTime(new Date(payment.transactionDate)) : 
+    formatMaldivesDateTime(new Date(payment.timestamp));
   
   let html = `
     <div style="margin-bottom: 15px;">
@@ -2069,7 +2089,13 @@ function printReceipt(type = 'first', paymentData = null) {
   const paymentType = payment.paymentType;
   
   document.getElementById("r_receiptNo").textContent = receiptNo + (type === 'final' ? ' (FINAL)' : '');
-  document.getElementById("r_date").textContent = formatMaldivesDateTime(new Date(payment.timestamp));
+  
+  // Use shift date for receipt date
+  const receiptDate = payment.transactionDate ? 
+    formatMaldivesDateTime(new Date(payment.transactionDate)) : 
+    formatMaldivesDateTime(new Date(payment.timestamp));
+  
+  document.getElementById("r_date").textContent = receiptDate;
   document.getElementById("r_shift").textContent = payment.shift;
   document.getElementById("r_staff").textContent = payment.staff;
   document.getElementById("r_name").textContent = payment.name;
