@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift Management</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <!-- External Firebase Configuration -->
+    <script src="fireshift.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #fefaf0;
+            color: #5d4a2e;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.08);
+            overflow: hidden;
+            border: 1px solid #f0e6d2;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #f5e6c4 0%, #e6d5a8 100%);
+            color: #8b6b3d;
+            padding: 28px 30px;
+            text-align: center;
+            border-bottom: 3px solid #d4b483;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #8b6b3d;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        
+        .subtitle {
+            font-size: 1.05rem;
+            opacity: 0.85;
+            margin-bottom: 18px;
+            color: #a0855a;
+        }
+        
+        .date-display {
+            font-size: 1.15rem;
+            font-weight: 600;
+            background-color: rgba(255, 248, 225, 0.7);
+            display: inline-block;
+            padding: 10px 24px;
+            border-radius: 50px;
+            color: #8b6b3d;
+            border: 2px solid #e6d5a8;
+        }
+        
+        .date-control {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .date-btn {
+            background-color: rgba(212, 175, 55, 0.15);
+            border: 2px solid #d4b483;
+            color: #8b6b3d;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+        
+        .date-btn:hover {
+            background-color: rgba(212, 175, 55, 0.25);
+            transform: translateY(-2px);
+        }
+        
+        .main-content {
+            padding: 30px;
+        }
+        
+        .shift-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            justify-content: center;
+            margin-bottom: 35px;
+        }
+        
+        .shift-card {
+            flex: 1;
+            min-width: 280px;
+            background: linear-gradient(to bottom right, #fffcf5, #fcf8ee);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.1);
+            border: 2px solid #f0e6d2;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .shift-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.15);
+        }
+        
+        .morning-shift {
+            border-top: 6px solid #ffc107;
+        }
+        
+        .evening-shift {
+            border-top: 6px solid #d4af37;
+        }
+        
+        .shift-title {
+            font-size: 1.6rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .morning-shift .shift-title {
+            color: #b8860b;
+        }
+        
+        .evening-shift .shift-title {
+            color: #8b6b3d;
+        }
+        
+        .shift-info {
+            margin-bottom: 24px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0e6d2;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #a0855a;
+        }
+        
+        .info-value {
+            font-weight: 700;
+            color: #5d4a2e;
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-open {
+            background: linear-gradient(135deg, #ffc107, #ff9800);
+            color: #5d4a2e;
+            border: 2px solid #ffc107;
+        }
+        
+        .btn-open:hover {
+            background: linear-gradient(135deg, #ffb300, #f57c00);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+        }
+        
+        .btn-close {
+            background: linear-gradient(135deg, #e6d5a8, #d4b483);
+            color: #5d4a2e;
+            border: 2px solid #d4b483;
+        }
+        
+        .btn-close:hover {
+            background: linear-gradient(135deg, #d4b483, #c19a5b);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn-disabled {
+            background: #f5f0e1;
+            color: #c0b090;
+            border: 2px solid #e6d5a8;
+            cursor: not-allowed;
+        }
+        
+        .btn-disabled:hover {
+            background: #f5f0e1;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        
+        .status-open {
+            background-color: #4CAF50;
+            box-shadow: 0 0 8px #4CAF50;
+        }
+        
+        .status-closed {
+            background-color: #f44336;
+            box-shadow: 0 0 8px #f44336;
+        }
+        
+        .progress-container {
+            margin-top: 35px;
+            padding: 24px;
+            background: linear-gradient(to bottom right, #fffcf5, #fcf8ee);
+            border-radius: 12px;
+            border: 2px solid #f0e6d2;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.08);
+        }
+        
+        .progress-title {
+            font-size: 1.3rem;
+            margin-bottom: 18px;
+            color: #8b6b3d;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background-color: #f0e6d2;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffc107, #ff9800);
+            border-radius: 6px;
+            width: 0%;
+            transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.3);
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .step {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0855a;
+            font-weight: 500;
+            padding: 5px;
+            flex: 1;
+        }
+        
+        .step.active {
+            color: #8b6b3d;
+            font-weight: 700;
+            background-color: rgba(255, 248, 225, 0.5);
+            border-radius: 6px;
+            transform: scale(1.05);
+        }
+        
+        .status-message {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            border: 2px solid;
+        }
+        
+        .success {
+            background-color: #f0f8e8;
+            color: #2d7a2d;
+            border-color: #d4edda;
+        }
+        
+        .error {
+            background-color: #fdeaea;
+            color: #c33;
+            border-color: #f5c6cb;
+        }
+        
+        .info {
+            background-color: #fffcf5;
+            color: #8b6b3d;
+            border-color: #f0e6d2;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #a0855a;
+            font-size: 0.9rem;
+            border-top: 2px solid #f0e6d2;
+            background-color: #fffcf5;
+        }
+        
+        .icon-gold {
+            color: #d4af37;
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .shift-container {
+                flex-direction: column;
+            }
+            
+            .shift-card {
+                min-width: 100%;
+            }
+            
+            .progress-steps {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .step {
+                text-align: left;
+                padding: 8px 12px;
+                border-bottom: 1px solid #f0e6d2;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-business-time icon-gold"></i>Shift Management</h1>
+            <p class="subtitle">Manage your daily shifts with elegance and efficiency</p>
+            <div class="date-display" id="current-date">Loading date...</div>
+            <div class="date-control">
+                <button class="date-btn" id="prev-day-btn"><i class="fas fa-chevron-left"></i> Previous</button>
+                <button class="date-btn" id="today-btn"><i class="fas fa-calendar-day"></i> Today</button>
+                <button class="date-btn" id="next-day-btn">Next <i class="fas fa-chevron-right"></i></button>
+                <button class="date-btn" id="new-day-btn"><i class="fas fa-plus-circle"></i> New Day</button>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="status-message" id="status-message"></div>
+            
+            <div class="shift-container">
+                <div class="shift-card morning-shift">
+                    <h2 class="shift-title"><i class="fas fa-sun icon-gold"></i> Morning Shift</h2>
+                    
+                    <div class="shift-info">
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value" id="morning-status">Not Started</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Opening Time:</span>
+                            <span class="info-value" id="morning-open-time">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Closing Time:</span>
+                            <span class="info-value" id="morning-close-time">-</span>
+                        </div>
+                    </div>
+                    
+                    <button id="morning-open-btn" class="btn btn-open">
+                        <i class="fas fa-door-open"></i> Open Morning Shift
+                    </button>
+                    <button id="morning-close-btn" class="btn btn-close btn-disabled">
+                        <i class="fas fa-door-closed"></i> Close Morning Shift
+                    </button>
+                </div>
+                
+                <div class="shift-card evening-shift">
+                    <h2 class="shift-title"><i class="fas fa-moon icon-gold"></i> Evening Shift</h2>
+                    
+                    <div class="shift-info">
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value" id="evening-status">Not Available</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Opening Time:</span>
+                            <span class="info-value" id="evening-open-time">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Closing Time:</span>
+                            <span class="info-value" id="evening-close-time">-</span>
+                        </div>
+                    </div>
+                    
+                    <button id="evening-open-btn" class="btn btn-open btn-disabled">
+                        <i class="fas fa-door-open"></i> Open Evening Shift
+                    </button>
+                    <button id="evening-close-btn" class="btn btn-close btn-disabled">
+                        <i class="fas fa-door-closed"></i> Close Evening Shift
+                    </button>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <h3 class="progress-title"><i class="fas fa-chart-line icon-gold"></i> Today's Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-steps">
+                    <div class="step" id="step1">Morning Not Started</div>
+                    <div class="step" id="step2">Morning Open</div>
+                    <div class="step" id="step3">Morning Closed</div>
+                    <div class="step" id="step4">Evening Open</div>
+                    <div class="step" id="step5">Evening Closed</div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><i class="fas fa-crown icon-gold"></i> Shift Management System &copy; <span id="current-year">2023</span></p>
+            <p style="font-size: 0.8rem; margin-top: 5px;">Powered by Firebase</p>
+        </footer>
+    </div>
+
+    <script>
+// ==================== GLOBAL VARIABLES ====================
+let currentDate = new Date();
+let shiftData = {
+    date: formatDate(currentDate),
+    morning: { open: null, close: null, status: 'not_started' },
+    evening: { open: null, close: null, status: 'not_available' },
+    lastUpdated: new Date().toISOString()
+};
+
+// ==================== DOM ELEMENTS ====================
+const currentDateEl = document.getElementById('current-date');
+const currentYearEl = document.getElementById('current-year');
+const statusMessageEl = document.getElementById('status-message');
+const progressFill = document.getElementById('progress-fill');
+
+// Date control buttons
+const prevDayBtn = document.getElementById('prev-day-btn');
+const todayBtn = document.getElementById('today-btn');
+const nextDayBtn = document.getElementById('next-day-btn');
+const newDayBtn = document.getElementById('new-day-btn');
+
+// Shift elements
+const morningStatusEl = document.getElementById('morning-status');
+const morningOpenTimeEl = document.getElementById('morning-open-time');
+const morningCloseTimeEl = document.getElementById('morning-close-time');
+const morningOpenBtn = document.getElementById('morning-open-btn');
+const morningCloseBtn = document.getElementById('morning-close-btn');
+
+const eveningStatusEl = document.getElementById('evening-status');
+const eveningOpenTimeEl = document.getElementById('evening-open-time');
+const eveningCloseTimeEl = document.getElementById('evening-close-time');
+const eveningOpenBtn = document.getElementById('evening-open-btn');
+const eveningCloseBtn = document.getElementById('evening-close-btn');
+
+// Progress steps
+const step1 = document.getElementById('step1');
+const step2 = document.getElementById('step2');
+const step3 = document.getElementById('step3');
+const step4 = document.getElementById('step4');
+const step5 = document.getElementById('step5');
+
+// ==================== FIREBASE INITIALIZATION ====================
+let db;
+
+async function initializeFirebase() {
+    try {
+        // Use config from external fireshift.js
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        
+        db = firebase.firestore();
+        console.log("Firebase initialized successfully from external config");
+        showMessage("Connected to database", "success");
+        return true;
+    } catch (error) {
+        console.error("Firebase initialization error:", error);
+        showMessage("Database connection error", "error");
+        return false;
+    }
+}
+
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', async function() {
+    // Set current year
+    currentYearEl.textContent = new Date().getFullYear();
+    
+    // Initialize Firebase
+    const firebaseInitialized = await initializeFirebase();
+    
+    if (firebaseInitialized) {
+        // Load shift data for today
+        await loadShiftData();
+    } else {
+        showMessage("Using local storage mode", "info");
+    }
+    
+    // Set up event listeners
+    setupEventListeners();
+});
+
+// ==================== EVENT LISTENERS ====================
+function setupEventListeners() {
+    // Shift buttons
+    morningOpenBtn.addEventListener('click', () => openShift('morning'));
+    morningCloseBtn.addEventListener('click', () => closeShift('morning'));
+    eveningOpenBtn.addEventListener('click', () => openShift('evening'));
+    eveningCloseBtn.addEventListener('click', () => closeShift('evening'));
+    
+    // Date control buttons
+    prevDayBtn.addEventListener('click', () => changeDate(-1));
+    todayBtn.addEventListener('click', goToToday);
+    nextDayBtn.addEventListener('click', () => changeDate(1));
+    newDayBtn.addEventListener('click', startNewDay);
+}
+
+// ==================== DATE FUNCTIONS ====================
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatDateForDisplay(date) {
+    return date.toLocaleDateString('en-US', { 
+        weekday: 'short', 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+    });
+}
+
+function formatDateForDocument(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}_${month}_${day}`;
+}
+
+function changeDate(days) {
+    currentDate.setDate(currentDate.getDate() + days);
+    updateDateDisplay();
+    loadShiftData();
+}
+
+function goToToday() {
+    currentDate = new Date();
+    updateDateDisplay();
+    loadShiftData();
+}
+
+function updateDateDisplay() {
+    const formattedDate = formatDateForDisplay(currentDate);
+    currentDateEl.textContent = formattedDate;
+}
+
+async function startNewDay() {
+    // Create fresh shift data for the current date
+    shiftData = {
+        date: formatDate(currentDate),
+        morning: { open: null, close: null, status: 'not_started' },
+        evening: { open: null, close: null, status: 'not_available' },
+        lastUpdated: new Date().toISOString()
+    };
+    
+    // Save to Firebase
+    await saveShiftData();
+    showMessage(`New golden day started for ${formatDate(currentDate)}!`, "success");
+}
+
+// ==================== DELETE PREVIOUS DAY SHIFTS ====================
+async function deletePreviousDayShifts(currentDateObj) {
+    try {
+        console.log("🗑️ Deleting previous day shift documents from Firebase...");
+        
+        const todayString = formatDate(currentDateObj);
+        const todayDocId = `shift_${formatDateForDocument(currentDateObj)}`;
+        
+        let deletedCount = 0;
+        
+        // Delete all shift documents from previous days
+        // Search up to 30 days back to be safe
+        for (let i = 1; i <= 30; i++) {
+            const previousDate = new Date(currentDateObj);
+            previousDate.setDate(currentDateObj.getDate() - i);
+            
+            const previousDocId = `shift_${formatDateForDocument(previousDate)}`;
+            
+            console.log(`Attempting to delete: ${previousDocId}`);
+            
+            try {
+                const previousDocRef = db.collection('shifts').doc(previousDocId);
+                const previousDoc = await previousDocRef.get();
+                
+                if (previousDoc.exists) {
+                    // Delete the document
+                    await previousDocRef.delete();
+                    deletedCount++;
+                    console.log(`✅ Deleted document: ${previousDocId}`);
+                } else {
+                    console.log(`Document not found: ${previousDocId}`);
+                }
+            } catch (error) {
+                console.error(`Error deleting ${previousDocId}:`, error);
+                // Continue with next document
+            }
+        }
+        
+        if (deletedCount > 0) {
+            console.log(`✅ Successfully deleted ${deletedCount} previous day shift documents`);
+            return deletedCount;
+        } else {
+            console.log("No previous day shift documents found to delete");
+            return 0;
+        }
+        
+    } catch (error) {
+        console.error("Error in deletePreviousDayShifts:", error);
+        return 0;
+    }
+}
+
+// ==================== FIREBASE FUNCTIONS ====================
+async function loadShiftData() {
+    try {
+        showMessage("Loading shift data...", "info");
+        updateDateDisplay();
+        
+        const dateString = formatDate(currentDate);
+        const docId = `shift_${formatDateForDocument(currentDate)}`;
+        
+        const docRef = db.collection('shifts').doc(docId);
+        const doc = await docRef.get();
+        
+        if (doc.exists) {
+            // Load existing data
+            shiftData = doc.data();
+            console.log("Loaded existing shift data:", shiftData);
+            
+            // If shift is already open, just update UI
+            if (shiftData.morning.status === 'open' || shiftData.evening.status === 'open') {
+                showMessage(`Shift data loaded for ${dateString}`, "success");
+            } else {
+                // Show message but don't require "New Day" click
+                showMessage(`Shift data loaded. Ready to open shift.`, "success");
+            }
+        } else {
+            // Auto-create new day document if it doesn't exist
+            shiftData = {
+                date: dateString,
+                morning: { open: null, close: null, status: 'not_started' },
+                evening: { open: null, close: null, status: 'not_available' },
+                lastUpdated: new Date().toISOString()
+            };
+            
+            // Auto-save the initial document
+            await saveShiftData();
+            console.log("Auto-created new day document");
+        }
+        
+        // Update UI with loaded data
+        updateUI();
+        
+    } catch (error) {
+        console.error("Error loading shift data:", error);
+        showMessage("Error loading shift data.", "error");
+    }
+}
+
+async function saveShiftData() {
+    try {
+        shiftData.lastUpdated = new Date().toISOString();
+        const dateString = formatDate(currentDate);
+        const docId = `shift_${formatDateForDocument(currentDate)}`;
+        
+        const docRef = db.collection('shifts').doc(docId);
+        await docRef.set(shiftData);
+        
+        console.log("Shift data saved successfully!");
+        updateUI();
+        
+    } catch (error) {
+        console.error("Error saving shift data:", error);
+        showMessage("Error saving shift data.", "error");
+    }
+}
+
+// ==================== SHIFT MANAGEMENT FUNCTIONS ====================
+async function openShift(shiftType) {
+    try {
+        // Disable button during operation
+        const button = shiftType === 'morning' ? morningOpenBtn : eveningOpenBtn;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
+        button.disabled = true;
+        
+        // Step 1: Delete all previous day shift documents from Firebase
+        await deletePreviousDayShifts(currentDate);
+        
+        // Step 2: Auto-create today's document if needed
+        const dateString = formatDate(currentDate);
+        const docId = `shift_${formatDateForDocument(currentDate)}`;
+        
+        const docRef = db.collection('shifts').doc(docId);
+        const doc = await docRef.get();
+        
+        if (!doc.exists) {
+            // Auto-create document with default values
+            shiftData = {
+                date: dateString,
+                morning: { open: null, close: null, status: 'not_started' },
+                evening: { open: null, close: null, status: 'not_available' },
+                lastUpdated: new Date().toISOString()
+            };
+        }
+        
+        // Step 3: Open the shift
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour12: true, 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        shiftData[shiftType].open = timeString;
+        shiftData[shiftType].status = 'open';
+        
+        // If opening evening shift, ensure morning shift is closed
+        if (shiftType === 'evening' && shiftData.morning.status !== 'closed') {
+            if (shiftData.morning.status === 'open') {
+                shiftData.morning.close = timeString;
+                shiftData.morning.status = 'closed';
+            }
+            if (shiftData.morning.status === 'not_started') {
+                shiftData.morning.status = 'skipped';
+            }
+        }
+        
+        // Step 4: Save the changes
+        shiftData.lastUpdated = new Date().toISOString();
+        await docRef.set(shiftData);
+        
+        // Step 5: Update UI and show success
+        updateUI();
+        
+        if (shiftType === 'morning') {
+            showMessage(`🌅 Morning Shift opened! Previous days cleaned up.`, "success");
+        } else if (shiftType === 'evening') {
+            showMessage(`🌙 Evening Shift opened! Previous days cleaned up.`, "success");
+        }
+        
+    } catch (error) {
+        console.error("Error opening shift:", error);
+        showMessage("Error opening shift. Please try again.", "error");
+    } finally {
+        // Re-enable button
+        const button = shiftType === 'morning' ? morningOpenBtn : eveningOpenBtn;
+        button.innerHTML = shiftType === 'morning' ? 
+            '<i class="fas fa-door-open"></i> Open Morning Shift' : 
+            '<i class="fas fa-door-open"></i> Open Evening Shift';
+        button.disabled = false;
+    }
+}
+
+async function closeShift(shiftType) {
+    try {
+        // Disable button during operation
+        const button = shiftType === 'morning' ? morningCloseBtn : eveningCloseBtn;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Closing...';
+        button.disabled = true;
+        
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { 
+            hour12: true, 
+            hour: '2-digit', 
+            minute: '2-digit',
+            second: '2-digit'
+        });
+        
+        shiftData[shiftType].close = timeString;
+        shiftData[shiftType].status = 'closed';
+        
+        // If closing morning shift, enable evening shift
+        if (shiftType === 'morning') {
+            shiftData.evening.status = 'available';
+        }
+        
+        await saveShiftData();
+        showMessage(`${shiftType === 'morning' ? '🌅 Morning' : '🌙 Evening'} Shift closed!`, "success");
+        
+    } catch (error) {
+        console.error("Error closing shift:", error);
+        showMessage("Error closing shift. Please try again.", "error");
+    } finally {
+        // Re-enable button
+        const button = shiftType === 'morning' ? morningCloseBtn : eveningCloseBtn;
+        button.innerHTML = shiftType === 'morning' ? 
+            '<i class="fas fa-door-closed"></i> Close Morning Shift' : 
+            '<i class="fas fa-door-closed"></i> Close Evening Shift';
+        button.disabled = false;
+    }
+}
+
+// ==================== UI UPDATE FUNCTIONS ====================
+function updateUI() {
+    // Update morning shift UI
+    updateShiftUI('morning', morningStatusEl, morningOpenTimeEl, morningCloseTimeEl, morningOpenBtn, morningCloseBtn);
+    
+    // Update evening shift UI
+    updateShiftUI('evening', eveningStatusEl, eveningOpenTimeEl, eveningCloseTimeEl, eveningOpenBtn, eveningCloseBtn);
+    
+    // Update progress
+    updateProgress();
+}
+
+function updateShiftUI(shiftType, statusEl, openTimeEl, closeTimeEl, openBtn, closeBtn) {
+    const shift = shiftData[shiftType];
+    
+    // Update status
+    let statusText = '';
+    let statusClass = '';
+    
+    switch(shift.status) {
+        case 'not_started': statusText = 'Not Started'; break;
+        case 'not_available': statusText = 'Not Available'; break;
+        case 'available': statusText = 'Available'; statusClass = 'status-open'; break;
+        case 'open': statusText = 'Open'; statusClass = 'status-open'; break;
+        case 'closed': statusText = 'Closed'; statusClass = 'status-closed'; break;
+        case 'skipped': statusText = 'Skipped'; statusClass = 'status-closed'; break;
+    }
+    
+    statusEl.innerHTML = statusClass ? 
+        `<span class="status-indicator ${statusClass}"></span>${statusText}` : statusText;
+    
+    // Update times
+    openTimeEl.textContent = shift.open || '-';
+    closeTimeEl.textContent = shift.close || '-';
+    
+    // Update button states
+    updateButtonState(shiftType, openBtn, closeBtn);
+}
+
+function updateButtonState(shiftType, openBtn, closeBtn) {
+    const shift = shiftData[shiftType];
+    
+    // Reset buttons
+    openBtn.classList.remove('btn-disabled');
+    closeBtn.classList.remove('btn-disabled');
+    openBtn.disabled = false;
+    closeBtn.disabled = false;
+    
+    // Set button states based on shift status
+    if (shiftType === 'morning') {
+        if (shift.status === 'not_started') {
+            closeBtn.disabled = true;
+            closeBtn.classList.add('btn-disabled');
+        } else if (shift.status === 'open') {
+            openBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+        } else if (shift.status === 'closed' || shift.status === 'skipped') {
+            openBtn.disabled = true;
+            closeBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+            closeBtn.classList.add('btn-disabled');
+        }
+    } else { // evening shift
+        if (shift.status === 'not_available') {
+            openBtn.disabled = true;
+            closeBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+            closeBtn.classList.add('btn-disabled');
+        } else if (shift.status === 'available') {
+            closeBtn.disabled = true;
+            closeBtn.classList.add('btn-disabled');
+        } else if (shift.status === 'open') {
+            openBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+        } else if (shift.status === 'closed') {
+            openBtn.disabled = true;
+            closeBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+            closeBtn.classList.add('btn-disabled');
+        }
+    }
+}
+
+function updateProgress() {
+    // Reset all steps
+    [step1, step2, step3, step4, step5].forEach(step => {
+        step.classList.remove('active');
+    });
+    
+    let progressWidth = 0;
+    
+    // Determine current progress
+    if (shiftData.morning.status === 'not_started' || shiftData.morning.status === 'skipped') {
+        step1.classList.add('active');
+        progressWidth = 0;
+    } 
+    
+    if (shiftData.morning.status === 'open') {
+        step2.classList.add('active');
+        progressWidth = 25;
+    }
+    
+    if (shiftData.morning.status === 'closed') {
+        step3.classList.add('active');
+        progressWidth = 50;
+    }
+    
+    if (shiftData.evening.status === 'open') {
+        step4.classList.add('active');
+        progressWidth = 75;
+    }
+    
+    if (shiftData.evening.status === 'closed') {
+        step5.classList.add('active');
+        progressWidth = 100;
+    }
+    
+    // Update progress bar width with animation
+    setTimeout(() => {
+        progressFill.style.width = `${progressWidth}%`;
+    }, 100);
+}
+
+// ==================== UTILITY FUNCTIONS ====================
+function showMessage(message, type) {
+    statusMessageEl.textContent = message;
+    statusMessageEl.className = `status-message ${type}`;
+    statusMessageEl.style.display = 'block';
+    
+    // Auto-hide messages after 4 seconds
+    const hideTime = 4000;
+    setTimeout(() => {
+        statusMessageEl.style.display = 'none';
+    }, hideTime);
+}
+    </script>
+</body>
+</html>
+
+
+
+
+
+
