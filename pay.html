@@ -75,96 +75,6 @@
       align-items: center;
     }
 
-    /* Shift Info Display */
-    .shift-info-container {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 5px;
-      min-width: 200px;
-    }
-    
-    .shift-info-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-    
-    .shift-info-label {
-      color: rgba(255, 255, 255, 0.8);
-      font-weight: 500;
-    }
-    
-    .shift-info-value {
-      background: rgba(255, 255, 255, 0.2);
-      padding: 4px 10px;
-      border-radius: 4px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      min-width: 80px;
-      text-align: center;
-    }
-    
-    .shift-open {
-      color: #2ecc71;
-      font-weight: bold;
-    }
-    
-    .shift-closed {
-      color: #e74c3c;
-      font-weight: bold;
-    }
-    
-    .shift-not-available {
-      color: #f39c12;
-      font-weight: bold;
-    }
-    
-    .refresh-shift-btn {
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
-      border-radius: 4px;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 12px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.3s;
-    }
-    
-    .refresh-shift-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      transform: translateY(-1px);
-    }
-    
-    .refresh-shift-btn .icon {
-      width: 14px;
-      height: 14px;
-    }
-
-    /* Option 1: Simple container */
-    .button-container {
-      display: flex;
-      gap: 10px;
-      margin: 10px 0;
-      padding: 10px;
-    }
-
-    /* Option 2: Container with styling */
-    .button-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      padding: 20px;
-      background-color: #77d8f8;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-      margin: 20px 0;
-    }
-
     /* Option 3: Center aligned container */
     .button-container {
       display: flex;
@@ -175,15 +85,6 @@
       background: linear-gradient(to right, #a67c00, #c59402);
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    /* Option 4: Vertical button container */
-    .button-container.vertical {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      max-width: 200px;
-      padding: 10px;
     }
 
     .home-btn {
@@ -773,9 +674,8 @@
         width: 100%;
       }
       
-      .shift-info-container {
-        align-items: center;
-        width: 100%;
+      .compact-info {
+        text-align: center;
       }
       
       .search-container {
@@ -801,6 +701,15 @@
       
       .header-left h1 {
         font-size: 22px;
+      }
+      
+      .compact-info-summary {
+        flex-wrap: wrap;
+      }
+      
+      .info-row {
+        min-width: 45%;
+        margin-bottom: 10px;
       }
     }
     
@@ -831,10 +740,9 @@
     .icon-print { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>'); }
     .icon-view { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>'); }
     .icon-search { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); }
-    .icon-home { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>'); }
+     .icon-home { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>'); }
     .icon-report { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M15.73 3H8.27L3 8.27v7.46L8.27 21h7.46L21 15.73V8.27L15.73 3zM12 17.3c-.72 0-1.3-.58-1.3-1.3s.58-1.3 1.3-1.3 1.3.58 1.3 1.3-.58 1.3-1.3 1.3zm1-4.3h-2V7h2v6z"/></svg>'); }
     .icon-void { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23c19a6b"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'); }
-    .icon-refresh { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>'); }
     
     /* Modal styles */
     .modal {
@@ -1061,6 +969,24 @@
       margin: 5px 0;
       border-left: 4px solid #c0392b;
     }
+    
+    /* Refresh button in search modal */
+    .refresh-btn {
+      padding: 5px 10px;
+      background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .refresh-btn:hover {
+      background: linear-gradient(135deg, #2980b9 0%, #1f639b 100%);
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
@@ -1086,21 +1012,6 @@
         <p>Koveli Lounge - Passenger Payment Processing</p>
       </div>
       <div class="header-right">
-        <!-- Shift Information Display -->
-        <div class="shift-info-container" id="shiftInfoContainer">
-          <div class="shift-info-row">
-            <span class="shift-info-label">Date:</span>
-            <span class="shift-info-value" id="shiftDate">Loading...</span>
-          </div>
-          <div class="shift-info-row">
-            <span class="shift-info-label">Shift:</span>
-            <span class="shift-info-value" id="shiftStatus">Loading...</span>
-            <button class="refresh-shift-btn" onclick="refreshShiftInfo()" title="Refresh shift information">
-              <span class="icon icon-refresh"></span>
-            </button>
-          </div>
-        </div>
-        
         <div class="user-display" id="userDisplay" onclick="logoutUser()" title="Double-click to logout">
           <span id="currentUser">Loading...</span>
         </div>
@@ -1223,6 +1134,15 @@
             <span class="info-label">Expiry Time:</span>
             <span class="info-value-summary" id="headerExpiryTime">--:--</span>
           </div>
+          <!-- ADDED: Current Shift & Date Display -->
+          <div class="info-row">
+            <span class="info-label">Shift:</span>
+            <span class="info-value-summary" id="currentShiftDisplay">Checking...</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Date:</span>
+            <span class="info-value-summary" id="currentDateDisplay">--/--/----</span>
+          </div>
         </div>
         <div class="input-group">
           <label>Subtotal Amount</label>
@@ -1250,6 +1170,9 @@
           </button>
           <button class="btn btn-secondary" onclick="loadPayments()">
             <span class="icon icon-view"></span>View Logs
+          </button>
+          <button class="btn btn-info" onclick="refreshShiftData()">
+            🔄 Refresh Shift
           </button>
         </div>
       </div>
@@ -1547,6 +1470,9 @@
   
   <!-- Company Information -->
   <script src="Co.js"></script>
+  
+  <!-- Shift System Firebase Configuration -->
+  <script src="fireshift.js"></script>
 
   <script>
 // ======== MAIN APPLICATION CODE ========
@@ -1560,10 +1486,158 @@ let isSyncing = false;
 let currentUser = null;
 let foundReceiptData = null;
 let isSupervisor = false;
-let currentShiftInfo = null;
+
+// Shift system variables
+let shiftFirebase = null;
+let shiftData = null;
+let currentShift = 'Morning'; // Default shift
 
 // Maldives timezone offset (UTC+5 hours in milliseconds)
 const MALDIVES_OFFSET = 5 * 60 * 60 * 1000;
+
+// ======== SHIFT SYSTEM FUNCTIONS ========
+
+// Initialize Shift Firebase
+function initializeShiftFirebase() {
+    try {
+        // Check if Firebase is already initialized
+        if (!firebase.apps.length) {
+            console.error("Main Firebase not initialized");
+            return false;
+        }
+        
+        // Check if shift config is available
+        if (!window.shiftFirebaseConfig) {
+            console.warn("Shift Firebase config not found in fireshift.js");
+            return false;
+        }
+        
+        // Initialize a separate Firebase app for shift system
+        const shiftApp = firebase.initializeApp(shiftFirebaseConfig, "shiftApp");
+        shiftFirebase = firebase.firestore(shiftApp);
+        console.log("Shift Firebase initialized successfully");
+        return true;
+    } catch (error) {
+        console.error("Error initializing Shift Firebase:", error);
+        return false;
+    }
+}
+
+// Fetch shift data from Firebase
+async function fetchShiftData() {
+    try {
+        if (!shiftFirebase) {
+            if (!initializeShiftFirebase()) {
+                console.warn("Shift Firebase not initialized");
+                return null;
+            }
+        }
+        
+        // Get today's date in YYYY-MM-DD format (Maldives time)
+        const todayMaldives = getMaldivesDate();
+        const todayStr = todayMaldives.toISOString().split('T')[0]; // "2025-12-20"
+        
+        console.log("Fetching shift data for date:", todayStr);
+        
+        // Try to get today's shift document
+        const shiftRef = shiftFirebase.collection("shifts").doc(todayStr);
+        const doc = await shiftRef.get();
+        
+        if (doc.exists) {
+            shiftData = doc.data();
+            console.log("Shift data fetched:", shiftData);
+            
+            // Determine which shift is currently open
+            determineCurrentShift(shiftData);
+            
+            // Update display
+            updateShiftDisplay();
+            
+            return shiftData;
+        } else {
+            console.log("No shift data found for today:", todayStr);
+            // Use default values
+            shiftData = {
+                date: todayStr,
+                morning: { status: "not_available" },
+                evening: { status: "not_available" }
+            };
+            updateShiftDisplay();
+            return shiftData;
+        }
+    } catch (error) {
+        console.error("Error fetching shift data:", error);
+        showNotification("Error loading shift data", "error");
+        return null;
+    }
+}
+
+// Determine which shift is currently open
+function determineCurrentShift(data) {
+    const maldivesNow = getMaldivesDate();
+    const currentHour = maldivesNow.getUTCHours();
+    
+    console.log("Current Maldives hour:", currentHour);
+    console.log("Morning shift status:", data.morning?.status);
+    console.log("Evening shift status:", data.evening?.status);
+    
+    // Priority 1: Check status fields
+    if (data.morning?.status === "open") {
+        currentShift = "Morning";
+        console.log("Shift determined by status: Morning (open)");
+    } else if (data.evening?.status === "open") {
+        currentShift = "Evening";
+        console.log("Shift determined by status: Evening (open)");
+    } 
+    // Priority 2: Use time-based logic if no status
+    else if (currentHour >= 6 && currentHour < 18) {
+        currentShift = "Morning";
+        console.log("Shift determined by time: Morning (6AM-6PM)");
+    } else {
+        currentShift = "Evening";
+        console.log("Shift determined by time: Evening (6PM-6AM)");
+    }
+    
+    return currentShift;
+}
+
+// Update shift display on the page
+function updateShiftDisplay() {
+    if (!shiftData) {
+        document.getElementById("currentShiftDisplay").textContent = "Not Available";
+        document.getElementById("currentDateDisplay").textContent = "--/--/----";
+        return;
+    }
+    
+    // Format date for display (DD/MM/YYYY)
+    let displayDate = "--/--/----";
+    if (shiftData.date) {
+        const dateParts = shiftData.date.split('-');
+        if (dateParts.length === 3) {
+            displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        }
+    }
+    
+    // Update display elements
+    document.getElementById("currentShiftDisplay").textContent = currentShift;
+    document.getElementById("currentDateDisplay").textContent = displayDate;
+    
+    // Also update the shift dropdown if supervisor
+    if (isSupervisor) {
+        document.getElementById("shiftTypeSelect").value = currentShift;
+    }
+    
+    console.log(`Shift display updated: ${currentShift} | Date: ${displayDate}`);
+}
+
+// Refresh shift data manually
+async function refreshShiftData() {
+    showNotification("Refreshing shift data...", "info", 1500);
+    await fetchShiftData();
+    showNotification(`Shift updated: ${currentShift}`, "success");
+}
+
+// ======== END SHIFT SYSTEM FUNCTIONS ========
 
 // Check if Firebase is initialized
 function checkFirebase() {
@@ -1584,193 +1658,6 @@ function checkCompanyInfo() {
       address: "Velana International Airport",
       phone: "+960 304 6677"
     };
-  }
-}
-
-// ======== SHIFT MANAGEMENT SYSTEM ========
-
-// Load shift info from localStorage or fetch from Firebase
-async function loadShiftInfo() {
-  try {
-    // Check if shift info exists in localStorage
-    const savedShiftInfo = JSON.parse(localStorage.getItem('shiftInfo') || 'null');
-    
-    if (savedShiftInfo && savedShiftInfo.lastFetched) {
-      const lastFetched = new Date(savedShiftInfo.lastFetched);
-      const now = new Date();
-      const hoursDiff = (now - lastFetched) / (1000 * 60 * 60);
-      
-      // If data is less than 1 hour old, use it
-      if (hoursDiff < 1) {
-        currentShiftInfo = savedShiftInfo;
-        updateShiftDisplay(savedShiftInfo);
-        console.log("Using cached shift info from", savedShiftInfo.lastFetched);
-        return savedShiftInfo;
-      }
-    }
-    
-    // If no cached data or data is old, fetch from Firebase
-    return await fetchShiftInfoFromFirebase();
-    
-  } catch (error) {
-    console.error("Error loading shift info:", error);
-    // Return default shift info
-    const defaultInfo = {
-      date: new Date().toISOString().split('T')[0],
-      shift: "Not Available",
-      status: "not_available",
-      lastFetched: new Date().toISOString()
-    };
-    currentShiftInfo = defaultInfo;
-    updateShiftDisplay(defaultInfo);
-    return defaultInfo;
-  }
-}
-
-// Fetch shift info from Firebase
-async function fetchShiftInfoFromFirebase() {
-  if (!checkFirebase()) {
-    throw new Error("Firebase not initialized");
-  }
-  
-  try {
-    showNotification("Fetching shift information...", "info", 2000);
-    
-    // Get current date in YYYY-MM-DD format
-    const today = getMaldivesDate();
-    const todayDateString = today.toISOString().split('T')[0];
-    
-    // Try to get today's shift document
-    const shiftDoc = await window.walkinDb.collection("shifts").doc(todayDateString).get();
-    
-    if (shiftDoc.exists) {
-      const shiftData = shiftDoc.data();
-      console.log("Shift data fetched:", shiftData);
-      
-      // Determine which shift is open
-      let activeShift = "Not Available";
-      let shiftStatus = "not_available";
-      
-      // Check morning shift
-      if (shiftData.morning && shiftData.morning.status === "open") {
-        activeShift = "Morning Shift";
-        shiftStatus = "open";
-      }
-      // Check evening shift
-      else if (shiftData.evening && shiftData.evening.status === "open") {
-        activeShift = "Evening Shift";
-        shiftStatus = "open";
-      }
-      // Check if morning shift exists but not open
-      else if (shiftData.morning && shiftData.morning.status === "closed") {
-        activeShift = "Morning Shift (Closed)";
-        shiftStatus = "closed";
-      }
-      // Check if evening shift exists but not open
-      else if (shiftData.evening && shiftData.evening.status === "closed") {
-        activeShift = "Evening Shift (Closed)";
-        shiftStatus = "closed";
-      }
-      
-      // Create shift info object
-      const shiftInfo = {
-        date: shiftData.date || todayDateString,
-        shift: activeShift,
-        status: shiftStatus,
-        lastFetched: new Date().toISOString(),
-        rawData: shiftData
-      };
-      
-      // Save to localStorage
-      localStorage.setItem('shiftInfo', JSON.stringify(shiftInfo));
-      currentShiftInfo = shiftInfo;
-      
-      // Update display
-      updateShiftDisplay(shiftInfo);
-      
-      showNotification(`Shift info loaded: ${activeShift}`, "success");
-      return shiftInfo;
-      
-    } else {
-      // No shift document found for today
-      const defaultInfo = {
-        date: todayDateString,
-        shift: "No Shift Data",
-        status: "not_available",
-        lastFetched: new Date().toISOString()
-      };
-      
-      localStorage.setItem('shiftInfo', JSON.stringify(defaultInfo));
-      currentShiftInfo = defaultInfo;
-      updateShiftDisplay(defaultInfo);
-      
-      showNotification("No shift data found for today", "warning");
-      return defaultInfo;
-    }
-    
-  } catch (error) {
-    console.error("Error fetching shift info from Firebase:", error);
-    throw error;
-  }
-}
-
-// Update shift display in header
-function updateShiftDisplay(shiftInfo) {
-  const dateElement = document.getElementById("shiftDate");
-  const statusElement = document.getElementById("shiftStatus");
-  
-  if (dateElement && statusElement && shiftInfo) {
-    // Format date for display (DD/MM/YYYY)
-    const dateParts = shiftInfo.date.split('-');
-    const formattedDate = dateParts.length === 3 ? 
-      `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : 
-      shiftInfo.date;
-    
-    dateElement.textContent = formattedDate;
-    
-    // Set shift status with appropriate styling
-    statusElement.textContent = shiftInfo.shift;
-    
-    // Clear existing classes
-    statusElement.className = 'shift-info-value';
-    
-    // Add appropriate class based on status
-    if (shiftInfo.status === "open") {
-      statusElement.classList.add('shift-open');
-    } else if (shiftInfo.status === "closed") {
-      statusElement.classList.add('shift-closed');
-    } else {
-      statusElement.classList.add('shift-not-available');
-    }
-  }
-}
-
-// Refresh shift info (manual refresh button)
-async function refreshShiftInfo() {
-  try {
-    const shiftInfo = await fetchShiftInfoFromFirebase();
-    return shiftInfo;
-  } catch (error) {
-    showNotification("Failed to refresh shift info", "error");
-    console.error("Error refreshing shift info:", error);
-    return currentShiftInfo;
-  }
-}
-
-// Get current shift for payment saving
-function getCurrentShift() {
-  if (!currentShiftInfo) {
-    return "Morning"; // Default fallback
-  }
-  
-  // Extract shift name from the shift info
-  const shiftText = currentShiftInfo.shift.toLowerCase();
-  if (shiftText.includes("morning")) {
-    return "Morning";
-  } else if (shiftText.includes("evening")) {
-    return "Evening";
-  } else {
-    return "Morning"; // Default fallback
   }
 }
 
@@ -2124,14 +2011,6 @@ function saveToLocalStorage(data) {
     // Add Maldives timestamp for consistency
     data.maldivesTimestamp = getMaldivesDate().toISOString();
     
-    // Add shift date from current shift info
-    if (currentShiftInfo && currentShiftInfo.date) {
-      data.shiftDate = currentShiftInfo.date;
-    } else {
-      // Fallback to today's date
-      data.shiftDate = getMaldivesDate().toISOString().split('T')[0];
-    }
-    
     // Check if payment already exists
     const existingIndex = pendingPayments.findIndex(p => p.id === data.id);
     
@@ -2327,8 +2206,7 @@ async function syncPendingPayments() {
       name: payment.name || '',
       flightNo: payment.flightNo || '',
       seatNo: payment.seatNo || '',
-      shift: payment.shiftTypeSelect || getCurrentShift(),
-      shiftDate: payment.shiftDate || (currentShiftInfo ? currentShiftInfo.date : getMaldivesDate().toISOString().split('T')[0]),
+      shift: currentShift, // Use the current shift from shift system
       adults: payment.adults || 0,
       kids: payment.kids || 0,
       currency: payment.currency || 'USD',
@@ -2419,16 +2297,11 @@ async function savePayment(data) {
     const userData = JSON.parse(localStorage.getItem("loggedInUser"));
     data.userId = userData ? userData.id : '';
     
+    // Add current shift to data
+    data.shift = currentShift;
+    
     // Add Maldives timestamp
     data.maldivesTimestamp = getMaldivesDate().toISOString();
-    
-    // Add shift date from current shift info
-    if (currentShiftInfo && currentShiftInfo.date) {
-      data.shiftDate = currentShiftInfo.date;
-    } else {
-      // Fallback to today's date
-      data.shiftDate = getMaldivesDate().toISOString().split('T')[0];
-    }
     
     // DOCUMENT ID IS THE RECEIPT NUMBER
     const docId = data.receiptNo.toString(); // Ensure it's a string
@@ -2864,17 +2737,11 @@ async function saveNow(){
     return;
   }
 
-  // Check if shift is available
-  if (!currentShiftInfo || currentShiftInfo.status === "not_available") {
-    showNotification("No active shift found. Please refresh shift info or contact supervisor.", "error");
-    return;
-  }
-
   const paymentType = document.getElementById("paymentType").value;
   const total = parseFloat(document.getElementById("total").value) || 0;
   
-  // Use current shift from shift info
-  const shift = getCurrentShift();
+  // Use current shift from shift system
+  const shift = currentShift;
   
   // Calculate expiry time (using Maldives timezone)
   const expiryData = calculateExpiryTime();
@@ -2886,7 +2753,6 @@ async function saveNow(){
     flightNo: document.getElementById("flightNo").value,
     seatNo: document.getElementById("seatNo").value,
     shift: shift,
-    shiftDate: currentShiftInfo.date, // Save the shift date from Firebase
     adults: parseInt(document.getElementById("adults").value),
     kids: parseInt(document.getElementById("kids").value),
     currency: document.getElementById("currency").value,
@@ -3341,8 +3207,7 @@ function displaySearchResult(payment) {
     <div style="margin-bottom: 15px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <h4 style="margin: 0;">Receipt Details</h4>
-        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" 
-                onclick="refreshReceiptData('${payment.receiptNo}')">
+        <button class="refresh-btn" onclick="refreshReceiptData('${payment.receiptNo}')">
           🔄 Refresh
         </button>
       </div>
@@ -3414,8 +3279,8 @@ function displaySearchResult(payment) {
           <input type="text" readonly value="${payment.staff || 'Unknown'}">
         </div>
         <div class="input-group">
-          <label>Status</label>
-          <input type="text" readonly value="${payment.voided ? 'VOIDED' : (payment.paymentType === 'Cash' ? (payment.finalReceiptPrinted ? 'Complete' : 'Pending Final') : (payment.cardDetailsAdded ? 'Completed' : 'Pending Details'))}">
+          <label>Shift</label>
+          <input type="text" readonly value="${payment.shift || currentShift}">
         </div>
       </div>
   `;
@@ -3618,7 +3483,7 @@ async function printReceipt(type = 'first', paymentData = null) {
   
   document.getElementById("r_receiptNo").innerText = receiptNo + (isVoided ? ' (VOID)' : (type === 'final' ? ' (FINAL)' : ''));
   document.getElementById("r_date").innerText = formatDateForDisplay(new Date());
-  document.getElementById("r_shift").innerText = payment.shift || getCurrentShift();
+  document.getElementById("r_shift").innerText = payment.shift || currentShift;
   document.getElementById("r_staff").innerText = payment.staff || currentUser || 'Unknown';
   document.getElementById("r_name").innerText = payment.name || 'N/A';
   document.getElementById("r_flight").innerText = payment.flightNo || 'N/A';
@@ -3816,15 +3681,15 @@ window.onload = async function(){
   // Get current user from localStorage
   getCurrentUser();
   
-  // Load shift information
-  await loadShiftInfo();
-  
   // Check if Firebase is initialized
   if (!checkFirebase()) {
     showNotification("Firebase not initialized. Working in offline mode.", "warning", 5000);
   } else {
     console.log("Firebase is ready");
   }
+  
+  // Initialize shift system
+  await fetchShiftData();
   
   updatePricing();
   togglePaymentFields();
