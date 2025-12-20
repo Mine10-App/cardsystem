@@ -1512,41 +1512,47 @@ function calculateExpiryTime() {
   };
 }
 
-// ======== BOARDING PASS PARSING ========
-function parseCode() {
+// ======== PARSE BOARDING PASS ========
+function parseCode(){
   const code = document.getElementById("codeInput").value.trim().toUpperCase();
   if(!code) return;
-  
-  // Simple parsing logic
   const parts = code.split(/\s+/);
-  
-  // Extract name (simplified)
-  let name = '';
-  if (parts.length > 0) {
-    // Remove PNR and other codes
-    name = parts[0].replace(/[0-9]/g, '').trim();
+
+  // Name + PNR
+  const idxMLE = code.indexOf('MLE');
+  let name='', pnr='';
+  if(idxMLE!==-1){
+    let fullNamePart = code.substring(0,idxMLE).trim();
+    if(fullNamePart.length>8){
+      name = fullNamePart.substring(2, fullNamePart.length-6).trim();
+      pnr = fullNamePart.substring(fullNamePart.length-6).trim();
+    }
   }
-  
-  // Extract flight number (looking for MLE pattern)
-  let flightNo = '';
-  for(let i = 0; i < parts.length; i++) {
-    if(parts[i].includes('MLE')) {
-      flightNo = parts[i];
+
+  // Flight No
+  let flightNo=''; let flightTokenIndex=-1;
+  for(let i=0;i<parts.length;i++){
+    if(parts[i].includes('MLE')){
+      flightTokenIndex=i;
+      const mleToken = parts[i];
+      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
       break;
     }
   }
-  
-  // Extract seat number (usually after flight)
-  let seatNo = '';
-  const flightIndex = parts.findIndex(p => p.includes('MLE'));
-  if(flightIndex !== -1 && parts[flightIndex + 1]) {
-    seatNo = parts[flightIndex + 1].substring(0, 3);
+
+  // Seat No
+  let seatNo='';
+  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
+    let seatToken = parts[flightTokenIndex+2];
+    if(seatToken.length>9){
+      seatNo = seatToken.substring(5, seatToken.length-4);
+    }
   }
-  
+
   document.getElementById("name").value = name;
   document.getElementById("flightNo").value = flightNo;
   document.getElementById("seatNo").value = seatNo;
-  
+
   updatePricing();
 }
 
