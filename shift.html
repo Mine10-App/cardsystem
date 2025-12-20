@@ -463,6 +463,9 @@ let shiftData = {
     lastUpdated: new Date().toISOString()
 };
 
+// Track if any shift is open globally
+let isAnyShiftOpen = false;
+
 // ==================== DOM ELEMENTS ====================
 const currentDateEl = document.getElementById('current-date');
 const currentYearEl = document.getElementById('current-year');
@@ -525,6 +528,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const firebaseInitialized = await initializeFirebase();
     
     if (firebaseInitialized) {
+        // Check if any shift is open globally
+        await checkForOpenShifts();
         // Load shift data for today
         await loadShiftData();
     } else {
@@ -592,6 +597,12 @@ function updateDateDisplay() {
 }
 
 async function startNewDay() {
+    // Check if any shift is open
+    if (isAnyShiftOpen) {
+        showMessage("Cannot start new day while a shift is open. Please close all shifts first.", "error");
+        return;
+    }
+    
     // Create fresh shift data for the current date
     shiftData = {
         date: formatDate(currentDate),
@@ -605,55 +616,93 @@ async function startNewDay() {
     showMessage(`New golden day started for ${formatDate(currentDate)}!`, "success");
 }
 
-// ==================== DELETE PREVIOUS DAY SHIFTS ====================
-async function deletePreviousDayShifts(currentDateObj) {
+// ==================== CHECK FOR OPEN SHIFTS ====================
+async function checkForOpenShifts() {
     try {
-        console.log("🗑️ Deleting previous day shift documents from Firebase...");
+        console.log("🔍 Checking for open shifts globally...");
         
-        const todayString = formatDate(currentDateObj);
-        const todayDocId = `shift_${formatDateForDocument(currentDateObj)}`;
+        const todayString = formatDate(currentDate);
+        const todayDocId = `shift_${formatDateForDocument(currentDate)}`;
         
-        let deletedCount = 0;
+        // Get yesterday's date
+        const yesterday = new Date(currentDate);
+        yesterday.setDate(currentDate.getDate() - 1);
+        const yesterdayDocId = `shift_${formatDateForDocument(yesterday)}`;
         
-        // Delete all shift documents from previous days
-        // Search up to 30 days back to be safe
-        for (let i = 1; i <= 30; i++) {
-            const previousDate = new Date(currentDateObj);
-            previousDate.setDate(currentDateObj.getDate() - i);
+        // Check both today and yesterday
+        const docIdsToCheck = [todayDocId, yesterdayDocId];
+        
+        for (const docId of docIdsToCheck) {
+            const docRef = db.collection('shifts').doc(docId);
+            const doc = await docRef.get();
             
-            const previousDocId = `shift_${formatDateForDocument(previousDate)}`;
-            
-            console.log(`Attempting to delete: ${previousDocId}`);
-            
-            try {
-                const previousDocRef = db.collection('shifts').doc(previousDocId);
-                const previousDoc = await previousDocRef.get();
+            if (doc.exists) {
+                const data = doc.data();
                 
-                if (previousDoc.exists) {
-                    // Delete the document
-                    await previousDocRef.delete();
-                    deletedCount++;
-                    console.log(`✅ Deleted document: ${previousDocId}`);
-                } else {
-                    console.log(`Document not found: ${previousDocId}`);
+                // Check if any shift is open
+                if (data.morning && data.morning.status === 'open') {
+                    isAnyShiftOpen = true;
+                    console.log(`Found open morning shift in ${docId}`);
+                    return;
                 }
-            } catch (error) {
-                console.error(`Error deleting ${previousDocId}:`, error);
-                // Continue with next document
+                
+                if (data.evening && data.evening.status === 'open') {
+                    isAnyShiftOpen = true;
+                    console.log(`Found open evening shift in ${docId}`);
+                    return;
+                }
             }
         }
         
-        if (deletedCount > 0) {
-            console.log(`✅ Successfully deleted ${deletedCount} previous day shift documents`);
-            return deletedCount;
+        isAnyShiftOpen = false;
+        console.log("No open shifts found");
+        
+    } catch (error) {
+        console.error("Error checking for open shifts:", error);
+        isAnyShiftOpen = false;
+    }
+}
+
+// ==================== DELETE YESTERDAY'S DATA ====================
+async function deleteYesterdaysData() {
+    try {
+        console.log("🗑️ Deleting yesterday's shift data...");
+        
+        // Calculate yesterday's date
+        const yesterday = new Date(currentDate);
+        yesterday.setDate(currentDate.getDate() - 1);
+        
+        const yesterdayDocId = `shift_${formatDateForDocument(yesterday)}`;
+        
+        console.log(`Attempting to delete yesterday's document: ${yesterdayDocId}`);
+        
+        const yesterdayDocRef = db.collection('shifts').doc(yesterdayDocId);
+        const yesterdayDoc = await yesterdayDocRef.get();
+        
+        if (yesterdayDoc.exists) {
+            // Check if all shifts are closed in yesterday's data
+            const yesterdayData = yesterdayDoc.data();
+            const allShiftsClosed = 
+                (yesterdayData.morning.status === 'closed' || yesterdayData.morning.status === 'skipped') &&
+                (yesterdayData.evening.status === 'closed' || yesterdayData.evening.status === 'skipped');
+            
+            if (allShiftsClosed) {
+                // Delete yesterday's document
+                await yesterdayDocRef.delete();
+                console.log(`✅ Deleted yesterday's document: ${yesterdayDocId}`);
+                return true;
+            } else {
+                console.log(`⚠️ Yesterday's shifts not all closed, not deleting: ${yesterdayDocId}`);
+                return false;
+            }
         } else {
-            console.log("No previous day shift documents found to delete");
-            return 0;
+            console.log(`No yesterday document found: ${yesterdayDocId}`);
+            return false;
         }
         
     } catch (error) {
-        console.error("Error in deletePreviousDayShifts:", error);
-        return 0;
+        console.error("Error deleting yesterday's data:", error);
+        return false;
     }
 }
 
@@ -674,13 +723,12 @@ async function loadShiftData() {
             shiftData = doc.data();
             console.log("Loaded existing shift data:", shiftData);
             
-            // If shift is already open, just update UI
+            // Check if this shift is open
             if (shiftData.morning.status === 'open' || shiftData.evening.status === 'open') {
-                showMessage(`Shift data loaded for ${dateString}`, "success");
-            } else {
-                // Show message but don't require "New Day" click
-                showMessage(`Shift data loaded. Ready to open shift.`, "success");
+                isAnyShiftOpen = true;
             }
+            
+            showMessage(`Shift data loaded for ${dateString}`, "success");
         } else {
             // Auto-create new day document if it doesn't exist
             shiftData = {
@@ -725,16 +773,22 @@ async function saveShiftData() {
 // ==================== SHIFT MANAGEMENT FUNCTIONS ====================
 async function openShift(shiftType) {
     try {
+        // Check if any shift is already open globally
+        if (isAnyShiftOpen) {
+            showMessage("Cannot open a new shift while another shift is open. Please close the open shift first.", "error");
+            return;
+        }
+        
         // Disable button during operation
         const button = shiftType === 'morning' ? morningOpenBtn : eveningOpenBtn;
         const originalText = button.innerHTML;
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening...';
         button.disabled = true;
         
-        // Step 1: Delete all previous day shift documents from Firebase
-        await deletePreviousDayShifts(currentDate);
+        // Delete yesterday's data if all shifts are closed
+        await deleteYesterdaysData();
         
-        // Step 2: Auto-create today's document if needed
+        // Auto-create today's document if needed
         const dateString = formatDate(currentDate);
         const docId = `shift_${formatDateForDocument(currentDate)}`;
         
@@ -751,7 +805,7 @@ async function openShift(shiftType) {
             };
         }
         
-        // Step 3: Open the shift
+        // Open the shift
         const now = new Date();
         const timeString = now.toLocaleTimeString('en-US', { 
             hour12: true, 
@@ -762,6 +816,7 @@ async function openShift(shiftType) {
         
         shiftData[shiftType].open = timeString;
         shiftData[shiftType].status = 'open';
+        isAnyShiftOpen = true;
         
         // If opening evening shift, ensure morning shift is closed
         if (shiftType === 'evening' && shiftData.morning.status !== 'closed') {
@@ -774,17 +829,17 @@ async function openShift(shiftType) {
             }
         }
         
-        // Step 4: Save the changes
+        // Save the changes
         shiftData.lastUpdated = new Date().toISOString();
         await docRef.set(shiftData);
         
-        // Step 5: Update UI and show success
+        // Update UI and show success
         updateUI();
         
         if (shiftType === 'morning') {
-            showMessage(`🌅 Morning Shift opened! Previous days cleaned up.`, "success");
+            showMessage(`🌅 Morning Shift opened!`, "success");
         } else if (shiftType === 'evening') {
-            showMessage(`🌙 Evening Shift opened! Previous days cleaned up.`, "success");
+            showMessage(`🌙 Evening Shift opened!`, "success");
         }
         
     } catch (error) {
@@ -818,6 +873,7 @@ async function closeShift(shiftType) {
         
         shiftData[shiftType].close = timeString;
         shiftData[shiftType].status = 'closed';
+        isAnyShiftOpen = false;
         
         // If closing morning shift, enable evening shift
         if (shiftType === 'morning') {
@@ -887,6 +943,15 @@ function updateButtonState(shiftType, openBtn, closeBtn) {
     closeBtn.classList.remove('btn-disabled');
     openBtn.disabled = false;
     closeBtn.disabled = false;
+    
+    // Check if any shift is open globally
+    if (isAnyShiftOpen) {
+        // If this shift is not the open one, disable open button
+        if (shift.status !== 'open') {
+            openBtn.disabled = true;
+            openBtn.classList.add('btn-disabled');
+        }
+    }
     
     // Set button states based on shift status
     if (shiftType === 'morning') {
@@ -978,9 +1043,3 @@ function showMessage(message, type) {
     </script>
 </body>
 </html>
-
-
-
-
-
-
