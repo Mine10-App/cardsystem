@@ -3,12 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift Summary Report</title>
+    <title>Shift Transactions Report</title>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F5E8B8;
+            --gold-dark: #B8860B;
+            --gold-darker: #8B6914;
+            --white: #FFFFFF;
+            --off-white: #FFFEF7;
+            --light-gray: #F8F8F8;
+            --gray: #E5E5E5;
+            --dark-gray: #666666;
+            --success: #4CAF50;
+            --error: #f44336;
+            --info: #2196F3;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -17,158 +32,238 @@
         }
         
         body {
-            background-color: #f5f5f5;
-            color: #333;
+            background-color: var(--off-white);
+            color: var(--gold-darker);
             padding: 20px;
             min-height: 100vh;
+            background-image: radial-gradient(circle at 10% 20%, rgba(255, 248, 225, 0.3) 0%, transparent 20%),
+                              radial-gradient(circle at 90% 80%, rgba(255, 248, 225, 0.3) 0%, transparent 20%);
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            background-color: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(212, 175, 55, 0.15);
             overflow: hidden;
+            border: 2px solid var(--gold-light);
+            position: relative;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-dark), var(--gold));
+            z-index: 2;
         }
         
         header {
-            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
-            color: white;
-            padding: 20px 30px;
+            background: linear-gradient(135deg, var(--gold-light) 0%, rgba(212, 175, 55, 0.9) 100%);
+            color: var(--gold-darker);
+            padding: 25px 30px;
             text-align: center;
-            border-bottom: 4px solid #3498db;
+            border-bottom: 3px solid var(--gold);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         h1 {
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
             font-weight: 700;
+            color: var(--gold-darker);
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 1;
         }
         
         .subtitle {
-            font-size: 0.9rem;
+            font-size: 1rem;
             opacity: 0.9;
             margin-bottom: 15px;
-            font-weight: 300;
+            font-weight: 500;
+            color: var(--gold-dark);
+            position: relative;
+            z-index: 1;
         }
         
         .filter-section {
-            padding: 20px 30px;
-            background-color: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
+            padding: 25px 30px;
+            background-color: var(--off-white);
+            border-bottom: 2px solid var(--gold-light);
+            position: relative;
+        }
+        
+        .filter-section::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 5%;
+            right: 5%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
         
         .filter-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 20px;
             align-items: flex-end;
         }
         
         .filter-group {
             flex: 1;
-            min-width: 200px;
+            min-width: 220px;
         }
         
         .filter-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #2c3e50;
+            color: var(--gold-darker);
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-group label i {
+            color: var(--gold);
         }
         
         .filter-group input,
         .filter-group select {
             width: 100%;
-            padding: 10px 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
+            padding: 12px 15px;
+            border: 2px solid var(--gold-light);
+            border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.3s;
-            background-color: white;
+            transition: all 0.3s;
+            background-color: var(--white);
+            color: var(--gold-darker);
         }
         
         .filter-group input:focus,
         .filter-group select:focus {
             outline: none;
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
         }
         
         .action-buttons {
             display: flex;
-            gap: 12px;
-            margin-top: 20px;
+            gap: 15px;
+            margin-top: 25px;
         }
         
         .btn {
-            padding: 12px 24px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            border: 2px solid #2980b9;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--white);
+            border: 2px solid var(--gold);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #2980b9, #2573a7);
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-darker));
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
         }
         
         .btn-secondary {
-            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-            color: white;
-            border: 2px solid #7f8c8d;
+            background: linear-gradient(135deg, var(--light-gray), var(--gray));
+            color: var(--gold-darker);
+            border: 2px solid var(--gold-light);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         
         .btn-secondary:hover {
-            background: linear-gradient(135deg, #7f8c8d, #6c7b7d);
+            background: linear-gradient(135deg, var(--gray), #d9d9d9);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(127, 140, 141, 0.3);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
         }
         
         .btn-success {
             background: linear-gradient(135deg, #27ae60, #219653);
-            color: white;
+            color: var(--white);
             border: 2px solid #219653;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
         }
         
         .btn-success:hover {
             background: linear-gradient(135deg, #219653, #1e8449);
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
         }
         
         .report-container {
-            padding: 20px;
+            padding: 25px;
             min-height: 300px;
+            background: linear-gradient(to bottom, var(--off-white), var(--white));
         }
         
         .loading {
             text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
+            padding: 50px;
+            color: var(--gold-dark);
             font-size: 16px;
         }
         
         .loading i {
-            font-size: 36px;
-            margin-bottom: 15px;
-            color: #3498db;
+            font-size: 40px;
+            margin-bottom: 20px;
+            color: var(--gold);
             animation: spin 2s linear infinite;
         }
         
@@ -179,110 +274,163 @@
         
         .error {
             text-align: center;
-            padding: 30px;
-            color: #e74c3c;
+            padding: 40px;
+            color: var(--error);
             font-size: 16px;
-            background-color: #ffeaea;
+            background-color: rgba(244, 67, 54, 0.1);
             border-radius: 8px;
-            border-left: 4px solid #e74c3c;
+            border-left: 4px solid var(--error);
+            border: 2px solid rgba(244, 67, 54, 0.2);
         }
         
         .no-data {
             text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
+            padding: 60px;
+            color: var(--gold-dark);
             font-size: 16px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 2px dashed #ddd;
+            background: linear-gradient(135deg, var(--off-white), var(--light-gray));
+            border-radius: 12px;
+            border: 2px dashed var(--gold-light);
         }
         
-        /* A4 Report Styles - ULTRA SIMPLE */
+        /* A4 Report Styles */
         .a4-report {
             width: 21cm;
             min-height: 29.7cm;
             margin: 0 auto;
-            background: white;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            padding: 1.5cm;
+            background: var(--white);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.1);
+            padding: 2cm;
             font-size: 12px;
             line-height: 1.4;
+            border: 1px solid var(--gold-light);
+            position: relative;
+        }
+        
+        .a4-report::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--gold), var(--gold-dark), var(--gold));
         }
         
         .report-header {
             text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #2c3e50;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--gold);
+            position: relative;
+        }
+        
+        .report-header::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 25%;
+            right: 25%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
         }
         
         .report-title {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 5px;
+            color: var(--gold-darker);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
         
         .report-subtitle {
-            font-size: 13px;
-            color: #7f8c8d;
+            font-size: 14px;
+            color: var(--gold-dark);
             margin-bottom: 5px;
+            font-weight: 500;
         }
         
         .report-date {
-            font-size: 12px;
-            color: #2c3e50;
+            font-size: 13px;
+            color: var(--gold-darker);
             font-weight: 600;
+            background: var(--gold-light);
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
         }
         
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
+            margin: 25px 0;
             font-size: 11px;
+            border: 1px solid var(--gold-light);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.08);
         }
         
         .summary-table th {
-            background-color: #2c3e50;
-            color: white;
-            padding: 8px 6px;
+            background: linear-gradient(to bottom, var(--gold-light), rgba(212, 175, 55, 0.9));
+            color: var(--gold-darker);
+            padding: 12px 8px;
             text-align: left;
             font-weight: 600;
-            border: 1px solid #34495e;
+            border: 1px solid var(--gold);
         }
         
         .summary-table td {
-            padding: 6px 6px;
-            border: 1px solid #ddd;
+            padding: 10px 8px;
+            border: 1px solid var(--gold-light);
         }
         
         .summary-table tr:nth-child(even) {
-            background-color: #f8f9fa;
+            background-color: rgba(255, 248, 225, 0.3);
         }
         
         .summary-table tr:hover {
-            background-color: #e8f4fc;
+            background-color: rgba(212, 175, 55, 0.1);
         }
         
         .grand-total {
-            background-color: #2c3e50 !important;
-            color: white;
+            background: linear-gradient(to right, var(--gold-light), rgba(212, 175, 55, 0.8)) !important;
+            color: var(--gold-darker) !important;
             font-weight: bold;
             font-size: 12px;
+            border-top: 2px solid var(--gold) !important;
         }
         
-        .flight-count, .pax-count {
+        .transactions-count, .pax-count {
             text-align: center;
             font-weight: 600;
         }
         
+        .transactions-count {
+            color: var(--gold-darker);
+        }
+        
+        .pax-count {
+            color: var(--success);
+        }
+        
         .report-footer {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px solid #ddd;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid var(--gold-light);
             text-align: center;
-            color: #7f8c8d;
+            color: var(--gold-dark);
             font-size: 10px;
+            position: relative;
+        }
+        
+        .report-footer::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
         }
         
         .print-controls {
@@ -296,76 +444,92 @@
         }
         
         .print-btn {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            background: #3498db;
-            color: white;
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--white);
             border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .print-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .print-btn:hover::before {
+            left: 100%;
         }
         
         .print-btn:hover {
-            background: #2980b9;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            background: linear-gradient(135deg, var(--gold-dark), var(--gold-darker));
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.6);
         }
         
         .back-btn {
-            background: #7f8c8d;
+            background: linear-gradient(135deg, var(--gray), var(--dark-gray));
         }
         
         .back-btn:hover {
-            background: #6c7b7d;
+            background: linear-gradient(135deg, var(--dark-gray), #555);
         }
         
         .status-message {
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin: 15px 30px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 30px;
             text-align: center;
             font-weight: 600;
             display: none;
             border-left: 4px solid;
+            background: var(--off-white);
+            border: 2px solid var(--gold-light);
         }
         
         .success {
-            background-color: #e8f6ef;
-            color: #27ae60;
-            border-color: #27ae60;
+            color: var(--success);
+            border-left-color: var(--success);
         }
         
         .error {
-            background-color: #fdeded;
-            color: #e74c3c;
-            border-color: #e74c3c;
+            color: var(--error);
+            border-left-color: var(--error);
         }
         
         .info {
-            background-color: #e8f4fc;
-            color: #3498db;
-            border-color: #3498db;
+            color: var(--gold);
+            border-left-color: var(--gold);
         }
         
         footer {
             text-align: center;
-            padding: 15px;
-            color: #7f8c8d;
-            font-size: 0.8rem;
-            border-top: 2px solid #f0f0f0;
-            background-color: #f8f9fa;
+            padding: 20px;
+            color: var(--gold-dark);
+            font-size: 0.9rem;
+            border-top: 2px solid var(--gold-light);
+            background: linear-gradient(to bottom, var(--off-white), var(--white));
         }
         
         @media screen and (max-width: 1200px) {
             .a4-report {
                 width: 100%;
-                padding: 1cm;
+                padding: 1.5cm;
             }
             
             .filter-container {
@@ -375,16 +539,17 @@
         
         @media print {
             body {
-                background: white;
+                background: var(--white);
                 padding: 0;
             }
             
             .container {
                 box-shadow: none;
                 border-radius: 0;
+                border: none;
             }
             
-            header, .filter-section, .print-controls, .action-buttons, footer {
+            .container::before, header, .filter-section, .print-controls, .action-buttons, footer {
                 display: none !important;
             }
             
@@ -398,10 +563,16 @@
                 padding: 0;
                 box-shadow: none;
                 font-size: 10px;
+                border: none;
+            }
+            
+            .a4-report::before {
+                display: none;
             }
             
             .summary-table {
                 font-size: 10px;
+                box-shadow: none;
             }
             
             .report-title {
@@ -413,8 +584,8 @@
 <body>
     <div class="container">
         <header>
-            <h1><i class="fas fa-file-alt"></i> Shift Summary</h1>
-            <p class="subtitle">Flight-wise passenger count - Simple Report</p>
+            <h1><i class="fas fa-chart-line"></i> Shift Transactions Report</h1>
+            <p class="subtitle">Flight-wise Transactions and Pax Summary</p>
         </header>
         
         <div class="status-message" id="statusMessage"></div>
@@ -438,27 +609,27 @@
             
             <div class="action-buttons">
                 <button id="generateBtn" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Generate
+                    <i class="fas fa-search"></i> Generate Report
                 </button>
                 <button id="resetBtn" class="btn btn-secondary">
-                    <i class="fas fa-redo"></i> Reset
+                    <i class="fas fa-redo"></i> Reset Filters
                 </button>
                 <button id="exportBtn" class="btn btn-success" style="display: none;">
-                    <i class="fas fa-file-excel"></i> Export
+                    <i class="fas fa-file-excel"></i> Export Data
                 </button>
             </div>
         </div>
         
         <div class="report-container" id="reportContainer">
             <div class="no-data" id="noDataMessage">
-                <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 15px; color: #ddd;"></i>
-                <h3>No Report Generated</h3>
-                <p>Select date and shift, then click "Generate"</p>
+                <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 20px; color: var(--gold-light);"></i>
+                <h3 style="color: var(--gold-darker);">No Report Generated</h3>
+                <p>Select date and shift, then click "Generate Report"</p>
             </div>
         </div>
         
         <footer>
-            <p>Shift Summary Report System</p>
+            <p><i class="fas fa-database" style="color: var(--gold);"></i> Shift Transactions Reporting System</p>
         </footer>
     </div>
     
@@ -524,7 +695,7 @@
                 reportContainer.innerHTML = `
                     <div class="loading">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading data for ${date}...</p>
+                        <p>Loading transactions for ${date}...</p>
                     </div>
                 `;
                 
@@ -549,30 +720,30 @@
                 if (querySnapshot.empty) {
                     reportContainer.innerHTML = `
                         <div class="no-data">
-                            <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 15px; color: #ddd;"></i>
-                            <h3>No Data Found</h3>
-                            <p>No data for Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift}</p>
+                            <i class="fas fa-file-alt" style="font-size: 48px; margin-bottom: 20px; color: var(--gold-light);"></i>
+                            <h3 style="color: var(--gold-darker);">No Data Found</h3>
+                            <p>No transactions for Date: ${date} | Shift: ${shift === 'all' ? 'All' : shift}</p>
                         </div>
                     `;
                     return;
                 }
                 
                 // Process data
-                const passengers = [];
+                const transactions = [];
                 querySnapshot.forEach(doc => {
-                    passengers.push({ id: doc.id, ...doc.data() });
+                    transactions.push({ id: doc.id, ...doc.data() });
                 });
                 
-                console.log(`Found ${passengers.length} passengers`);
+                console.log(`Found ${transactions.length} transactions`);
                 
                 // Group data by flight
-                const flightData = groupDataByFlight(passengers);
+                const flightData = groupDataByFlight(transactions);
                 
                 // Store current report data
                 currentReportData = {
                     date: date,
                     shift: shift,
-                    passengers: passengers,
+                    transactions: transactions,
                     flightData: flightData
                 };
                 
@@ -583,14 +754,14 @@
                 exportBtn.style.display = 'flex';
                 printControls.style.display = 'flex';
                 
-                showMessage(`Report generated: ${flightData.flights.length} flights, ${flightData.totalPassengers} passengers`, "success");
+                showMessage(`Report generated: ${flightData.totalFlights} flights, ${flightData.totalTransactions} transactions`, "success");
                 
             } catch (error) {
                 console.error("Error generating report:", error);
                 reportContainer.innerHTML = `
                     <div class="error">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 36px; margin-bottom: 15px;"></i>
-                        <h3>Error Loading Report</h3>
+                        <i class="fas fa-exclamation-triangle" style="font-size: 36px; margin-bottom: 15px; color: var(--error);"></i>
+                        <h3 style="color: var(--error);">Error Loading Report</h3>
                         <p>${error.message}</p>
                     </div>
                 `;
@@ -599,30 +770,30 @@
         }
 
         // ==================== GROUP DATA BY FLIGHT ====================
-        function groupDataByFlight(passengers) {
+        function groupDataByFlight(transactions) {
             const flightMap = new Map();
-            let totalPassengers = 0;
+            let totalTransactions = 0;
             let totalPax = 0;
             
-            passengers.forEach(passenger => {
-                const airline = passenger.airline || 'Unknown';
-                const flightNo = passenger.flightNo || 'Unknown';
+            transactions.forEach(transaction => {
+                const airline = transaction.airline || 'Unknown';
+                const flightNo = transaction.flightNo || 'Unknown';
                 const key = `${airline}_${flightNo}`;
-                const numPax = passenger.numPax || 1;
+                const numPax = transaction.numPax || 1;
                 
                 if (!flightMap.has(key)) {
                     flightMap.set(key, {
                         airline: airline,
                         flightNo: flightNo,
-                        passengers: 0,
+                        transactions: 0,
                         pax: 0
                     });
                 }
                 
                 const flight = flightMap.get(key);
-                flight.passengers++;
+                flight.transactions++;
                 flight.pax += numPax;
-                totalPassengers++;
+                totalTransactions++;
                 totalPax += numPax;
             });
             
@@ -636,7 +807,7 @@
             
             return {
                 flights: flights,
-                totalPassengers: totalPassengers,
+                totalTransactions: totalTransactions,
                 totalPax: totalPax,
                 totalFlights: flights.length
             };
@@ -648,15 +819,23 @@
             const formattedDate = new Date(date).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
-                day: 'numeric'
+                day: 'numeric',
+                weekday: 'short'
+            });
+            
+            // Format time
+            const generatedTime = new Date().toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
             });
             
             // Generate report HTML
             let reportHTML = `
                 <div class="a4-report">
                     <div class="report-header">
-                        <div class="report-title">DAILY SHIFT SUMMARY</div>
-                        <div class="report-subtitle">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)}</div>
+                        <div class="report-title">SHIFT TRANSACTIONS SUMMARY</div>
+                        <div class="report-subtitle">Flight-wise Transactions and Pax Count</div>
+                        <div class="report-date">${formattedDate} | ${shift === 'all' ? 'All Shifts' : shift.charAt(0).toUpperCase() + shift.slice(1)} Shift</div>
                     </div>
                     
                     <table class="summary-table">
@@ -664,8 +843,8 @@
                             <tr>
                                 <th width="40%">Airline</th>
                                 <th width="30%">Flight No</th>
-                                <th width="15%">Passengers</th>
-                                <th width="15%">Pax</th>
+                                <th width="15%">Transactions</th>
+                                <th width="15%">Total Pax</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -677,7 +856,7 @@
                     <tr>
                         <td>${flight.airline}</td>
                         <td>${flight.flightNo}</td>
-                        <td class="flight-count">${flight.passengers}</td>
+                        <td class="transactions-count">${flight.transactions}</td>
                         <td class="pax-count">${flight.pax}</td>
                     </tr>
                 `;
@@ -686,15 +865,16 @@
             // Add grand total row
             reportHTML += `
                     <tr class="grand-total">
-                        <td colspan="2">GRAND TOTAL (${flightData.totalFlights} Flights)</td>
-                        <td>${flightData.totalPassengers}</td>
-                        <td>${flightData.totalPax}</td>
+                        <td colspan="2"><strong>GRAND TOTAL (${flightData.totalFlights} Flights)</strong></td>
+                        <td><strong>${flightData.totalTransactions}</strong></td>
+                        <td><strong>${flightData.totalPax}</strong></td>
                     </tr>
                 </tbody>
             </table>
             
             <div class="report-footer">
-                <p>Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                <p>Report generated on ${new Date().toLocaleDateString()} at ${generatedTime}</p>
+                <p>Total: ${flightData.totalFlights} flights | ${flightData.totalTransactions} transactions | ${flightData.totalPax} pax</p>
             </div>
         </div>
             `;
@@ -711,28 +891,28 @@
                 
                 // Create CSV content
                 let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "Airline,Flight No,Passengers,Total Pax\n";
+                csvContent += "Airline,Flight No,Transactions,Total Pax\n";
                 
                 // Add flight rows
                 flightData.flights.forEach(flight => {
-                    csvContent += `${flight.airline},${flight.flightNo},${flight.passengers},${flight.pax}\n`;
+                    csvContent += `${flight.airline},${flight.flightNo},${flight.transactions},${flight.pax}\n`;
                 });
                 
                 // Add grand total
-                csvContent += `GRAND TOTAL,,${flightData.totalPassengers},${flightData.totalPax}\n`;
+                csvContent += `GRAND TOTAL,,${flightData.totalTransactions},${flightData.totalPax}\n`;
                 
                 // Create download link
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");
                 link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `shift_${date}_${shift}.csv`);
+                link.setAttribute("download", `transactions_${date}_${shift}.csv`);
                 document.body.appendChild(link);
                 
                 // Download file
                 link.click();
                 document.body.removeChild(link);
                 
-                showMessage("File exported successfully", "success");
+                showMessage("Data exported successfully", "success");
                 
             } catch (error) {
                 console.error("Error exporting:", error);
@@ -762,7 +942,7 @@
             shiftFilter.value = 'all';
             
             showFilters();
-            showMessage("Filters reset", "info");
+            showMessage("Filters reset to default", "info");
         }
 
         // ==================== UTILITY FUNCTIONS ====================
