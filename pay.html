@@ -1134,6 +1134,8 @@
             <span class="info-label">Expiry Time:</span>
             <span class="info-value-summary" id="headerExpiryTime">--:--</span>
           </div>
+        </div>
+        <div class="compact-info-summary">
           <!-- ADDED: Current Shift & Date Display -->
           <div class="info-row">
             <span class="info-label">Shift:</span>
@@ -1462,15 +1464,19 @@
     </div>
   </div>
 
-  <!-- Add Firebase SDK and your scripts -->
-  <script src="fireshift1.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="fireW1.js"></script>
-  <script src="rate1.js"></script>
+ <!-- Load Firebase SDK first -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+<!-- Load your config files -->
+<script src="fireW1.js"></script>  <!-- Transaction Firebase (kwakinsys) -->
+<script src="fireshift1.js"></script> <!-- Shift Firebase (cardsystem-21773) -->
+
+<!-- Load other files -->
+<script src="rate1.js"></script>
+<script src="Co.js"></script>
   
-  <!-- Company Information -->
-  <script src="Co.js"></script>
+ 
   
   <!-- Shift System Firebase Configuration -->
   
