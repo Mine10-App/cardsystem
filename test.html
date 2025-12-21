@@ -535,10 +535,6 @@
     background: var(--info);
   }
   
-  .alert-notification.qr {
-    background: var(--qr-green);
-  }
-  
   .spinner {
     display: inline-block;
     width: 16px;
@@ -660,33 +656,34 @@
     transform: none;
   }
   
-  /* QR Card Status Indicator */
-  .qr-status-indicator {
-    position: fixed;
-    bottom: 20px;
-    left: 20px;
-    background: var(--qr-green);
-    color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  /* QR Flight Indicator */
+  .qr-flight-indicator {
     display: flex;
     align-items: center;
     gap: 8px;
-    z-index: 999;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.3s ease;
-    font-size: 13px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(39, 174, 96, 0.1);
+    border-radius: 6px;
+    border-left: 4px solid var(--qr-green);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--qr-green-dark);
   }
   
-  .qr-status-indicator.show {
-    opacity: 1;
-    transform: translateY(0);
+  .qr-flight-indicator i {
+    color: var(--qr-green);
   }
   
-  .qr-status-indicator i {
-    font-size: 16px;
+  .qr-flight-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--qr-green);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 5px;
   }
   
   @media (max-width: 768px) {
@@ -705,13 +702,6 @@
       min-width: 150px;
       text-align: right;
     }
-    
-    .qr-status-indicator {
-      bottom: 100px;
-      left: 10px;
-      right: 10px;
-      text-align: center;
-    }
   }
 </style>
 </head>
@@ -725,11 +715,6 @@
 <div class="alert-notification" id="alertNotification">
   <i class="fas fa-check-circle"></i>
   <span id="alertMessage">Operation completed successfully</span>
-</div>
-
-<div class="qr-status-indicator" id="qrStatusIndicator">
-  <i class="fas fa-qrcode"></i>
-  <span id="qrStatusMessage">QR Card processing...</span>
 </div>
 
 <div class="float-nav">
@@ -751,6 +736,11 @@
   <div class="entry-section" id="passengerEntryCard">
     <div class="entry-card-title">
       <i class="fas fa-user-plus"></i> Enter Passenger Details
+    </div>
+    
+    <div id="qrFlightIndicator" class="qr-flight-indicator" style="display: none;">
+      <i class="fas fa-plane"></i>
+      <span>QR Flight Detected: Will use QR parsing logic</span>
     </div>
     
     <div class="form-group">
@@ -954,6 +944,9 @@ const fqtvTierMappings = {
   }
 };
 
+// ----- OneWorld Airlines for QR Logic -----
+const oneWorldAirlines = ['BA', 'IB', 'QR', 'CX', 'UL', 'MH', 'AA', 'AY', 'RJ', 'LA', 'AB', 'JL'];
+
 // ----- Initialize Airline Dropdown -----
 const airlineSelect = document.getElementById('airlineSelect');
 for(let iata in airlines){
@@ -986,8 +979,7 @@ const alertMessage = document.getElementById('alertMessage');
 const passengerEntryCard = document.getElementById('passengerEntryCard');
 const scannerIndicator = document.getElementById('scannerIndicator');
 const refreshShiftBtn = document.getElementById('refreshShiftBtn');
-const qrStatusIndicator = document.getElementById('qrStatusIndicator');
-const qrStatusMessage = document.getElementById('qrStatusMessage');
+const qrFlightIndicator = document.getElementById('qrFlightIndicator');
 
 // ----- Global Variables -----
 let isApproving = false;
@@ -1005,11 +997,46 @@ let lastValue = '';
 let isScannerActive = false;
 let isProcessing = false;
 
-// ----- QR Card System Variables -----
-let qrCardDb = null;
-let qrCardInitialized = false;
-let qrCardProcessing = false;
-let qrCardCache = [];
+// ----- QR Firebase Instance -----
+let qrFirebaseDb = null;
+let qrFirebaseInitialized = false;
+
+// ----- Initialize QR Firebase -----
+function initializeQRFirebase() {
+  try {
+    console.log("Initializing QR Firebase...");
+    
+    // Check if firebase-config.js exists
+    if (typeof firebaseConfig === 'undefined') {
+      console.error("❌ Firebase config not found in firebase-config.js");
+      return false;
+    }
+    
+    console.log("Using Firebase config for QR flights:", firebaseConfig.projectId);
+    
+    let qrApp;
+    try {
+      // Try to get existing app for QR
+      qrApp = firebase.app('qrFlights');
+      console.log("✅ Using existing QR Firebase app");
+    } catch (e) {
+      // Create new app for QR flights
+      qrApp = firebase.initializeApp(firebaseConfig, 'qrFlights');
+      console.log("✅ Created new QR Firebase app");
+    }
+    
+    // Initialize Firestore
+    qrFirebaseDb = firebase.firestore(qrApp);
+    qrFirebaseInitialized = true;
+    console.log("✅ QR Firestore initialized successfully");
+    
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Error initializing QR Firebase:", error);
+    return false;
+  }
+}
 
 // ----- Shift Cache -----
 let shiftCacheInitialized = false;
@@ -1084,7 +1111,7 @@ function formatDateForDisplay(dateString) {
 }
 
 // ----- Alert System -----
-function showAlert(message, isError = false, isWarning = false, isInfo = false, isQR = false) {
+function showAlert(message, isError = false, isWarning = false, isInfo = false) {
   alertMessage.textContent = message;
   alertNotification.className = 'alert-notification';
   
@@ -1097,9 +1124,6 @@ function showAlert(message, isError = false, isWarning = false, isInfo = false, 
   } else if (isInfo) {
     alertNotification.classList.add('info');
     alertNotification.querySelector('i').className = 'fas fa-info-circle';
-  } else if (isQR) {
-    alertNotification.classList.add('qr');
-    alertNotification.querySelector('i').className = 'fas fa-qrcode';
   } else {
     alertNotification.querySelector('i').className = 'fas fa-check-circle';
   }
@@ -1108,26 +1132,6 @@ function showAlert(message, isError = false, isWarning = false, isInfo = false, 
   
   setTimeout(() => {
     alertNotification.classList.remove('show');
-  }, 3000);
-}
-
-// ----- QR Card Status Indicator -----
-function showQRStatus(message, isError = false) {
-  qrStatusMessage.textContent = message;
-  qrStatusIndicator.className = 'qr-status-indicator';
-  
-  if (isError) {
-    qrStatusIndicator.style.background = 'var(--error)';
-    qrStatusIndicator.querySelector('i').className = 'fas fa-exclamation-circle';
-  } else {
-    qrStatusIndicator.style.background = 'var(--qr-green)';
-    qrStatusIndicator.querySelector('i').className = 'fas fa-qrcode';
-  }
-  
-  qrStatusIndicator.classList.add('show');
-  
-  setTimeout(() => {
-    qrStatusIndicator.classList.remove('show');
   }, 3000);
 }
 
@@ -1224,368 +1228,184 @@ function initializeShiftFirebase() {
   }
 }
 
-// ----- Initialize QR Card Firebase -----
-function initializeQRCardFirebase() {
-  try {
-    console.log("Initializing QR Card Firebase...");
+// ----- QR Flight Parsing Logic (from QRCard) -----
+function parseQRCode(codeValue) {
+  console.log("🔍 Parsing QR flight code:", codeValue);
+  
+  let data = {
+    firstName: '',
+    lastName: '',
+    carrierCode: '',
+    destination: '',
+    origin: '',
+    flightNumber: '',
+    seatNumber: '',
+    cabinCode: '',
+    secNumber: '',
+    ffpOwner: '',
+    ffpNumber: '',
+    ffpTier: '',
+    originalTier: ''
+  };
+  
+  codeValue = codeValue.replace(/\s+/g, ' ').trim().toUpperCase();
+  
+  const mlePos = codeValue.indexOf('MLE');
+  
+  if (mlePos !== -1) {
+    // Extract name fields
+    const textBeforeMLE = codeValue.substring(0, mlePos);
+    let processedText = '';
     
-    // Use existing Firebase config from firebase-config.js or create new one
-    if (typeof firebaseConfig === 'undefined') {
-      console.error("❌ Firebase config not found for QR Card");
-      showQRStatus("QR Card Firebase config not found", true);
-      return false;
+    if (textBeforeMLE.length >= 8) {
+      processedText = textBeforeMLE.substring(2, textBeforeMLE.length - 7);
+    } else if (textBeforeMLE.length > 2) {
+      processedText = textBeforeMLE.substring(2);
     }
     
-    let app;
-    try {
-      // Try to get existing default app
-      app = firebase.app();
-      console.log("✅ Using existing Firebase app for QR Card");
-    } catch (e) {
-      // Create new app for QR Card
-      app = firebase.initializeApp(firebaseConfig);
-      console.log("✅ Created new Firebase app for QR Card");
-    }
-    
-    // Initialize Firestore
-    qrCardDb = firebase.firestore(app);
-    qrCardInitialized = true;
-    
-    console.log("✅ QR Card Firestore initialized successfully");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Error initializing QR Card Firebase:", error);
-    showQRStatus("Failed to initialize QR Card system", true);
-    return false;
-  }
-}
-
-// ----- Process Entry for QR Card System -----
-async function processForQRCard(entry) {
-  if (qrCardProcessing) {
-    console.log("QR Card system is busy, skipping...");
-    return false;
-  }
-  
-  // Check if airline code starts with QR
-  const airlineCode = entry.airline || '';
-  const flightCode = entry.flight || '';
-  
-  // Check if it's a QR flight (either airline code is QR or flight starts with QR)
-  const isQRFlight = airlineCode.toUpperCase() === 'QR' || 
-                    flightCode.toUpperCase().startsWith('QR');
-  
-  if (!isQRFlight) {
-    console.log(`⚠️ Not a QR flight (Airline: ${airlineCode}, Flight: ${flightCode}) - skipping QR Card processing`);
-    return false;
-  }
-  
-  console.log(`✅ QR flight detected: ${entry.flight} - Processing for QR Card...`);
-  showQRStatus(`Processing QR flight ${entry.flight}...`);
-  
-  // Initialize Firebase if not already done
-  if (!qrCardInitialized) {
-    if (!initializeQRCardFirebase()) {
-      showQRStatus("Failed to initialize QR Card system", true);
-      return false;
-    }
-  }
-  
-  qrCardProcessing = true;
-  
-  try {
-    // Extract data for QR Card system
-    const qrCardData = extractDataForQRCard(entry);
-    
-    if (!qrCardData) {
-      console.log("❌ Failed to extract data for QR Card");
-      showQRStatus("Failed to extract data for QR Card", true);
-      qrCardProcessing = false;
-      return false;
-    }
-    
-    // Check for duplicate in QR Card system
-    const isDuplicate = await checkQRCardDuplicate(qrCardData);
-    
-    if (isDuplicate) {
-      console.log("⚠️ Duplicate QR Card entry found, skipping...");
-      showQRStatus("Duplicate QR Card entry - skipped", true);
-      qrCardProcessing = false;
-      return false;
-    }
-    
-    // Save to QR Card Firebase
-    const saved = await saveToQRCardFirebase(qrCardData);
-    
-    if (saved) {
-      console.log(`✅ QR Card entry saved successfully: ${entry.flight} - ${entry.name}`);
-      showQRStatus(`QR Card saved: ${entry.flight} - ${entry.name}`);
-      showAlert(`QR Card entry saved for flight ${entry.flight}`, false, false, false, true);
-      
-      // Add to cache
-      qrCardCache.push({
-        flight: qrCardData.flightNumber,
-        seat: qrCardData.seatNumber,
-        date: qrCardData.flightDate,
-        name: `${qrCardData.firstName} ${qrCardData.lastName}`,
-        timestamp: Date.now()
-      });
-      
-      // Keep cache size manageable
-      if (qrCardCache.length > 100) {
-        qrCardCache = qrCardCache.slice(-50);
+    if (processedText.includes('/')) {
+      const nameParts = processedText.split('/');
+      if (nameParts.length >= 2) {
+        data.lastName = nameParts[0].trim();
+        data.firstName = nameParts[1].trim();
+      } else if (nameParts.length === 1) {
+        data.lastName = nameParts[0].trim();
       }
-      
-      qrCardProcessing = false;
-      return true;
     } else {
-      console.log("❌ Failed to save QR Card entry");
-      showQRStatus("Failed to save QR Card entry", true);
-      qrCardProcessing = false;
-      return false;
+      data.lastName = processedText.trim();
     }
     
-  } catch (error) {
-    console.error("❌ Error processing QR Card:", error);
-    showQRStatus(`Error: ${error.message}`, true);
-    qrCardProcessing = false;
-    return false;
-  }
-}
-
-// ----- Extract Data for QR Card System -----
-function extractDataForQRCard(entry) {
-  try {
-    if (!entry || !entry.code || !entry.name || !entry.flight) {
-      console.log("❌ Invalid entry data for QR Card extraction");
-      return null;
+    // Extract MLE word
+    let wordStart = mlePos;
+    let wordEnd = mlePos + 3;
+    
+    while (wordStart > 0 && /[A-Z0-9]/.test(codeValue[wordStart - 1])) {
+      wordStart--;
     }
     
-    // Parse the original code for detailed information
-    const codeValue = entry.code.trim().toUpperCase();
-    const parts = codeValue.split(/\s+/);
-    
-    // Extract name parts
-    const nameParts = entry.name.split('/');
-    let lastName = '';
-    let firstName = '';
-    
-    if (nameParts.length >= 2) {
-      lastName = nameParts[0].trim();
-      firstName = nameParts[1].trim();
-    } else {
-      lastName = entry.name.trim();
-      firstName = '';
+    while (wordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[wordEnd])) {
+      wordEnd++;
     }
     
-    // Extract MLE position
-    const mlePos = codeValue.indexOf('MLE');
+    const mleWord = codeValue.substring(wordStart, wordEnd);
     
-    // Extract origin and destination
-    let origin = '';
-    let destination = '';
+    // Extract carrier code
+    data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
     
-    if (mlePos !== -1) {
-      const mleWord = extractMLEWord(codeValue, mlePos);
-      if (mleWord.length >= 3) {
-        origin = mleWord.substring(0, 3);
+    // Extract destination
+    if (mleWord.length >= 5) {
+      data.destination = mleWord.substring(3, mleWord.length - 2);
+    }
+    
+    // Extract origin
+    if (mleWord.length >= 3) {
+      data.origin = mleWord.substring(0, 3);
+    }
+    
+    // Extract flight number
+    let nextWordStart = wordEnd;
+    
+    while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
+      nextWordStart++;
+    }
+    
+    let nextWordEnd = nextWordStart;
+    while (nextWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[nextWordEnd])) {
+      nextWordEnd++;
+    }
+    
+    if (nextWordStart < codeValue.length) {
+      data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
+    }
+    
+    // Extract seat number, cabin code, and sec number
+    let seatWordStart = nextWordEnd;
+    
+    while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
+      seatWordStart++;
+    }
+    
+    let seatWordEnd = seatWordStart;
+    while (seatWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[seatWordEnd])) {
+      seatWordEnd++;
+    }
+    
+    if (seatWordStart < codeValue.length) {
+      const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
+      
+      // Extract seat number
+      if (seatWord.length >= 9) {
+        data.seatNumber = seatWord.substring(5, seatWord.length - 4);
       }
-      if (mleWord.length >= 5) {
-        destination = mleWord.substring(3, mleWord.length - 2);
+      
+      // Extract cabin code
+      if (seatWord.length >= 4) {
+        data.cabinCode = seatWord.substring(3, 4);
       }
-    }
-    
-    // Extract seat information
-    let seatNumber = entry.seat || '';
-    let cabinCode = entry.class || '';
-    let cabin = 'Economy';
-    
-    switch(cabinCode.toUpperCase()) {
-      case 'J':
-        cabin = 'Business';
-        break;
-      case 'Y':
-        cabin = 'Economy';
-        break;
-      case 'F':
-        cabin = 'First';
-        break;
-    }
-    
-    // Extract SEC number
-    let secNumber = '';
-    if (mlePos !== -1) {
-      const seatWord = extractSeatWord(codeValue, mlePos);
-      if (seatWord && seatWord.length >= 4) {
+      
+      // Extract SEC number
+      if (seatWord.length >= 4) {
         const last4Chars = seatWord.substring(seatWord.length - 4);
         if (/^\d{4}$/.test(last4Chars)) {
-          secNumber = last4Chars;
+          data.secNumber = last4Chars;
+        } else {
+          let digitsEnd = seatWord.length;
+          let digitsStart = seatWord.length - 1;
+          
+          while (digitsStart >= 0 && /\d/.test(seatWord[digitsStart])) {
+            digitsStart--;
+          }
+          
+          digitsStart++;
+          
+          if (digitsStart < digitsEnd) {
+            data.secNumber = seatWord.substring(digitsStart, digitsEnd);
+          }
         }
       }
     }
     
-    // Extract FFP information
-    const ffpInfo = extractFFPFieldsFromCode(codeValue, entry.flight.substring(0, 2));
-    let ffpTier = ffpInfo.ffpTier || '';
+    // Extract FFP fields
+    const words = codeValue.split(' ').filter(word => word.trim() !== '');
     
-    // Convert single letters to full names
-    if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
-    if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
-    if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
-    
-    // Determine Guest Category
-    const guestCategory = getGuestCategoryForQR(cabinCode, cabin, ffpInfo.ffpNumber, ffpTier);
-    
-    // For QR flights with N0/empty tier, clear FFP fields
-    let finalFFPOwner = ffpInfo.ffpOwner || '';
-    let finalFFPNumber = ffpInfo.ffpNumber || '';
-    let finalFFPTier = ffpTier || '';
-    
-    const isExactlyN0 = ffpTier === 'N0' || ffpInfo.originalTier === 'N0';
-    const isEmptyTier = (!ffpTier || ffpTier.trim() === '') && 
-                       (!ffpInfo.originalTier || ffpInfo.originalTier.trim() === '');
-    
-    if (entry.flight.toUpperCase().startsWith('QR') && (isExactlyN0 || isEmptyTier)) {
-      finalFFPOwner = '';
-      finalFFPNumber = '';
-      finalFFPTier = '';
-    }
-    
-    // Prepare QR Card data object
-    const qrCardData = {
-      flightDate: entry.date || getCurrentDate(),
-      carrierCode: entry.flight.substring(0, 2) || 'QR',
-      flightNumber: entry.flight || '',
-      secNumber: secNumber,
-      ffpOwner: finalFFPOwner,
-      ffpNumber: finalFFPNumber,
-      ffpTier: finalFFPTier,
-      originalTier: ffpInfo.originalTier || '',
-      paxType: 'Adult',
-      cabin: cabin,
-      cabinCode: cabinCode,
-      seatNumber: seatNumber,
-      origin: origin,
-      destination: destination,
-      firstName: firstName,
-      lastName: lastName,
-      guestCategory: guestCategory,
-      originalCode: entry.code,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      processedAt: getMaldivesDateTimeISO(),
-      processedBy: userData ? userData.name : 'Unknown'
-    };
-    
-    console.log("📋 QR Card data extracted:", qrCardData);
-    return qrCardData;
-    
-  } catch (error) {
-    console.error("❌ Error extracting QR Card data:", error);
-    return null;
-  }
-}
-
-// ----- Helper function to extract MLE word -----
-function extractMLEWord(code, mlePos) {
-  let wordStart = mlePos;
-  let wordEnd = mlePos + 3;
-  
-  while (wordStart > 0 && /[A-Z0-9]/.test(code[wordStart - 1])) {
-    wordStart--;
-  }
-  
-  while (wordEnd < code.length && /[A-Z0-9]/.test(code[wordEnd])) {
-    wordEnd++;
-  }
-  
-  return code.substring(wordStart, wordEnd);
-}
-
-// ----- Helper function to extract seat word -----
-function extractSeatWord(code, mlePos) {
-  // Find the word after MLE word
-  let mleWord = extractMLEWord(code, mlePos);
-  let afterMLEPos = mlePos + mleWord.length;
-  
-  // Skip to next word
-  while (afterMLEPos < code.length && !/[A-Z0-9]/.test(code[afterMLEPos])) {
-    afterMLEPos++;
-  }
-  
-  // Extract flight number word
-  let flightWordEnd = afterMLEPos;
-  while (flightWordEnd < code.length && /[A-Z0-9]/.test(code[flightWordEnd])) {
-    flightWordEnd++;
-  }
-  
-  // Skip to seat word
-  let seatWordStart = flightWordEnd;
-  while (seatWordStart < code.length && !/[A-Z0-9]/.test(code[seatWordStart])) {
-    seatWordStart++;
-  }
-  
-  // Extract seat word
-  let seatWordEnd = seatWordStart;
-  while (seatWordEnd < code.length && /[A-Z0-9]/.test(code[seatWordEnd])) {
-    seatWordEnd++;
-  }
-  
-  if (seatWordStart < code.length) {
-    return code.substring(seatWordStart, seatWordEnd);
-  }
-  
-  return '';
-}
-
-// ----- Helper function to extract FFP fields -----
-function extractFFPFieldsFromCode(codeValue, carrierCode = '') {
-  const words = codeValue.split(' ').filter(word => word.trim() !== '');
-  
-  let ffpOwner = '';
-  let ffpNumber = '';
-  let ffpTier = '';
-  let originalTier = '';
-  
-  if (words.length >= 2) {
-    const lastWord = words[words.length - 1];
-    const secondLastWord = words[words.length - 2];
-    
-    if (secondLastWord.length < 4) {
-      ffpOwner = '';
-      ffpNumber = '';
-      ffpTier = '';
-      originalTier = '';
-    } else {
-      ffpNumber = secondLastWord;
+    if (words.length >= 2) {
+      const lastWord = words[words.length - 1];
+      const secondLastWord = words[words.length - 2];
       
-      if (words.length >= 3) {
-        const thirdLastWord = words[words.length - 3];
-        if (thirdLastWord.length === 2 && /^[A-Z]{2}$/.test(thirdLastWord)) {
-          ffpOwner = thirdLastWord;
+      if (secondLastWord.length < 4) {
+        data.ffpOwner = '';
+        data.ffpNumber = '';
+        data.ffpTier = '';
+        data.originalTier = '';
+      } else {
+        data.ffpNumber = secondLastWord;
+        
+        if (words.length >= 3) {
+          const thirdLastWord = words[words.length - 3];
+          if (thirdLastWord.length === 2 && /^[A-Z]{2}$/.test(thirdLastWord)) {
+            data.ffpOwner = thirdLastWord;
+          }
+        }
+        
+        if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
+          data.originalTier = lastWord.toUpperCase();
+          data.ffpTier = convertQRFFPTier(data.carrierCode, data.ffpOwner, data.originalTier);
         }
       }
-      
-      if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
-        originalTier = lastWord.toUpperCase();
-        ffpTier = convertFFPTierForQR(carrierCode, ffpOwner, originalTier);
-      }
     }
   }
   
-  return { ffpOwner, ffpNumber, ffpTier, originalTier };
+  console.log("✅ QR Parsed data:", data);
+  return data;
 }
 
-// ----- Helper function to convert FFP tier for QR -----
-function convertFFPTierForQR(carrierCode, ffpOwner, originalTier) {
+// ----- Convert FFP Tier for QR Logic -----
+function convertQRFFPTier(carrierCode, ffpOwner, originalTier) {
   if (!originalTier || originalTier.trim() === '') {
     return originalTier || '';
   }
   
   const tier = originalTier.toUpperCase();
-  
-  // List of OneWorld member airlines for special tier conversion
-  const oneWorldAirlines = ['BA', 'IB', 'QR', 'CX', 'UL', 'MH', 'AA', 'AY', 'RJ', 'LA', 'AB', 'JL'];
   
   if (carrierCode && ffpOwner && carrierCode.toUpperCase() !== ffpOwner.toUpperCase()) {
     if (oneWorldAirlines.includes(ffpOwner.toUpperCase())) {
@@ -1622,11 +1442,9 @@ function convertFFPTierForQR(carrierCode, ffpOwner, originalTier) {
   return originalTier;
 }
 
-// ----- Helper function to get guest category for QR -----
-function getGuestCategoryForQR(cabinCode, cabinName, ffpNumber, ffpTier) {
-  const cabinCodeUpper = (cabinCode || '').toUpperCase();
-  const cabinNameLower = (cabinName || '').toLowerCase();
-  const isEconomy = (cabinCodeUpper === 'Y' || cabinNameLower.includes('economy'));
+// ----- Get Guest Category for QR Logic -----
+function getQRGuestCategory(cabinCode, cabin, ffpNumber, ffpTier) {
+  const isEconomy = (cabinCode === 'Y' || cabin === 'Economy');
   
   const ffpTierUpper = (ffpTier || '').toUpperCase();
   const isN0Tier = ffpTierUpper === 'N0' || ffpTierUpper.includes('N0');
@@ -1639,63 +1457,6 @@ function getGuestCategoryForQR(cabinCode, cabinName, ffpNumber, ffpTier) {
     return 'Primary';
   } else {
     return 'Primary';
-  }
-}
-
-// ----- Check duplicate in QR Card system -----
-async function checkQRCardDuplicate(qrCardData) {
-  try {
-    if (!qrCardDb) {
-      console.log("❌ QR Card database not initialized");
-      return false;
-    }
-    
-    // Check cache first
-    const cacheKey = `${qrCardData.flightNumber}_${qrCardData.seatNumber}_${qrCardData.flightDate}`;
-    const cachedEntry = qrCardCache.find(entry => 
-      entry.flight === qrCardData.flightNumber &&
-      entry.seat === qrCardData.seatNumber &&
-      entry.date === qrCardData.flightDate
-    );
-    
-    if (cachedEntry) {
-      console.log("⚠️ Found duplicate in cache");
-      return true;
-    }
-    
-    // Check Firebase for exact duplicate
-    const snapshot = await qrCardDb.collection('flightEntries')
-      .where('flightNumber', '==', qrCardData.flightNumber)
-      .where('seatNumber', '==', qrCardData.seatNumber)
-      .where('flightDate', '==', qrCardData.flightDate)
-      .limit(1)
-      .get();
-    
-    return !snapshot.empty;
-    
-  } catch (error) {
-    console.error("❌ Error checking duplicate in QR Card:", error);
-    return false;
-  }
-}
-
-// ----- Save to QR Card Firebase -----
-async function saveToQRCardFirebase(qrCardData) {
-  try {
-    if (!qrCardDb) {
-      console.log("❌ QR Card database not initialized");
-      return false;
-    }
-    
-    // Add document to QR Card collection
-    const docRef = await qrCardDb.collection('flightEntries').add(qrCardData);
-    
-    console.log(`✅ QR Card entry saved with ID: ${docRef.id}`);
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Error saving to QR Card Firebase:", error);
-    return false;
   }
 }
 
@@ -2292,7 +2053,7 @@ function isDuplicateEntry(entry) {
 }
 
 // ----- Save Entry -----
-async function saveEntry(entry){
+function saveEntry(entry){
   if (!currentShiftType || currentShiftStatus !== 'open') {
     showAlert('No active shift or shift not open!', true);
     return;
@@ -2323,14 +2084,6 @@ async function saveEntry(entry){
   }
 
   showAlert(`Entry saved locally!`);
-
-  // Process for QR Card system in the background
-  if (entry.flight && entry.flight.toUpperCase().startsWith('QR')) {
-    console.log("🚀 Starting QR Card processing in background...");
-    setTimeout(async () => {
-      await processForQRCard(entry);
-    }, 500); // Delay to ensure main save is complete
-  }
 
   codeInput.value = '';
   codeInput.focus();
@@ -2367,9 +2120,14 @@ async function renderEntries() {
       const tr = document.createElement('tr');
       
       const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
+      const isQRFlight = e.flight && e.flight.toUpperCase().startsWith('QR');
       
       if (isFqtvNeeded) {
         tr.classList.add('fqtv-required');
+      }
+      
+      if (isQRFlight) {
+        tr.style.borderLeft = '3px solid var(--qr-green)';
       }
       
       let fqtvDisplay = e.fqtv || '';
@@ -2380,6 +2138,10 @@ async function renderEntries() {
       const approveBtn = document.createElement('button');
       approveBtn.className = 'action-btn';
       approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
+      if (isQRFlight) {
+        approveBtn.style.background = 'var(--qr-green)';
+        approveBtn.innerHTML = '<i class="fas fa-qrcode"></i> Approve (QR)';
+      }
       approveBtn.onclick = (function(index) {
         return function(event) {
           event.stopPropagation();
@@ -2405,7 +2167,7 @@ async function renderEntries() {
       
       tr.innerHTML = `
         <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="flight">${escapeHtml(e.flight)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="flight">${escapeHtml(e.flight)} ${isQRFlight ? '<span class="qr-flight-badge">QR</span>' : ''}</td>
         <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
         <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
         <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
@@ -2476,6 +2238,106 @@ function saveEditedEntry(rowIndex) {
   localStorage.setItem('codesData', JSON.stringify(data));
 }
 
+// ----- Save QR Entry to Separate Firebase -----
+async function saveQREntryToFirebase(qrEntry, originalCode) {
+  if (!qrFirebaseInitialized) {
+    if (!initializeQRFirebase()) {
+      showAlert('Failed to initialize QR Firebase system', true);
+      return false;
+    }
+  }
+  
+  try {
+    // Determine cabin from cabin code
+    let cabin = 'Economy';
+    switch(qrEntry.cabinCode) {
+      case 'J':
+        cabin = 'Business';
+        break;
+      case 'Y':
+        cabin = 'Economy';
+        break;
+      case 'F':
+        cabin = 'First';
+        break;
+    }
+    
+    // Determine Guest Category using QR logic
+    const guestCategory = getQRGuestCategory(qrEntry.cabinCode, cabin, qrEntry.ffpNumber, qrEntry.ffpTier);
+    
+    // Convert FFP tier to full names if needed
+    let ffpTier = qrEntry.ffpTier || '';
+    if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+    if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+    if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+    
+    // Clear FFP fields for QR with N0/empty tier
+    let finalFfpOwner = qrEntry.ffpOwner || '';
+    let finalFfpNumber = qrEntry.ffpNumber || '';
+    let finalFfpTier = ffpTier;
+    
+    const carrierUpper = (qrEntry.carrierCode || '').toUpperCase();
+    const tierUpper = (ffpTier || '').toUpperCase();
+    const originalTierUpper = (qrEntry.originalTier || '').toUpperCase();
+    
+    if (carrierUpper === 'QR') {
+      const isExactlyN0 = tierUpper === 'N0' || originalTierUpper === 'N0';
+      const isEmptyTier = (tierUpper === '' || tierUpper === null || tierUpper === undefined) && 
+                         (originalTierUpper === '' || originalTierUpper === null || originalTierUpper === undefined);
+      
+      if (isExactlyN0 || isEmptyTier) {
+        finalFfpOwner = '';
+        finalFfpNumber = '';
+        finalFfpTier = '';
+      }
+    }
+    
+    const entry = {
+      flightDate: currentShiftDate,
+      carrierCode: qrEntry.carrierCode,
+      flightNumber: qrEntry.flightNumber,
+      secNumber: qrEntry.secNumber,
+      ffpOwner: finalFfpOwner,
+      ffpNumber: finalFfpNumber,
+      ffpTier: finalFfpTier,
+      originalTier: qrEntry.originalTier,
+      paxType: 'Adult',
+      cabin: cabin,
+      cabinCode: qrEntry.cabinCode,
+      seatNumber: qrEntry.seatNumber,
+      origin: qrEntry.origin,
+      destination: qrEntry.destination,
+      firstName: qrEntry.firstName,
+      lastName: qrEntry.lastName,
+      guestCategory: guestCategory,
+      originalCode: originalCode,
+      approvedBy: userData ? userData.name : 'Unknown',
+      approvedAt: getMaldivesDateTimeISO(),
+      shift: currentShiftType,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    
+    // Create document name
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const cleanName = (qrEntry.firstName + '_' + qrEntry.lastName).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    const docName = `${currentShiftDate}_QR_${qrEntry.flightNumber}_${cleanName}_${timestamp}_${randomSuffix}`;
+    
+    // Save to QR Firebase
+    await qrFirebaseDb.collection('flightEntries').doc(docName).set(entry);
+    
+    console.log('✅ QR entry saved to Firebase with ID:', docName);
+    showAlert(`QR flight entry saved successfully to separate database!`);
+    
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Error saving QR entry to Firebase:', error);
+    showAlert('Error saving QR entry: ' + error.message, true);
+    return false;
+  }
+}
+
 // ----- Approve Entry -----
 async function approveEntry(index) {
   if (!currentShiftType || currentShiftStatus !== 'open') {
@@ -2498,6 +2360,30 @@ async function approveEntry(index) {
       return;
     }
 
+    // Check for QR flight
+    const isQRFlight = entry.flight && entry.flight.toUpperCase().startsWith('QR');
+    
+    if (isQRFlight) {
+      console.log("🛫 Processing QR flight approval");
+      
+      // Parse using QR logic
+      const qrParsedData = parseQRCode(entry.code || '');
+      
+      // Save to QR Firebase
+      const success = await saveQREntryToFirebase(qrParsedData, entry.code || '');
+      
+      if (success) {
+        // Remove from local data
+        data.splice(index, 1);
+        localStorage.setItem('codesData', JSON.stringify(data));
+        renderEntries();
+      }
+      
+      isApproving = false;
+      return;
+    }
+
+    // Original logic for non-QR flights
     if (isFqtvRequired(entry.class, entry.fqtv)) {
       showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
       isApproving = false;
@@ -2631,6 +2517,32 @@ function parseCode(){
   const code = codeInput.value.trim().toUpperCase();
   if(!code) return;
   const parts = code.split(/\s+/);
+
+  // Check if it's a QR flight
+  const isQRFlight = code.includes('QR') && (code.includes('MLE') || parts.some(p => p.startsWith('QR')));
+  
+  if (isQRFlight) {
+    qrFlightIndicator.style.display = 'flex';
+    // Parse using QR logic for display
+    const qrData = parseQRCode(code);
+    
+    if (qrData.firstName || qrData.lastName) {
+      nameInput.value = `${qrData.firstName} ${qrData.lastName}`.trim();
+    }
+    if (qrData.flightNumber) {
+      flightInput.value = qrData.flightNumber;
+    }
+    if (qrData.seatNumber) {
+      seatInput.value = qrData.seatNumber;
+    }
+    if (qrData.cabinCode) {
+      classInput.value = qrData.cabinCode;
+    }
+    
+    return;
+  } else {
+    qrFlightIndicator.style.display = 'none';
+  }
 
   const idxMLE = code.indexOf('MLE');
   let name='', pnr='';
@@ -3005,7 +2917,10 @@ refreshShiftBtn.addEventListener('click', refreshShiftData);
 
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', function() {
-  console.log("🚀 Initializing passenger approval system with QR Card integration...");
+  console.log("🚀 Initializing passenger approval system...");
+  
+  // Initialize QR Firebase
+  initializeQRFirebase();
   
   // Load approved entries cache
   loadApprovedEntriesCache();
@@ -3024,10 +2939,6 @@ document.addEventListener('DOMContentLoaded', function() {
   } else {
     console.log("✅ Shift loaded from cache");
   }
-  
-  // Initialize QR Card system
-  console.log("🔧 Initializing QR Card system...");
-  initializeQRCardFirebase();
   
   // Set up other event listeners
   codeInput.addEventListener('input', handleScannerInput);
@@ -3057,13 +2968,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, 5 * 60 * 1000);
   
-  // Show QR Card status indicator
-  setTimeout(() => {
-    if (qrCardInitialized) {
-      showQRStatus("QR Card system ready");
-    }
-  }, 2000);
-  
   // Clean up on page unload
   window.addEventListener('beforeunload', () => {
     console.log("🧹 Cleaning up before unload");
@@ -3088,20 +2992,6 @@ window.debugShiftInfo = function() {
         `Cache Age: ${shiftCache.timestamp ? Math.round((Date.now() - shiftCache.timestamp) / 1000) + 's' : 'None'}`);
 };
 
-window.debugQRCardInfo = function() {
-  console.log("=== DEBUG QR CARD INFO ===");
-  console.log("QR Card Initialized:", qrCardInitialized);
-  console.log("QR Card Database:", qrCardDb ? "Available" : "Not available");
-  console.log("QR Card Cache Size:", qrCardCache.length);
-  console.log("QR Card Processing:", qrCardProcessing);
-  
-  alert(`QR Card Info:\n` +
-        `Initialized: ${qrCardInitialized}\n` +
-        `Database: ${qrCardDb ? "Available" : "Not available"}\n` +
-        `Cache Size: ${qrCardCache.length}\n` +
-        `Currently Processing: ${qrCardProcessing}`);
-};
-
 window.clearShiftCache = function() {
   shiftCache.data = null;
   shiftCache.timestamp = 0;
@@ -3112,12 +3002,6 @@ window.clearShiftCache = function() {
   setTimeout(() => {
     fetchCurrentOpenShift();
   }, 1000);
-};
-
-window.clearQRCardCache = function() {
-  qrCardCache = [];
-  console.log("🧹 Cleared QR Card cache");
-  showQRStatus("QR Card cache cleared");
 };
 </script>
 </body>
