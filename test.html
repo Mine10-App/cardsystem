@@ -905,6 +905,8 @@
 <script src="./fireC1.js"></script>
 <!-- Shift System Firebase Configuration -->
 <script src="./fireshift.js"></script>
+<!-- Link to firebase-config.js for QR flights -->
+<script src="./firebase-config.js"></script>
 <script>
 // ----- Airlines dropdown -----
 const airlines = {
@@ -997,18 +999,18 @@ let lastValue = '';
 let isScannerActive = false;
 let isProcessing = false;
 
-// ----- QR Firebase Instance -----
-let qrFirebaseDb = null;
-let qrFirebaseInitialized = false;
+// ----- QR Firebase Database -----
+let qrDb = null;
 
-// ----- Initialize QR Firebase -----
+// ----- Initialize QR Firebase from firebase-config.js -----
 function initializeQRFirebase() {
   try {
-    console.log("Initializing QR Firebase...");
+    console.log("Initializing QR Firebase from firebase-config.js...");
     
-    // Check if firebase-config.js exists
+    // Check if firebase-config.js is loaded
     if (typeof firebaseConfig === 'undefined') {
-      console.error("❌ Firebase config not found in firebase-config.js");
+      console.error("❌ firebase-config.js not loaded or firebaseConfig not defined");
+      showAlert("QR Firebase configuration not found", true);
       return false;
     }
     
@@ -1020,20 +1022,20 @@ function initializeQRFirebase() {
       qrApp = firebase.app('qrFlights');
       console.log("✅ Using existing QR Firebase app");
     } catch (e) {
-      // Create new app for QR flights
+      // Create new app for QR flights using config from firebase-config.js
       qrApp = firebase.initializeApp(firebaseConfig, 'qrFlights');
-      console.log("✅ Created new QR Firebase app");
+      console.log("✅ Created new QR Firebase app from firebase-config.js");
     }
     
     // Initialize Firestore
-    qrFirebaseDb = firebase.firestore(qrApp);
-    qrFirebaseInitialized = true;
-    console.log("✅ QR Firestore initialized successfully");
+    qrDb = firebase.firestore(qrApp);
+    console.log("✅ QR Firestore initialized successfully from firebase-config.js");
     
     return true;
     
   } catch (error) {
-    console.error("❌ Error initializing QR Firebase:", error);
+    console.error("❌ Error initializing QR Firebase from firebase-config.js:", error);
+    showAlert("Failed to initialize QR Firebase system: " + error.message, true);
     return false;
   }
 }
@@ -2238,9 +2240,10 @@ function saveEditedEntry(rowIndex) {
   localStorage.setItem('codesData', JSON.stringify(data));
 }
 
-// ----- Save QR Entry to Separate Firebase -----
+// ----- Save QR Entry to Firebase using firebase-config.js -----
 async function saveQREntryToFirebase(qrEntry, originalCode) {
-  if (!qrFirebaseInitialized) {
+  // Initialize QR Firebase if not already initialized
+  if (!qrDb) {
     if (!initializeQRFirebase()) {
       showAlert('Failed to initialize QR Firebase system', true);
       return false;
@@ -2323,16 +2326,16 @@ async function saveQREntryToFirebase(qrEntry, originalCode) {
     const cleanName = (qrEntry.firstName + '_' + qrEntry.lastName).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
     const docName = `${currentShiftDate}_QR_${qrEntry.flightNumber}_${cleanName}_${timestamp}_${randomSuffix}`;
     
-    // Save to QR Firebase
-    await qrFirebaseDb.collection('flightEntries').doc(docName).set(entry);
+    // Save to Firebase using the firebase-config.js configuration
+    await qrDb.collection('flightEntries').doc(docName).set(entry);
     
-    console.log('✅ QR entry saved to Firebase with ID:', docName);
-    showAlert(`QR flight entry saved successfully to separate database!`);
+    console.log('✅ QR entry saved to Firebase (firebase-config.js) with ID:', docName);
+    showAlert(`QR flight entry saved successfully to Firebase!`);
     
     return true;
     
   } catch (error) {
-    console.error('❌ Error saving QR entry to Firebase:', error);
+    console.error('❌ Error saving QR entry to Firebase (firebase-config.js):', error);
     showAlert('Error saving QR entry: ' + error.message, true);
     return false;
   }
@@ -2369,7 +2372,7 @@ async function approveEntry(index) {
       // Parse using QR logic
       const qrParsedData = parseQRCode(entry.code || '');
       
-      // Save to QR Firebase
+      // Save to Firebase using firebase-config.js
       const success = await saveQREntryToFirebase(qrParsedData, entry.code || '');
       
       if (success) {
@@ -2919,7 +2922,7 @@ refreshShiftBtn.addEventListener('click', refreshShiftData);
 document.addEventListener('DOMContentLoaded', function() {
   console.log("🚀 Initializing passenger approval system...");
   
-  // Initialize QR Firebase
+  // Initialize QR Firebase from firebase-config.js
   initializeQRFirebase();
   
   // Load approved entries cache
