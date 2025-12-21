@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Processor - Firebase Edition</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        /* Tabs Styles */
+        .tab-controls {
+            display: flex;
+            margin-bottom: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-btn:hover {
+            background-color: #f0f7ff;
+            color: #4a90e2;
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: #4a90e2;
+            color: #4a90e2;
+            background-color: #f0f7ff;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Existing styles with improvements */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4a90e2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+        }
+        
+        input[readonly] {
+            background-color: #f9f9f9;
+            cursor: not-allowed;
+        }
+        
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        button:hover {
+            background-color: #3a7bc8;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        button.download-btn {
+            background-color: #27ae60;
+        }
+        
+        button.download-btn:hover {
+            background-color: #219653;
+        }
+        
+        button.clear-btn {
+            background-color: #e74c3c;
+        }
+        
+        button.clear-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .saved-list {
+            margin-top: 30px;
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .saved-list h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .saved-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .saved-item:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .saved-item-info {
+            flex: 1;
+        }
+        
+        .saved-item-info div {
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        
+        .saved-item-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            justify-content: flex-end;
+        }
+        
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .edit-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .edit-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .filter-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        
+        .saved-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .no-data {
+            text-align: center;
+            color: #777;
+            font-style: italic;
+            padding: 40px 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .duplicate-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 5px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .duplicate-warning.show {
+            display: block;
+        }
+        
+        .cabin-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .business-badge {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .economy-badge {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .first-badge {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .guest-badge {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .primary-badge {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        .edit-form {
+            background: #f8f9fa;
+            border: 2px solid #4a90e2;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .search-group {
+            background: #f0f8ff;
+            border: 1px solid #cce5ff;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .search-group h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #004085;
+        }
+        
+        .search-results {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        
+        .search-result-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .editable-section {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 5px 0;
+        }
+        
+        .editable-section-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .field-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .field-group label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .field-value {
+            font-size: 12px;
+            padding: 4px 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            border: 1px solid #eee;
+        }
+        
+        .edit-toggle-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        .edit-toggle-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .edit-all-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .edit-all-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .logic-notice {
+            font-size: 10px;
+            color: #e74c3c;
+            font-style: italic;
+            margin-top: 3px;
+        }
+        
+        .logic-active {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .tier-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 3px;
+        }
+        
+        .tier-emerald {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .tier-sapphire {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .tier-ruby {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .tier-platinum {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .tier-gold {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .tier-silver {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .tier-n0 {
+            background-color: #95a5a6;
+            color: white;
+        }
+        
+        .save-item-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .save-item-btn:hover {
+            background-color: #219653;
+        }
+        
+        .cancel-edit-btn {
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .cancel-edit-btn:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .item-edit-mode {
+            border: 2px solid #4a90e2;
+            background-color: #f0f8ff;
+        }
+        
+        .saved-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .saved-item-header-info {
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .saved-item-details {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .saved-item-details span {
+            margin-right: 10px;
+        }
+        
+        .code-input-section {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-group input {
+            flex: 1;
+        }
+        
+        .input-group button {
+            flex: 0 0 100px;
+        }
+        
+        .auto-save-notice {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        /* Firebase status indicator */
+        .firebase-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        
+        .firebase-connected {
+            background-color: #27ae60;
+        }
+        
+        .firebase-disconnected {
+            background-color: #e74c3c;
+        }
+        
+        /* Edit View Styles */
+        .editable-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .editable-table th {
+            background-color: #4a90e2;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+        
+        .editable-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        
+        .editable-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .editable-table input,
+        .editable-table select {
+            width: 100%;
+            padding: 5px 8px;
+            font-size: 12px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        .editable-table .actions-cell {
+            display: flex;
+            gap: 5px;
+            min-width: 100px;
+        }
+        
+        /* Simple List View */
+        .simple-list {
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .simple-list-item {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        
+        .simple-list-item:hover {
+            background-color: #f8f9fa;
+            border-color: #4a90e2;
+        }
+        
+        .simple-list-item-info {
+            flex: 1;
+        }
+        
+        .simple-list-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        /* Loading spinner */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-text {
+            margin-top: 10px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="./firebase-config.js"></script>
+</head>
+<body>
+    <h2>Code Processor <span id="firebaseStatus" class="firebase-status firebase-disconnected"></span></h2>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loader"></div>
+        <div class="loading-text" id="loadingText">Loading...</div>
+    </div>
+    
+    <!-- Tab Controls -->
+    <div class="tab-controls">
+        <button class="tab-btn active" data-tab="input">Code Input</button>
+        <button class="tab-btn" data-tab="all">All Entries</button>
+        <button class="tab-btn" data-tab="edit">Edit View</button>
+        <button class="tab-btn" data-tab="simple">Simple List</button>
+    </div>
+    
+    <!-- Tab 1: Code Input -->
+    <div class="tab-content active" id="tab-input">
+        <div class="code-input-section">
+            <div class="form-group">
+                <label for="codeField">Enter Code:</label>
+                <div class="input-group">
+                    <input type="text" id="codeField" placeholder="Type or paste code here - auto-saves when valid" autofocus>
+                    <button id="clearBtn" class="clear-btn">Clear</button>
+                </div>
+                <div class="auto-save-notice">Valid entries auto-save after 1.5 seconds</div>
+                <div id="duplicateWarning" class="duplicate-warning">⚠ This code has already been saved!</div>
+            </div>
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+    </div>
+    
+    <!-- Tab 2: All Entries -->
+    <div class="tab-content" id="tab-all">
+        <div class="saved-list">
+            <div class="saved-list-header">
+                <h3>All Saved Entries</h3>
+                <span id="entryCount">0 entries</span>
+            </div>
+            
+            <div class="filter-group">
+                <div class="form-group">
+                    <label for="filterDate">Filter by Date:</label>
+                    <input type="date" id="filterDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="filterFlight">Filter by Flight No:</label>
+                    <input type="text" id="filterFlight" placeholder="Enter flight number">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="downloadAllBtn" class="download-btn">Download Excel (All)</button>
+                <button id="downloadFilteredBtn" class="download-btn" style="background-color: #9b59b6;">Download Filtered</button>
+                <button id="clearAllBtn" class="clear-btn">Clear All Data</button>
+            </div>
+            
+            <div id="savedEntries">
+                <div class="no-data">No saved entries yet. Enter a valid code to save.</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 3: Edit View -->
+    <div class="tab-content" id="tab-edit">
+        <div class="saved-list">
+            <div class="saved-list-header">
+                <h3>Edit Mode - Bulk Editing</h3>
+                <div>
+                    <button id="saveAllBtn" class="save-item-btn" style="display: none;">Save All Changes</button>
+                    <button id="cancelAllBtn" class="cancel-edit-btn" style="display: none;">Cancel All</button>
+                </div>
+            </div>
+            
+            <div id="editableEntries">
+                <div class="no-data">No entries to edit. Switch to "All Entries" tab to view saved data.</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tab 4: Simple List -->
+    <div class="tab-content" id="tab-simple">
+        <div class="saved-list">
+            <div class="saved-list-header">
+                <h3>Simple List View</h3>
+                <button id="refreshSimpleBtn" class="edit-btn">Refresh</button>
+            </div>
+            
+            <div class="simple-list" id="simpleList">
+                <div class="no-data">No entries available.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Firebase
+        let db;
+        let firebaseInitialized = false;
+        
+        try {
+            // Check if firebaseConfig is available
+            if (typeof firebaseConfig !== 'undefined') {
+                // Initialize Firebase
+                const app = firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                firebaseInitialized = true;
+                
+                // Update status indicator
+                document.getElementById('firebaseStatus').className = 'firebase-status firebase-connected';
+                showStatus('Firebase connected successfully', false, 'info');
+                
+                // Enable offline persistence
+                db.enablePersistence()
+                    .catch((err) => {
+                        if (err.code == 'failed-precondition') {
+                            showStatus('Multiple tabs open, offline persistence disabled', true);
+                        } else if (err.code == 'unimplemented') {
+                            showStatus('Browser doesn\'t support offline persistence', true);
+                        }
+                    });
+            } else {
+                showStatus('Firebase config not found. Please create firebase-config.js', true);
+            }
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            showStatus('Firebase initialization failed: ' + error.message, true);
+        }
+        
+        // Get all DOM elements
+        const codeField = document.getElementById('codeField');
+        const clearBtn = document.getElementById('clearBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const downloadFilteredBtn = document.getElementById('downloadFilteredBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const savedEntries = document.getElementById('savedEntries');
+        const entryCount = document.getElementById('entryCount');
+        const filterDate = document.getElementById('filterDate');
+        const filterFlight = document.getElementById('filterFlight');
+        const duplicateWarning = document.getElementById('duplicateWarning');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const saveAllBtn = document.getElementById('saveAllBtn');
+        const cancelAllBtn = document.getElementById('cancelAllBtn');
+        const editableEntries = document.getElementById('editableEntries');
+        const simpleList = document.getElementById('simpleList');
+        const refreshSimpleBtn = document.getElementById('refreshSimpleBtn');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        
+        // Set current date as default for filter
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        filterDate.value = formattedDate;
+        
+        // Initialize data array
+        let savedData = [];
+        let allEntries = []; // For storing all Firebase entries
+        
+        // Track editing state
+        let isEditing = false;
+        let editingIndex = -1;
+        let editMode = false; // For bulk edit mode
+        
+        // Auto-save timer and flags
+        let autoSaveTimeout = null;
+        const AUTO_SAVE_DELAY = 1500; // 1.5 second delay for auto-save
+        
+        // List of OneWorld member airlines for special tier conversion
+        const oneWorldAirlines = ['BA', 'IB', 'QR', 'CX', 'UL', 'MH', 'AA', 'AY', 'RJ', 'LA', 'AB', 'JL'];
+        
+        // Tab switching functionality
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update active tab content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${tabId}`) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                // Load data for specific tabs
+                if (tabId === 'edit') {
+                    loadEditableTableView();
+                } else if (tabId === 'simple') {
+                    loadSimpleListView();
+                } else if (tabId === 'all') {
+                    loadAllEntries();
+                }
+            });
+        });
+        
+        // Show loading overlay
+        function showLoading(message = 'Loading...') {
+            loadingText.textContent = message;
+            loadingOverlay.classList.add('active');
+        }
+        
+        // Hide loading overlay
+        function hideLoading() {
+            loadingOverlay.classList.remove('active');
+        }
+        
+        // Function to load all entries from Firebase
+        async function loadAllEntries() {
+            if (!firebaseInitialized) {
+                showStatus('Firebase not initialized', true);
+                return;
+            }
+            
+            showLoading('Loading entries from Firebase...');
+            
+            try {
+                const snapshot = await db.collection('flightEntries')
+                    .orderBy('timestamp', 'desc')
+                    .get();
+                
+                allEntries = [];
+                snapshot.forEach(doc => {
+                    allEntries.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                savedData = allEntries; // For backward compatibility
+                updateSavedList();
+                hideLoading();
+                showStatus(`Loaded ${allEntries.length} entries from Firebase`, false, 'info');
+            } catch (error) {
+                hideLoading();
+                console.error('Error loading from Firebase:', error);
+                showStatus('Error loading data: ' + error.message, true);
+            }
+        }
+        
+        // Function to save entry to Firebase
+        async function saveToFirebase(entry) {
+            if (!firebaseInitialized) {
+                showStatus('Firebase not initialized', true);
+                return false;
+            }
+            
+            try {
+                // Add timestamp if not present
+                if (!entry.timestamp) {
+                    entry.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                }
+                
+                const docRef = await db.collection('flightEntries').add(entry);
+                entry.id = docRef.id; // Add Firebase ID to the entry
+                
+                console.log('Entry saved to Firebase with ID:', docRef.id);
+                return docRef.id;
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                showStatus('Error saving to Firebase: ' + error.message, true);
+                return false;
+            }
+        }
+        
+        // Function to update entry in Firebase
+        async function updateInFirebase(entryId, updatedData) {
+            if (!firebaseInitialized) {
+                showStatus('Firebase not initialized', true);
+                return false;
+            }
+            
+            try {
+                // Update timestamp
+                updatedData.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                await db.collection('flightEntries').doc(entryId).update(updatedData);
+                console.log('Entry updated in Firebase with ID:', entryId);
+                return true;
+            } catch (error) {
+                console.error('Error updating in Firebase:', error);
+                showStatus('Error updating entry: ' + error.message, true);
+                return false;
+            }
+        }
+        
+        // Function to delete entry from Firebase
+        async function deleteFromFirebase(entryId) {
+            if (!firebaseInitialized) {
+                showStatus('Firebase not initialized', true);
+                return false;
+            }
+            
+            try {
+                await db.collection('flightEntries').doc(entryId).delete();
+                console.log('Entry deleted from Firebase with ID:', entryId);
+                return true;
+            } catch (error) {
+                console.error('Error deleting from Firebase:', error);
+                showStatus('Error deleting entry: ' + error.message, true);
+                return false;
+            }
+        }
+        
+        // Function to clear all data from Firebase
+        async function clearAllFirebaseData() {
+            if (!firebaseInitialized) {
+                showStatus('Firebase not initialized', true);
+                return false;
+            }
+            
+            showLoading('Deleting all data from Firebase...');
+            
+            try {
+                // Get all documents
+                const snapshot = await db.collection('flightEntries').get();
+                
+                // Delete each document
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+                
+                await batch.commit();
+                
+                hideLoading();
+                showStatus(`Deleted ${snapshot.size} entries from Firebase`, false, 'info');
+                return true;
+            } catch (error) {
+                hideLoading();
+                console.error('Error clearing Firebase data:', error);
+                showStatus('Error clearing data: ' + error.message, true);
+                return false;
+            }
+        }
+        
+        // Function to determine Guest Category based on cabin and FFP tier
+        function getGuestCategoryFromCabinAndFFP(cabinCode, cabinName, ffpNumber, ffpTier) {
+            const cabinCodeUpper = (cabinCode || '').toUpperCase();
+            const cabinNameLower = (cabinName || '').toLowerCase();
+            const isEconomy = (cabinCodeUpper === 'Y' || cabinNameLower.includes('economy'));
+            
+            const ffpTierUpper = (ffpTier || '').toUpperCase();
+            const isN0Tier = ffpTierUpper === 'N0' || ffpTierUpper.includes('N0');
+            const isTierEmpty = !ffpTier || ffpTier.trim() === '';
+            const isFFPNumberEmpty = !ffpNumber || ffpNumber.trim() === '';
+            
+            if (isEconomy && (isN0Tier || isTierEmpty || isFFPNumberEmpty)) {
+                return 'Guest';
+            } else if (isEconomy && ffpNumber && ffpNumber.trim() !== '') {
+                return 'Primary';
+            } else {
+                return 'Primary';
+            }
+        }
+        
+        // Function to check if Guest Category should be Guest
+        function shouldBeGuest(ffpTier, cabin, ffpNumber) {
+            if (!cabin) return false;
+            
+            const tier = (ffpTier || '').toString().toUpperCase();
+            const cabinType = (cabin || '').toString().toLowerCase();
+            const hasFFPNumber = ffpNumber && ffpNumber.trim() !== '';
+            
+            const isN0Tier = tier === 'N0' || tier.includes('N0');
+            const isTierEmpty = !ffpTier || ffpTier.trim() === '';
+            const isEconomyCabin = cabinType.includes('economy') || cabinType === 'y';
+            
+            if (isEconomyCabin && (isN0Tier || isTierEmpty || !hasFFPNumber)) {
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // Function to convert FFP tier
+        function convertFFPTier(carrierCode, ffpOwner, originalTier) {
+            if (!originalTier || originalTier.trim() === '') {
+                return originalTier || '';
+            }
+            
+            const tier = originalTier.toUpperCase();
+            
+            if (carrierCode && ffpOwner && carrierCode.toUpperCase() !== ffpOwner.toUpperCase()) {
+                if (oneWorldAirlines.includes(ffpOwner.toUpperCase())) {
+                    if (tier === 'N1' || tier === 'N2') {
+                        return 'Emerald';
+                    } else if (tier === 'N3') {
+                        return 'Sapphire';
+                    } else if (tier === 'N0') {
+                        return 'N0';
+                    }
+                } else {
+                    if (tier === 'N1' || tier === 'P') {
+                        return 'Platinum';
+                    } else if (tier === 'N2' || tier === 'G') {
+                        return 'Gold';
+                    } else if (tier === 'N3' || tier === 'S') {
+                        return 'Silver';
+                    } else if (tier === 'N0') {
+                        return 'N0';
+                    }
+                }
+            } else {
+                if (tier === 'N1' || tier === 'P') {
+                    return 'Platinum';
+                } else if (tier === 'N2' || tier === 'G') {
+                    return 'Gold';
+                } else if (tier === 'N3' || tier === 'S') {
+                    return 'Silver';
+                } else if (tier === 'N0') {
+                    return 'N0';
+                }
+            }
+            
+            return originalTier;
+        }
+        
+        // Function to get tier badge class
+        function getTierBadgeClass(tier) {
+            if (!tier) return '';
+            
+            tier = tier.toUpperCase();
+            if (tier.includes('EMERALD')) {
+                return 'tier-emerald';
+            } else if (tier.includes('SAPPHIRE')) {
+                return 'tier-sapphire';
+            } else if (tier.includes('RUBY')) {
+                return 'tier-ruby';
+            } else if (tier.includes('PLATINUM') || tier === 'P') {
+                return 'tier-platinum';
+            } else if (tier.includes('GOLD') || tier === 'G') {
+                return 'tier-gold';
+            } else if (tier.includes('SILVER') || tier === 'S') {
+                return 'tier-silver';
+            } else if (tier.includes('N0')) {
+                return 'tier-n0';
+            }
+            return '';
+        }
+        
+        // Function to update saved entries list
+        function updateSavedList(filteredData = null) {
+            const dataToDisplay = filteredData || savedData;
+            entryCount.textContent = `${dataToDisplay.length} entries`;
+            
+            if (dataToDisplay.length === 0) {
+                savedEntries.innerHTML = '<div class="no-data">No saved entries yet. Enter a valid code to save.</div>';
+                return;
+            }
+            
+            let html = '';
+            dataToDisplay.forEach((entry, index) => {
+                const isThisEntryEditing = isEditing && editingIndex === index;
+                
+                html += `
+                    <div class="saved-item ${isThisEntryEditing ? 'item-edit-mode' : ''}" id="entry-${index}">
+                        ${getEntryHeader(entry, index, isThisEntryEditing)}
+                        ${isThisEntryEditing ? getEditForm(entry, index) : getViewModeContent(entry, index)}
+                    </div>
+                `;
+            });
+            
+            savedEntries.innerHTML = html;
+        }
+        
+        // Function to get entry header
+        function getEntryHeader(entry, index, isEditing) {
+            let editBadge = '';
+            if (isEditing) {
+                editBadge = `<span class="edit-toggle-btn">Editing</span>`;
+            }
+            
+            return `
+                <div class="saved-item-header">
+                    <div class="saved-item-header-info">
+                        ${entry.flightDate} | ${entry.carrierCode} ${entry.flightNumber} | ${entry.firstName} ${entry.lastName}
+                        ${editBadge}
+                        <small style="color: #999; font-size: 10px; margin-left: 5px;">ID: ${entry.id ? entry.id.substring(0, 8) + '...' : 'local'}</small>
+                    </div>
+                    <div class="saved-item-header-actions">
+                        ${!isEditing ? `
+                            <button class="edit-btn" onclick="editEntry(${index})">Edit</button>
+                            <button class="delete-btn" onclick="deleteEntry(${index})">Delete</button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Function to get view mode content
+        function getViewModeContent(entry, index) {
+            let cabinBadgeClass = '';
+            let cabinBadgeText = '';
+            if (entry.cabinCode === 'J' || entry.cabin === 'Business') {
+                cabinBadgeClass = 'business-badge';
+                cabinBadgeText = 'Business';
+            } else if (entry.cabinCode === 'Y' || entry.cabin === 'Economy') {
+                cabinBadgeClass = 'economy-badge';
+                cabinBadgeText = 'Economy';
+            } else if (entry.cabinCode === 'F' || entry.cabin === 'First') {
+                cabinBadgeClass = 'first-badge';
+                cabinBadgeText = 'First';
+            }
+            
+            let guestBadgeClass = '';
+            let guestBadgeText = '';
+            if (entry.guestCategory === 'Guest') {
+                guestBadgeClass = 'guest-badge';
+                guestBadgeText = 'Guest';
+            } else if (entry.guestCategory === 'Primary') {
+                guestBadgeClass = 'primary-badge';
+                guestBadgeText = 'Primary';
+            }
+            
+            let tierBadgeClass = getTierBadgeClass(entry.ffpTier);
+            let tierDisplayName = entry.ffpTier || '';
+            
+            if (tierDisplayName === 'P') tierDisplayName = 'Platinum';
+            if (tierDisplayName === 'G') tierDisplayName = 'Gold';
+            if (tierDisplayName === 'S') tierDisplayName = 'Silver';
+            
+            let tierBadgeText = tierDisplayName ? `<span class="tier-badge ${tierBadgeClass}">${tierDisplayName}</span>` : '';
+            
+            const shouldBeGuestCategory = shouldBeGuest(entry.ffpTier, entry.cabin, entry.ffpNumber);
+            const logicNotice = shouldBeGuestCategory ? 
+                '<div class="logic-notice">Economy cabin + (Empty/N0 tier or no FFP) = Auto Guest</div>' : '';
+            
+            return `
+                <div class="saved-item-details">
+                    <span>Seat: ${entry.seatNumber}</span>
+                    <span>Cabin: ${entry.cabin} 
+                        ${cabinBadgeText ? `<span class="cabin-badge ${cabinBadgeClass}">${cabinBadgeText}</span>` : ''}</span>
+                    <span>Origin: ${entry.origin} → Destination: ${entry.destination}</span>
+                </div>
+                
+                <div class="saved-item-details">
+                    <span>Carrier: ${entry.carrierCode}</span>
+                    <span>FFP Owner: ${entry.ffpOwner || 'None'}</span>
+                    <span>FFP: ${entry.ffpNumber || 'None'} ${tierBadgeText}</span>
+                    <span>Sec: ${entry.secNumber || 'None'}</span>
+                </div>
+                
+                <div class="field-row">
+                    <div class="field-group">
+                        <label>PAX Type:</label>
+                        <div class="field-value">${entry.paxType || 'Adult'}</div>
+                    </div>
+                    <div class="field-group">
+                        <label>Guest Category:</label>
+                        <div class="field-value ${shouldBeGuestCategory ? 'logic-active' : ''}">${entry.guestCategory || 'Guest'} 
+                            ${guestBadgeText ? `<span class="cabin-badge ${guestBadgeClass}">${guestBadgeText}</span>` : ''}
+                            ${logicNotice}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Function to get edit form
+        function getEditForm(entry, index) {
+            const shouldBeGuestCategory = shouldBeGuest(entry.ffpTier, entry.cabin, entry.ffpNumber);
+            const guestCategoryDisabled = shouldBeGuestCategory ? 'disabled' : '';
+            const logicNotice = shouldBeGuestCategory ? 
+                '<div class="logic-notice">Economy cabin + (Empty/N0 tier or no FFP) = Auto Guest (cannot be changed)</div>' : '';
+            
+            return `
+                <div class="editable-section">
+                    <div class="editable-section-title">Passenger Information</div>
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editFirstName-${index}">First Name:</label>
+                            <input type="text" id="editFirstName-${index}" value="${entry.firstName || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editLastName-${index}">Last Name:</label>
+                            <input type="text" id="editLastName-${index}" value="${entry.lastName || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editPaxType-${index}">PAX Type:</label>
+                            <select id="editPaxType-${index}">
+                                <option value="Adult" ${entry.paxType === 'Adult' ? 'selected' : ''}>Adult</option>
+                                <option value="Child" ${entry.paxType === 'Child' ? 'selected' : ''}>Child</option>
+                                <option value="Infant" ${entry.paxType === 'Infant' ? 'selected' : ''}>Infant</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editGuestCategory-${index}">Guest Category:</label>
+                            <select id="editGuestCategory-${index}" ${guestCategoryDisabled}>
+                                <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
+                                <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
+                            </select>
+                            ${logicNotice}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editable-section">
+                    <div class="editable-section-title">Flight Information</div>
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editFlightDate-${index}">Flight Date:</label>
+                            <input type="date" id="editFlightDate-${index}" value="${entry.flightDate || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editCarrierCode-${index}">Carrier Code:</label>
+                            <input type="text" id="editCarrierCode-${index}" value="${entry.carrierCode || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editFlightNumber-${index}">Flight Number:</label>
+                            <input type="text" id="editFlightNumber-${index}" value="${entry.flightNumber || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editSeatNumber-${index}">Seat Number:</label>
+                            <input type="text" id="editSeatNumber-${index}" value="${entry.seatNumber || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editOrigin-${index}">Origin:</label>
+                            <input type="text" id="editOrigin-${index}" value="${entry.origin || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDestination-${index}">Destination:</label>
+                            <input type="text" id="editDestination-${index}" value="${entry.destination || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editCabin-${index}">Cabin:</label>
+                            <select id="editCabin-${index}">
+                                <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
+                                <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
+                                <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
+                                <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First Class</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editCabinCode-${index}">Cabin Code:</label>
+                            <input type="text" id="editCabinCode-${index}" value="${entry.cabinCode || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editSecNumber-${index}">Sec Number:</label>
+                            <input type="text" id="editSecNumber-${index}" value="${entry.secNumber || ''}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="editable-section">
+                    <div class="editable-section-title">FFP Information</div>
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editFFPOwner-${index}">FFP Owner:</label>
+                            <input type="text" id="editFFPOwner-${index}" value="${entry.ffpOwner || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label for="editFFPNumber-${index}">FFP Number:</label>
+                            <input type="text" id="editFFPNumber-${index}" value="${entry.ffpNumber || ''}">
+                        </div>
+                    </div>
+                    
+                    <div class="field-row">
+                        <div class="form-group">
+                            <label for="editFFPTier-${index}">FFP Tier:</label>
+                            <input type="text" id="editFFPTier-${index}" value="${entry.ffpTier || ''}">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="saved-item-actions">
+                    <button class="save-item-btn" onclick="saveEdit(${index})">Save Changes</button>
+                    <button class="cancel-edit-btn" onclick="cancelEntryEdit(${index})">Cancel</button>
+                </div>
+            `;
+        }
+        
+        // Function to edit a specific entry
+        window.editEntry = function(index) {
+            if (isEditing && editingIndex !== index) {
+                showStatus('Please finish editing current entry first', true);
+                return;
+            }
+            
+            if (index < 0 || index >= savedData.length) return;
+            
+            isEditing = true;
+            editingIndex = index;
+            
+            showStatus('Editing entry...');
+            updateSavedList();
+        };
+        
+        // Function to save edit
+        window.saveEdit = async function(index) {
+            if (!isEditing || editingIndex !== index) return;
+            
+            const entry = savedData[index];
+            
+            // Get updated values
+            const firstName = document.getElementById(`editFirstName-${index}`).value;
+            const lastName = document.getElementById(`editLastName-${index}`).value;
+            const paxType = document.getElementById(`editPaxType-${index}`).value;
+            const guestCategory = document.getElementById(`editGuestCategory-${index}`).value;
+            const flightDate = document.getElementById(`editFlightDate-${index}`).value;
+            const carrierCode = document.getElementById(`editCarrierCode-${index}`).value;
+            const flightNumber = document.getElementById(`editFlightNumber-${index}`).value;
+            const seatNumber = document.getElementById(`editSeatNumber-${index}`).value;
+            const origin = document.getElementById(`editOrigin-${index}`).value;
+            const destination = document.getElementById(`editDestination-${index}`).value;
+            const cabin = document.getElementById(`editCabin-${index}`).value;
+            const cabinCode = document.getElementById(`editCabinCode-${index}`).value;
+            const secNumber = document.getElementById(`editSecNumber-${index}`).value;
+            const ffpOwner = document.getElementById(`editFFPOwner-${index}`).value;
+            const ffpNumber = document.getElementById(`editFFPNumber-${index}`).value;
+            let ffpTier = document.getElementById(`editFFPTier-${index}`).value;
+            
+            // Convert single letters to full names when saving
+            if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+            if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+            if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+            
+            // Apply Guest Category logic
+            let finalGuestCategory = guestCategory;
+            if (shouldBeGuest(ffpTier, cabin, ffpNumber)) {
+                finalGuestCategory = 'Guest';
+            }
+            
+            // Create updated data object
+            const updatedData = {
+                firstName: firstName,
+                lastName: lastName,
+                paxType: paxType,
+                guestCategory: finalGuestCategory,
+                flightDate: flightDate,
+                carrierCode: carrierCode,
+                flightNumber: flightNumber,
+                seatNumber: seatNumber,
+                origin: origin,
+                destination: destination,
+                cabin: cabin,
+                cabinCode: cabinCode,
+                secNumber: secNumber,
+                ffpOwner: ffpOwner,
+                ffpNumber: ffpNumber,
+                ffpTier: ffpTier
+            };
+            
+            // Update in Firebase if entry has an ID
+            if (entry.id) {
+                showLoading('Updating entry in Firebase...');
+                const success = await updateInFirebase(entry.id, updatedData);
+                hideLoading();
+                
+                if (!success) {
+                    showStatus('Failed to update entry in Firebase', true);
+                    return;
+                }
+            }
+            
+            // Update local data
+            Object.assign(entry, updatedData);
+            
+            // Reset editing state
+            isEditing = false;
+            editingIndex = -1;
+            
+            // Update display
+            updateSavedList();
+            showStatus('Entry updated successfully!');
+        };
+        
+        // Function to cancel editing
+        window.cancelEntryEdit = function(index) {
+            isEditing = false;
+            editingIndex = -1;
+            
+            // Update display
+            updateSavedList();
+            showStatus('Edit cancelled');
+        };
+        
+        // Function to show status message
+        function showStatus(message, isError = false, type = '') {
+            statusMessage.textContent = message;
+            
+            if (type === 'info') {
+                statusMessage.className = 'status-message status-info';
+            } else {
+                statusMessage.className = `status-message ${isError ? 'status-error' : 'status-success'}`;
+            }
+            
+            setTimeout(() => {
+                statusMessage.className = 'status-message';
+            }, 3000);
+        }
+        
+        // Function to normalize spaces
+        function normalizeSpaces(text) {
+            return text.replace(/\s+/g, ' ').trim();
+        }
+        
+        // Function to check if entry is valid for saving
+        function isValidEntry(firstName, lastName, flightNumber) {
+            return firstName.trim() !== '' && 
+                   lastName.trim() !== '' &&
+                   flightNumber.trim() !== '';
+        }
+        
+        // Function to check if code is a duplicate
+        function isDuplicateEntry(currentCode) {
+            if (!currentCode || currentCode.trim() === '') {
+                return false;
+            }
+            
+            const normalizedCurrentCode = normalizeSpaces(currentCode.toUpperCase());
+            
+            const isDuplicate = savedData.some(entry => {
+                if (!entry.originalCode) return false;
+                const normalizedEntryCode = normalizeSpaces(entry.originalCode.toUpperCase());
+                return normalizedEntryCode === normalizedCurrentCode;
+            });
+            
+            return isDuplicate;
+        }
+        
+        // Function to extract FFP fields from code
+        function extractFFPFieldsFromCode(codeValue, carrierCode = '') {
+            const words = codeValue.split(' ').filter(word => word.trim() !== '');
+            
+            let ffpOwner = '';
+            let ffpNumber = '';
+            let ffpTier = '';
+            let originalTier = '';
+            
+            if (words.length >= 2) {
+                const lastWord = words[words.length - 1];
+                const secondLastWord = words[words.length - 2];
+                
+                if (secondLastWord.length < 4) {
+                    ffpOwner = '';
+                    ffpNumber = '';
+                    ffpTier = '';
+                    originalTier = '';
+                } else {
+                    ffpNumber = secondLastWord;
+                    
+                    if (words.length >= 3) {
+                        const thirdLastWord = words[words.length - 3];
+                        if (thirdLastWord.length === 2 && /^[A-Z]{2}$/.test(thirdLastWord)) {
+                            ffpOwner = thirdLastWord;
+                        }
+                    }
+                    
+                    if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
+                        originalTier = lastWord.toUpperCase();
+                        ffpTier = convertFFPTier(carrierCode, ffpOwner, originalTier);
+                    }
+                }
+            }
+            
+            return { ffpOwner, ffpNumber, ffpTier, originalTier };
+        }
+        
+        // Function to extract all data from code
+        function extractDataFromCode(codeValue) {
+            let data = {
+                firstName: '',
+                lastName: '',
+                carrierCode: '',
+                destination: '',
+                origin: '',
+                flightNumber: '',
+                seatNumber: '',
+                cabinCode: '',
+                secNumber: '',
+                ffpOwner: '',
+                ffpNumber: '',
+                ffpTier: '',
+                originalTier: ''
+            };
+            
+            codeValue = normalizeSpaces(codeValue.toUpperCase());
+            
+            const mlePos = codeValue.indexOf('MLE');
+            
+            if (mlePos !== -1) {
+                // Extract name fields
+                const textBeforeMLE = codeValue.substring(0, mlePos);
+                let processedText = '';
+                
+                if (textBeforeMLE.length >= 8) {
+                    processedText = textBeforeMLE.substring(2, textBeforeMLE.length - 7);
+                } else if (textBeforeMLE.length > 2) {
+                    processedText = textBeforeMLE.substring(2);
+                }
+                
+                if (processedText.includes('/')) {
+                    const nameParts = processedText.split('/');
+                    if (nameParts.length >= 2) {
+                        data.lastName = nameParts[0].trim();
+                        data.firstName = nameParts[1].trim();
+                    } else if (nameParts.length === 1) {
+                        data.lastName = nameParts[0].trim();
+                    }
+                } else {
+                    data.lastName = processedText.trim();
+                }
+                
+                // Extract MLE word
+                let wordStart = mlePos;
+                let wordEnd = mlePos + 3;
+                
+                while (wordStart > 0 && /[A-Z0-9]/.test(codeValue[wordStart - 1])) {
+                    wordStart--;
+                }
+                
+                while (wordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[wordEnd])) {
+                    wordEnd++;
+                }
+                
+                const mleWord = codeValue.substring(wordStart, wordEnd);
+                
+                // Extract carrier code
+                data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
+                
+                // Extract destination
+                if (mleWord.length >= 5) {
+                    data.destination = mleWord.substring(3, mleWord.length - 2);
+                }
+                
+                // Extract origin
+                if (mleWord.length >= 3) {
+                    data.origin = mleWord.substring(0, 3);
+                }
+                
+                // Extract flight number
+                let nextWordStart = wordEnd;
+                
+                while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
+                    nextWordStart++;
+                }
+                
+                let nextWordEnd = nextWordStart;
+                while (nextWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[nextWordEnd])) {
+                    nextWordEnd++;
+                }
+                
+                if (nextWordStart < codeValue.length) {
+                    data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
+                }
+                
+                // Extract seat number, cabin code, and sec number
+                let seatWordStart = nextWordEnd;
+                
+                while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
+                    seatWordStart++;
+                }
+                
+                let seatWordEnd = seatWordStart;
+                while (seatWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[seatWordEnd])) {
+                    seatWordEnd++;
+                }
+                
+                if (seatWordStart < codeValue.length) {
+                    const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
+                    
+                    // Extract seat number
+                    if (seatWord.length >= 9) {
+                        data.seatNumber = seatWord.substring(5, seatWord.length - 4);
+                    }
+                    
+                    // Extract cabin code
+                    if (seatWord.length >= 4) {
+                        data.cabinCode = seatWord.substring(3, 4);
+                    }
+                    
+                    // Extract SEC number
+                    if (seatWord.length >= 4) {
+                        const last4Chars = seatWord.substring(seatWord.length - 4);
+                        if (/^\d{4}$/.test(last4Chars)) {
+                            data.secNumber = last4Chars;
+                        } else {
+                            let digitsEnd = seatWord.length;
+                            let digitsStart = seatWord.length - 1;
+                            
+                            while (digitsStart >= 0 && /\d/.test(seatWord[digitsStart])) {
+                                digitsStart--;
+                            }
+                            
+                            digitsStart++;
+                            
+                            if (digitsStart < digitsEnd) {
+                                data.secNumber = seatWord.substring(digitsStart, digitsEnd);
+                            }
+                        }
+                    }
+                }
+                
+                // Extract FFP fields
+                const ffpFields = extractFFPFieldsFromCode(codeValue, data.carrierCode);
+                data.ffpOwner = ffpFields.ffpOwner;
+                data.ffpNumber = ffpFields.ffpNumber;
+                data.ffpTier = ffpFields.ffpTier;
+                data.originalTier = ffpFields.originalTier;
+            }
+            
+            return data;
+        }
+        
+        // Function to process the code with auto-save
+        function processCodeWithAutoSave() {
+            duplicateWarning.classList.remove('show');
+            
+            let codeValue = codeField.value;
+            
+            // Check for duplicate
+            if (codeValue.length > 10) {
+                if (isDuplicateEntry(codeValue)) {
+                    duplicateWarning.classList.add('show');
+                    clearTimeout(autoSaveTimeout);
+                    return;
+                }
+            }
+            
+            // Extract data from code
+            const data = extractDataFromCode(codeValue);
+            
+            // Set up auto-save timer
+            if (!isDuplicateEntry(codeValue) && isValidEntry(data.firstName, data.lastName, data.flightNumber)) {
+                clearTimeout(autoSaveTimeout);
+                autoSaveTimeout = setTimeout(() => {
+                    saveExtractedData(data, codeValue);
+                }, AUTO_SAVE_DELAY);
+            }
+        }
+        
+        // Function to save extracted data
+        async function saveExtractedData(data, originalCode) {
+            if (!isValidEntry(data.firstName, data.lastName, data.flightNumber)) {
+                return false;
+            }
+            
+            // Check for duplicate BEFORE saving
+            if (isDuplicateEntry(originalCode)) {
+                showStatus('This code has already been saved!', true);
+                duplicateWarning.classList.add('show');
+                
+                setTimeout(() => {
+                    codeField.value = '';
+                    codeField.focus();
+                }, 1000);
+                
+                return false;
+            }
+            
+            // Determine cabin from cabin code
+            let cabin = 'Economy';
+            switch(data.cabinCode) {
+                case 'J':
+                    cabin = 'Business';
+                    break;
+                case 'Y':
+                    cabin = 'Economy';
+                    break;
+                case 'F':
+                    cabin = 'First';
+                    break;
+            }
+            
+            // Determine Guest Category
+            const guestCategory = getGuestCategoryFromCabinAndFFP(data.cabinCode, cabin, data.ffpNumber, data.ffpTier);
+            
+            // Convert FFP tier to full names if needed
+            let ffpTier = data.ffpTier || '';
+            if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+            if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+            if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+            
+            const entry = {
+                flightDate: new Date().toISOString().split('T')[0],
+                carrierCode: data.carrierCode,
+                flightNumber: data.flightNumber,
+                secNumber: data.secNumber,
+                ffpOwner: data.ffpOwner,
+                ffpNumber: data.ffpNumber,
+                ffpTier: ffpTier,
+                originalTier: data.originalTier,
+                paxType: 'Adult',
+                cabin: cabin,
+                cabinCode: data.cabinCode,
+                seatNumber: data.seatNumber,
+                origin: data.origin,
+                destination: data.destination,
+                firstName: data.firstName,
+                lastName: data.lastName,
+                guestCategory: guestCategory,
+                originalCode: originalCode,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            // Save to Firebase
+            showLoading('Saving to Firebase...');
+            const entryId = await saveToFirebase(entry);
+            hideLoading();
+            
+            if (!entryId) {
+                showStatus('Failed to save to Firebase', true);
+                return false;
+            }
+            
+            entry.id = entryId;
+            
+            // Save to local array
+            savedData.unshift(entry); // Add to beginning for newest first
+            allEntries.unshift(entry);
+            
+            showStatus('Entry saved successfully to Firebase!');
+            updateSavedList();
+            
+            // Clear code field after successful save
+            codeField.value = '';
+            codeField.focus();
+            return true;
+        }
+        
+        // Function to filter data
+        function getFilteredData() {
+            const filterDateValue = filterDate.value;
+            const filterFlightValue = filterFlight.value.toUpperCase();
+            
+            if (!filterDateValue && !filterFlightValue) {
+                return savedData;
+            }
+            
+            return savedData.filter(entry => {
+                const dateMatch = !filterDateValue || entry.flightDate === filterDateValue;
+                const flightMatch = !filterFlightValue || entry.flightNumber.includes(filterFlightValue);
+                return dateMatch && flightMatch;
+            });
+        }
+        
+        // Function to download data as Excel file (REMOVED Cabin_Code)
+        function downloadExcel(dataToDownload, filenameSuffix = '') {
+            if (dataToDownload.length === 0) {
+                showStatus('No data to download', true);
+                return;
+            }
+            
+            // Headers WITHOUT Cabin_Code
+            const headers = [
+                'Flight_Date',
+                'Carrier_Code',
+                'Flight_Number',
+                'Sec_Number',
+                'FFP_Owner',
+                'FFP_Number',
+                'FFP_Tier',
+                'Guest_Type',
+                'Cabin', // Only Cabin field, no Cabin_Code
+                'Seat_Number',
+                'Origin',
+                'Destination',
+                'First_Name',
+                'Last_Name',
+                'PAX_Type'
+            ];
+            
+            // Create CSV content
+            let csvContent = headers.join(',') + '\n';
+            
+            dataToDownload.forEach((entry, index) => {
+                let exportEntry = { ...entry };
+                
+                const carrierUpper = (exportEntry.carrierCode || '').toUpperCase();
+                const tierUpper = (exportEntry.ffpTier || '').toUpperCase();
+                const originalTierUpper = (exportEntry.originalTier || '').toUpperCase();
+                
+                // Simplified logic for clearing FFP fields for QR with N0/empty tier
+                if (carrierUpper === 'QR') {
+                    const isExactlyN0 = tierUpper === 'N0' || originalTierUpper === 'N0';
+                    const isEmptyTier = (tierUpper === '' || tierUpper === null || tierUpper === undefined) && 
+                                       (originalTierUpper === '' || originalTierUpper === null || originalTierUpper === undefined);
+                    
+                    if (isExactlyN0 || isEmptyTier) {
+                        exportEntry.ffpOwner = '';
+                        exportEntry.ffpNumber = '';
+                        exportEntry.ffpTier = '';
+                    }
+                }
+                
+                // Create row WITHOUT Cabin_Code
+                const row = [
+                    exportEntry.flightDate,
+                    exportEntry.carrierCode,
+                    exportEntry.flightNumber,
+                    exportEntry.secNumber,
+                    exportEntry.ffpOwner,
+                    exportEntry.ffpNumber,
+                    exportEntry.ffpTier,
+                    exportEntry.guestCategory,
+                    exportEntry.cabin, // Only Cabin, no Cabin_Code
+                    exportEntry.seatNumber,
+                    exportEntry.origin,
+                    exportEntry.destination,
+                    exportEntry.firstName,
+                    exportEntry.lastName,
+                    exportEntry.paxType
+                ];
+                
+                // Escape commas and quotes in values
+                const escapedRow = row.map(value => {
+                    if (value === null || value === undefined) return '""';
+                    const stringValue = String(value);
+                    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                        return `"${stringValue.replace(/"/g, '""')}"`;
+                    }
+                    return stringValue;
+                });
+                
+                csvContent += escapedRow.join(',') + '\n';
+            });
+            
+            // Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const dateStr = new Date().toISOString().split('T')[0];
+            link.setAttribute('href', url);
+            link.setAttribute('download', `flight_data_${dateStr}${filenameSuffix}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showStatus(`Downloaded ${dataToDownload.length} records`);
+        }
+        
+        // Function to delete an entry
+        window.deleteEntry = async function(index) {
+            if (isEditing && editingIndex === index) {
+                showStatus('Please finish editing or cancel first', true);
+                return;
+            }
+            
+            if (confirm('Are you sure you want to delete this entry?')) {
+                const entry = savedData[index];
+                
+                // Delete from Firebase if entry has an ID
+                if (entry.id) {
+                    showLoading('Deleting from Firebase...');
+                    const success = await deleteFromFirebase(entry.id);
+                    hideLoading();
+                    
+                    if (!success) {
+                        showStatus('Failed to delete from Firebase', true);
+                        return;
+                    }
+                }
+                
+                // Remove from local arrays
+                savedData.splice(index, 1);
+                allEntries = allEntries.filter(e => e.id !== entry.id);
+                
+                updateSavedList();
+                showStatus('Entry deleted successfully');
+            }
+        };
+        
+        // Function to load editable table view
+        async function loadEditableTableView() {
+            if (allEntries.length === 0) {
+                editableEntries.innerHTML = '<div class="no-data">No entries to edit. Save some codes first.</div>';
+                saveAllBtn.style.display = 'none';
+                cancelAllBtn.style.display = 'none';
+                return;
+            }
+            
+            let html = `
+                <table class="editable-table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Flight No</th>
+                            <th>Seat</th>
+                            <th>Cabin</th>
+                            <th>Guest Category</th>
+                            <th>FFP Number</th>
+                            <th>FFP Tier</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            allEntries.forEach((entry, index) => {
+                html += `
+                    <tr id="edit-row-${index}">
+                        <td><input type="text" value="${entry.firstName || ''}" id="edit-fn-${index}" class="editable-field"></td>
+                        <td><input type="text" value="${entry.lastName || ''}" id="edit-ln-${index}" class="editable-field"></td>
+                        <td><input type="text" value="${entry.flightNumber || ''}" id="edit-flight-${index}" class="editable-field"></td>
+                        <td><input type="text" value="${entry.seatNumber || ''}" id="edit-seat-${index}" class="editable-field"></td>
+                        <td>
+                            <select id="edit-cabin-${index}" class="editable-field">
+                                <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
+                                <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
+                                <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
+                                <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First</option>
+                            </select>
+                        </td>
+                        <td>
+                            <select id="edit-guest-${index}" class="editable-field">
+                                <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
+                                <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
+                            </select>
+                        </td>
+                        <td><input type="text" value="${entry.ffpNumber || ''}" id="edit-ffpnum-${index}" class="editable-field"></td>
+                        <td><input type="text" value="${entry.ffpTier || ''}" id="edit-ffptier-${index}" class="editable-field"></td>
+                        <td class="actions-cell">
+                            <button class="save-item-btn" onclick="saveSingleEdit(${index}, '${entry.id}')" style="font-size: 11px; padding: 3px 8px;">Save</button>
+                            <button class="delete-btn" onclick="deleteEntryFromTable(${index}, '${entry.id}')" style="font-size: 11px; padding: 3px 8px;">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            editableEntries.innerHTML = html;
+            saveAllBtn.style.display = 'inline-block';
+            cancelAllBtn.style.display = 'inline-block';
+        }
+        
+        // Function to save a single edit from table view
+        window.saveSingleEdit = async function(index, entryId) {
+            const firstName = document.getElementById(`edit-fn-${index}`).value;
+            const lastName = document.getElementById(`edit-ln-${index}`).value;
+            const flightNumber = document.getElementById(`edit-flight-${index}`).value;
+            const seatNumber = document.getElementById(`edit-seat-${index}`).value;
+            const cabin = document.getElementById(`edit-cabin-${index}`).value;
+            const guestCategory = document.getElementById(`edit-guest-${index}`).value;
+            const ffpNumber = document.getElementById(`edit-ffpnum-${index}`).value;
+            let ffpTier = document.getElementById(`edit-ffptier-${index}`).value;
+            
+            // Convert single letters to full names
+            if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+            if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+            if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+            
+            // Apply Guest Category logic
+            let finalGuestCategory = guestCategory;
+            if (shouldBeGuest(ffpTier, cabin, ffpNumber)) {
+                finalGuestCategory = 'Guest';
+            }
+            
+            const updatedData = {
+                firstName,
+                lastName,
+                flightNumber,
+                seatNumber,
+                cabin,
+                guestCategory: finalGuestCategory,
+                ffpNumber,
+                ffpTier
+            };
+            
+            // Update in Firebase
+            if (entryId) {
+                showLoading('Updating entry...');
+                const success = await updateInFirebase(entryId, updatedData);
+                hideLoading();
+                
+                if (!success) {
+                    showStatus('Failed to update entry', true);
+                    return;
+                }
+                
+                // Update local data
+                const entryIndex = allEntries.findIndex(e => e.id === entryId);
+                if (entryIndex !== -1) {
+                    Object.assign(allEntries[entryIndex], updatedData);
+                }
+                
+                showStatus('Entry updated successfully!');
+                
+                // Highlight the row to show it was saved
+                const row = document.getElementById(`edit-row-${index}`);
+                row.style.backgroundColor = '#d4edda';
+                setTimeout(() => {
+                    row.style.backgroundColor = '';
+                }, 1000);
+            }
+        };
+        
+        // Function to delete entry from table view
+        window.deleteEntryFromTable = async function(index, entryId) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                // Delete from Firebase
+                if (entryId) {
+                    showLoading('Deleting entry...');
+                    const success = await deleteFromFirebase(entryId);
+                    hideLoading();
+                    
+                    if (!success) {
+                        showStatus('Failed to delete entry', true);
+                        return;
+                    }
+                }
+                
+                // Remove from local arrays
+                allEntries = allEntries.filter(e => e.id !== entryId);
+                savedData = savedData.filter(e => e.id !== entryId);
+                
+                // Reload the table
+                loadEditableTableView();
+                showStatus('Entry deleted successfully');
+            }
+        };
+        
+        // Function to load simple list view
+        function loadSimpleListView() {
+            if (allEntries.length === 0) {
+                simpleList.innerHTML = '<div class="no-data">No entries available. Save some codes first.</div>';
+                return;
+            }
+            
+            let html = '';
+            allEntries.forEach((entry, index) => {
+                // Determine cabin badge
+                let cabinBadge = '';
+                if (entry.cabin === 'Business') {
+                    cabinBadge = '<span class="cabin-badge business-badge">Business</span>';
+                } else if (entry.cabin === 'Economy') {
+                    cabinBadge = '<span class="cabin-badge economy-badge">Economy</span>';
+                } else if (entry.cabin === 'First') {
+                    cabinBadge = '<span class="cabin-badge first-badge">First</span>';
+                }
+                
+                // Determine guest badge
+                let guestBadge = '';
+                if (entry.guestCategory === 'Guest') {
+                    guestBadge = '<span class="cabin-badge guest-badge">Guest</span>';
+                } else if (entry.guestCategory === 'Primary') {
+                    guestBadge = '<span class="cabin-badge primary-badge">Primary</span>';
+                }
+                
+                html += `
+                    <div class="simple-list-item">
+                        <div class="simple-list-item-info">
+                            <strong>${entry.firstName} ${entry.lastName}</strong>
+                            <div style="font-size: 11px; color: #666; margin-top: 2px;">
+                                ${entry.flightDate} | ${entry.carrierCode} ${entry.flightNumber} | Seat: ${entry.seatNumber}
+                                ${cabinBadge} ${guestBadge}
+                            </div>
+                        </div>
+                        <div class="simple-list-item-actions">
+                            <button class="edit-btn" onclick="editEntryFromSimpleList(${index})" style="font-size: 11px; padding: 3px 8px;">Edit</button>
+                            <button class="delete-btn" onclick="deleteEntryFromSimpleList(${index}, '${entry.id}')" style="font-size: 11px; padding: 3px 8px;">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            simpleList.innerHTML = html;
+        }
+        
+        // Function to edit entry from simple list
+        window.editEntryFromSimpleList = function(index) {
+            // Switch to edit tab and edit this entry
+            document.querySelector('[data-tab="edit"]').click();
+            
+            // Scroll to the row
+            setTimeout(() => {
+                const row = document.getElementById(`edit-row-${index}`);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 2000);
+                }
+            }, 500);
+        };
+        
+        // Function to delete entry from simple list
+        window.deleteEntryFromSimpleList = async function(index, entryId) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                // Delete from Firebase
+                if (entryId) {
+                    showLoading('Deleting entry...');
+                    const success = await deleteFromFirebase(entryId);
+                    hideLoading();
+                    
+                    if (!success) {
+                        showStatus('Failed to delete entry', true);
+                        return;
+                    }
+                }
+                
+                // Remove from local arrays
+                allEntries = allEntries.filter(e => e.id !== entryId);
+                savedData = savedData.filter(e => e.id !== entryId);
+                
+                // Reload the simple list
+                loadSimpleListView();
+                showStatus('Entry deleted successfully');
+            }
+        };
+        
+        // Save all changes in edit mode
+        saveAllBtn.addEventListener('click', async function() {
+            if (confirm('Save all changes in the edit table?')) {
+                showLoading('Saving all changes...');
+                
+                let savePromises = [];
+                
+                // Find all editable fields and collect update promises
+                allEntries.forEach((entry, index) => {
+                    if (document.getElementById(`edit-fn-${index}`)) {
+                        const firstName = document.getElementById(`edit-fn-${index}`).value;
+                        const lastName = document.getElementById(`edit-ln-${index}`).value;
+                        const flightNumber = document.getElementById(`edit-flight-${index}`).value;
+                        const seatNumber = document.getElementById(`edit-seat-${index}`).value;
+                        const cabin = document.getElementById(`edit-cabin-${index}`).value;
+                        const guestCategory = document.getElementById(`edit-guest-${index}`).value;
+                        const ffpNumber = document.getElementById(`edit-ffpnum-${index}`).value;
+                        let ffpTier = document.getElementById(`edit-ffptier-${index}`).value;
+                        
+                        // Convert single letters to full names
+                        if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+                        if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+                        if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+                        
+                        // Apply Guest Category logic
+                        let finalGuestCategory = guestCategory;
+                        if (shouldBeGuest(ffpTier, cabin, ffpNumber)) {
+                            finalGuestCategory = 'Guest';
+                        }
+                        
+                        const updatedData = {
+                            firstName,
+                            lastName,
+                            flightNumber,
+                            seatNumber,
+                            cabin,
+                            guestCategory: finalGuestCategory,
+                            ffpNumber,
+                            ffpTier
+                        };
+                        
+                        // Update local data
+                        Object.assign(entry, updatedData);
+                        
+                        // Add to update promises if entry has ID
+                        if (entry.id) {
+                            savePromises.push(updateInFirebase(entry.id, updatedData));
+                        }
+                    }
+                });
+                
+                // Execute all update promises
+                try {
+                    await Promise.all(savePromises);
+                    hideLoading();
+                    showStatus(`All ${savePromises.length} entries updated successfully!`);
+                    
+                    // Refresh the table
+                    loadEditableTableView();
+                } catch (error) {
+                    hideLoading();
+                    showStatus('Error saving some entries: ' + error.message, true);
+                }
+            }
+        });
+        
+        // Cancel all edits
+        cancelAllBtn.addEventListener('click', function() {
+            if (confirm('Cancel all edits and reload data from Firebase?')) {
+                loadAllEntries();
+                showStatus('All edits cancelled, reloading data...', false, 'info');
+            }
+        });
+        
+        // Event listeners
+        codeField.addEventListener('input', processCodeWithAutoSave);
+        
+        // Manual save on Enter key
+        codeField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(autoSaveTimeout);
+                const data = extractDataFromCode(codeField.value);
+                saveExtractedData(data, codeField.value);
+            }
+        });
+        
+        clearBtn.addEventListener('click', function() {
+            codeField.value = '';
+            codeField.focus();
+            duplicateWarning.classList.remove('show');
+        });
+        
+        // Download all data
+        downloadAllBtn.addEventListener('click', function() {
+            downloadExcel(savedData, '_all');
+        });
+        
+        // Download filtered data
+        downloadFilteredBtn.addEventListener('click', function() {
+            const filteredData = getFilteredData();
+            const dateSuffix = filterDate.value ? `_${filterDate.value}` : '';
+            const flightSuffix = filterFlight.value ? `_${filterFlight.value}` : '';
+            downloadExcel(filteredData, `${dateSuffix}${flightSuffix}`);
+        });
+        
+        // Clear all data
+        clearAllBtn.addEventListener('click', async function() {
+            if (confirm('Are you sure you want to clear ALL data from Firebase? This action cannot be undone.')) {
+                const success = await clearAllFirebaseData();
+                if (success) {
+                    savedData = [];
+                    allEntries = [];
+                    updateSavedList();
+                    loadSimpleListView();
+                    showStatus('All data cleared from Firebase');
+                }
+            }
+        });
+        
+        // Update list when filters change
+        filterDate.addEventListener('change', function() {
+            const filteredData = getFilteredData();
+            updateSavedList(filteredData);
+        });
+        
+        filterFlight.addEventListener('input', function() {
+            const filteredData = getFilteredData();
+            updateSavedList(filteredData);
+        });
+        
+        // Refresh simple list
+        refreshSimpleBtn.addEventListener('click', function() {
+            loadSimpleListView();
+            showStatus('Simple list refreshed', false, 'info');
+        });
+        
+        // Initialize - load data from Firebase
+        loadAllEntries();
+        
+    });
+    </script>
+</body>
+</html>
