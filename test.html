@@ -1,0 +1,2320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unified Code Processor - Dual Firebase System</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="./firebase-config.js"></script>  <!-- For QRCard system -->
+    <script src="./fireshift.js"></script>        <!-- For passenger approval system -->
+    <script src="./fireC1.js"></script>           <!-- For passenger approval system -->
+    
+    <style>
+        :root {
+            --gold: #D4AF37;
+            --gold-light: #F5E8B8;
+            --gold-dark: #B8860B;
+            --gold-darker: #8B6914;
+            --blue: #4a90e2;
+            --blue-light: #f0f7ff;
+            --blue-dark: #3a7bc8;
+            --success: #27ae60;
+            --error: #e74c3c;
+            --warning: #f39c12;
+            --info: #3498db;
+            --white: #FFFFFF;
+            --gray-light: #f8f9fa;
+            --gray: #e5e5e5;
+            --gray-dark: #666666;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* Header Section */
+        .header-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-top: 4px solid var(--blue);
+        }
+        
+        .header-section h1 {
+            margin: 0 0 20px 0;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-section h1 i {
+            color: var(--gold);
+        }
+        
+        /* Tabs Styles */
+        .tab-controls {
+            display: flex;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #666;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .tab-btn:hover {
+            background-color: var(--blue-light);
+            color: var(--blue);
+        }
+        
+        .tab-btn.active {
+            border-bottom-color: var(--blue);
+            color: var(--blue);
+            background-color: var(--blue-light);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Code Input Section */
+        .code-input-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .input-with-icon {
+            position: relative;
+            margin-bottom: 10px;
+        }
+        
+        .input-with-icon i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--blue);
+        }
+        
+        #codeField {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            font-size: 16px;
+            border: 2px solid var(--blue);
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+        
+        #codeField:focus {
+            outline: none;
+            border-color: var(--blue-dark);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+        
+        .auto-save-notice {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .duplicate-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 12px;
+            display: none;
+        }
+        
+        .duplicate-warning.show {
+            display: block;
+        }
+        
+        /* Status Indicators */
+        .status-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .firebase-status {
+            background-color: var(--gray-light);
+        }
+        
+        .firebase-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .firebase-connected {
+            background-color: var(--success);
+        }
+        
+        .firebase-disconnected {
+            background-color: var(--error);
+        }
+        
+        .shift-status {
+            background-color: var(--gray-light);
+        }
+        
+        .shift-active {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .shift-inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Button Groups */
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .primary-btn {
+            background-color: var(--blue);
+            color: white;
+        }
+        
+        .primary-btn:hover {
+            background-color: var(--blue-dark);
+        }
+        
+        .success-btn {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .success-btn:hover {
+            background-color: #219653;
+        }
+        
+        .warning-btn {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .warning-btn:hover {
+            background-color: #e67e22;
+        }
+        
+        .danger-btn {
+            background-color: var(--error);
+            color: white;
+        }
+        
+        .danger-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .clear-btn {
+            background-color: var(--gray-dark);
+            color: white;
+        }
+        
+        .clear-btn:hover {
+            background-color: #555;
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Entries Section */
+        .entries-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--gray-light);
+        }
+        
+        .section-header h3 {
+            margin: 0;
+            color: var(--blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .entries-count {
+            background: var(--blue);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 13px;
+            border: 1px solid var(--gray);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        th, td {
+            border: 1px solid var(--gray);
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: var(--blue-light);
+            font-weight: bold;
+            color: var(--blue);
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: var(--gray-light);
+        }
+        
+        tr:hover {
+            background-color: rgba(74, 144, 226, 0.1);
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .action-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        
+        .business-badge {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .economy-badge {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .first-badge {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .guest-badge {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .primary-badge {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 15px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            background: var(--gray-light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--gray-dark);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--gray);
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+        
+        /* Messages */
+        .status-message {
+            padding: 10px 15px;
+            margin-top: 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-message.show {
+            display: block;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .tab-controls {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                padding: 12px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group button {
+                width: 100%;
+            }
+            
+            table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+        
+        /* Flight Status */
+        .flight-closed {
+            background-color: rgba(231, 76, 60, 0.1) !important;
+        }
+        
+        .flight-closed td {
+            opacity: 0.8;
+        }
+        
+        /* FQTV Warning */
+        .fqtv-required {
+            background-color: rgba(243, 156, 18, 0.1) !important;
+        }
+        
+        .fqtv-warning {
+            color: var(--warning);
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        /* Edit Mode */
+        .edit-mode {
+            border: 2px solid var(--blue) !important;
+            background-color: var(--blue-light) !important;
+        }
+        
+        .editable-cell {
+            cursor: text;
+            transition: background-color 0.3s;
+        }
+        
+        .editable-cell:focus {
+            background-color: #fff;
+            outline: 2px solid var(--blue);
+        }
+        
+        /* System Info */
+        .system-info {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--gray-light);
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: var(--gray-dark);
+        }
+        
+        .info-value {
+            color: var(--blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loader"></div>
+            <div class="loading-text" id="loadingText">Loading...</div>
+        </div>
+        
+        <!-- Header Section -->
+        <div class="header-section">
+            <h1><i class="fas fa-qrcode"></i> Unified Code Processor</h1>
+            <div class="system-info">
+                <div class="info-item">
+                    <span class="info-label">QRCard System:</span>
+                    <span id="qrCardStatus" class="info-value">Connecting...</span>
+                    <span id="qrCardStatusDot" class="firebase-dot firebase-disconnected"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Passenger System:</span>
+                    <span id="passengerStatus" class="info-value">Connecting...</span>
+                    <span id="passengerStatusDot" class="firebase-dot firebase-disconnected"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Shift System:</span>
+                    <span id="shiftStatus" class="info-value">Checking...</span>
+                    <span id="shiftStatusDot" class="firebase-dot firebase-disconnected"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">User:</span>
+                    <span id="userDisplay" class="info-value">Loading...</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Controls -->
+        <div class="tab-controls">
+            <button class="tab-btn active" data-tab="input">
+                <i class="fas fa-keyboard"></i> Code Input
+            </button>
+            <button class="tab-btn" data-tab="entries">
+                <i class="fas fa-list"></i> Saved Entries
+            </button>
+            <button class="tab-btn" data-tab="approved">
+                <i class="fas fa-check-circle"></i> Approved Entries
+            </button>
+            <button class="tab-btn" data-tab="export">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+        </div>
+        
+        <!-- Tab 1: Code Input -->
+        <div class="tab-content active" id="tab-input">
+            <div class="code-input-section">
+                <div class="input-with-icon">
+                    <i class="fas fa-barcode"></i>
+                    <input type="text" id="codeField" placeholder="Scan or paste QR code here" autofocus>
+                </div>
+                <div class="auto-save-notice">Valid codes auto-save to both systems after 1.5 seconds</div>
+                <div id="duplicateWarning" class="duplicate-warning">⚠ This code has already been saved!</div>
+                
+                <div class="status-container">
+                    <div class="status-indicator shift-status" id="shiftIndicator">
+                        <i class="fas fa-clock"></i>
+                        <span id="shiftText">Loading shift...</span>
+                    </div>
+                    <div class="status-indicator firebase-status">
+                        <i class="fas fa-database"></i>
+                        <span>Dual Firebase System</span>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="manualSaveBtn" class="primary-btn">
+                        <i class="fas fa-save"></i> Save Now
+                    </button>
+                    <button id="clearBtn" class="clear-btn">
+                        <i class="fas fa-eraser"></i> Clear
+                    </button>
+                    <button id="refreshShiftBtn" class="warning-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh Shift
+                    </button>
+                </div>
+                
+                <div id="statusMessage" class="status-message"></div>
+            </div>
+        </div>
+        
+        <!-- Tab 2: Saved Entries -->
+        <div class="tab-content" id="tab-entries">
+            <div class="entries-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-list-alt"></i> Pending Approval</h3>
+                    <div class="entries-count" id="pendingCount">0 entries</div>
+                </div>
+                
+                <div class="filter-section">
+                    <div class="filter-grid">
+                        <div class="form-group">
+                            <label for="filterFlight">Filter by Flight:</label>
+                            <input type="text" id="filterFlight" placeholder="Flight number">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterDate">Filter by Date:</label>
+                            <input type="date" id="filterDate">
+                        </div>
+                        <div class="form-group">
+                            <label for="filterName">Filter by Name:</label>
+                            <input type="text" id="filterName" placeholder="Passenger name">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="approveAllBtn" class="success-btn">
+                        <i class="fas fa-check-double"></i> Approve All
+                    </button>
+                    <button id="clearAllBtn" class="danger-btn">
+                        <i class="fas fa-trash"></i> Clear All Pending
+                    </button>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Flight</th>
+                            <th>Seat</th>
+                            <th>Class</th>
+                            <th>FQTV</th>
+                            <th>Pax</th>
+                            <th>Date</th>
+                            <th>QRCard ID</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingEntries">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+                                No pending entries. Scan a code to get started.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Approved Entries -->
+        <div class="tab-content" id="tab-approved">
+            <div class="entries-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-check-circle"></i> Approved Entries</h3>
+                    <div class="entries-count" id="approvedCount">0 entries</div>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Flight</th>
+                            <th>Seat</th>
+                            <th>Class</th>
+                            <th>FQTV</th>
+                            <th>Approved By</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approvedEntries">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+                                No approved entries yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Tab 4: Export Data -->
+        <div class="tab-content" id="tab-export">
+            <div class="entries-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-file-export"></i> Export Data</h3>
+                </div>
+                
+                <div class="button-group">
+                    <button id="exportQRCards" class="primary-btn">
+                        <i class="fas fa-download"></i> Export QRCard Data (Excel)
+                    </button>
+                    <button id="exportPassengers" class="success-btn">
+                        <i class="fas fa-download"></i> Export Passenger Data (CSV)
+                    </button>
+                    <button id="exportAll" class="warning-btn">
+                        <i class="fas fa-download"></i> Export All Data
+                    </button>
+                </div>
+                
+                <div style="margin-top: 30px; padding: 20px; background: var(--gray-light); border-radius: 8px;">
+                    <h4><i class="fas fa-info-circle"></i> Export Information</h4>
+                    <ul style="color: var(--gray-dark); line-height: 1.6;">
+                        <li><strong>QRCard Data:</strong> Contains all flight details, cabin codes, and FFP information</li>
+                        <li><strong>Passenger Data:</strong> Contains approved passenger information with shift details</li>
+                        <li><strong>All Data:</strong> Combines both datasets into a comprehensive export</li>
+                        <li>Exports are generated in real-time from both Firebase databases</li>
+                        <li>Data is filtered based on current shift and date settings</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== MAIN APPLICATION =====
+    document.addEventListener('DOMContentLoaded', function() {
+        // ----- Global Variables -----
+        let qrCardDb = null;
+        let passengerDb = null;
+        let shiftDb = null;
+        let currentShiftType = null;
+        let currentShiftDate = null;
+        let currentShiftStatus = 'not_started';
+        let userData = null;
+        
+        let autoSaveTimeout = null;
+        const AUTO_SAVE_DELAY = 1500;
+        
+        let pendingEntries = [];
+        let approvedEntries = [];
+        let allQRCards = [];
+        
+        let isApproving = false;
+        let isProcessing = false;
+        
+        // ----- DOM Elements -----
+        const codeField = document.getElementById('codeField');
+        const manualSaveBtn = document.getElementById('manualSaveBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const refreshShiftBtn = document.getElementById('refreshShiftBtn');
+        const duplicateWarning = document.getElementById('duplicateWarning');
+        const statusMessage = document.getElementById('statusMessage');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
+        const pendingEntries = document.getElementById('pendingEntries');
+        const approvedEntries = document.getElementById('approvedEntries');
+        const pendingCount = document.getElementById('pendingCount');
+        const approvedCount = document.getElementById('approvedCount');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const approveAllBtn = document.getElementById('approveAllBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportQRCards = document.getElementById('exportQRCards');
+        const exportPassengers = document.getElementById('exportPassengers');
+        const exportAll = document.getElementById('exportAll');
+        const filterFlight = document.getElementById('filterFlight');
+        const filterDate = document.getElementById('filterDate');
+        const filterName = document.getElementById('filterName');
+        
+        // Status elements
+        const qrCardStatus = document.getElementById('qrCardStatus');
+        const qrCardStatusDot = document.getElementById('qrCardStatusDot');
+        const passengerStatus = document.getElementById('passengerStatus');
+        const passengerStatusDot = document.getElementById('passengerStatusDot');
+        const shiftStatus = document.getElementById('shiftStatus');
+        const shiftStatusDot = document.getElementById('shiftStatusDot');
+        const userDisplay = document.getElementById('userDisplay');
+        const shiftText = document.getElementById('shiftText');
+        const shiftIndicator = document.getElementById('shiftIndicator');
+        
+        // ----- OneWorld Airlines -----
+        const oneWorldAirlines = ['BA', 'IB', 'QR', 'CX', 'UL', 'MH', 'AA', 'AY', 'RJ', 'LA', 'AB', 'JL'];
+        
+        // ----- Airlines for FQTV -----
+        const airlines = {
+            'EK':'Emirates','FZ':'Flydubai','BA':'British Airways','EY':'Etihad',
+            'MH':'Malaysia Airlines','AI':'Air India','AZ':'Alitalia','VS':'Virgin Atlantic',
+            'PG':'Bangkok Airways','GF':'Gulf Air','Q2':'Malindivian','UL':'Srilankan Airlines',
+            'AK':'Air Asia','SQ':'Singapore Airlines','6E':'Indigo','OS':'Austrian Airlines',
+            '8D':'Fits Air','SU':'Aeroflot','OD':'Batik Air','TK':'Turkish Airline',
+            'G9':'Air Arabia','SV':'Saudia','MU':'China Eastern Airlines','BS':'US-Bangla Airlines',
+            '3U':'Sichuan Airlines','A1': 'Avia Maldives', 'DR': 'DER Turistic Service AG', 'HP':'Hotel Plan', 'HU':'Humming Bird',
+            'KU':'Kouni UK', 'NT' : 'Nanto Tours','MT':'Maldives Travel Factory', 'WI':'Wako International', 'KC':'Air Astana','HIS':'Japan HIS Tours',
+            'JD':'Capital Airlines', 'J2':'Azerbaijan Airlines', 'VO':'Voyages Maldives', 'WK':'Edelweiss','DE':'Condor','NO':'Neos','4Y':'Discover Airlines',
+            'JL':'Japan Airlines', 'QF':'Qantas Airways', 'CX':'Cathay Pacific', 'AA':'American Airlines',
+            'LA':'LATAM Airlines', 'AY':'Finnair', 'IB':'Iberia', 'QR':'Qatar Airways',
+            'LX':'Swiss International Air Lines', 'LH':'Lufthansa', 'AC':'Air Canada', 'NH':'All Nippon Airways',
+            'BR':'EVA Air', 'CI':'China Airlines', 'NZ':'Air New Zealand', 'VA':'Virgin Australia',
+            'AF':'Air France', 'KL':'KLM', 'DL':'Delta Air Lines', 'UA':'United Airlines',
+            'B6':'JetBlue', 'WN':'Southwest Airlines', 'WS':'WestJet', 'AS':'Alaska Airlines',
+            'F9':'Frontier Airlines', 'G4':'Allegiant Air', 'NK':'Spirit Airlines', 'SY':'Sun Country Airlines',
+            '9W':'Jet Airways', 'ET':'Ethiopian Airlines', 'KE':'Korean Air', 'OZ':'Asiana Airlines',
+            'PR':'Philippine Airlines', 'TG':'Thai Airways'
+        };
+        
+        // ----- FQTV Tier Mappings -----
+        const fqtvTierMappings = {
+            'same': {
+                'n3': 'Platinum',
+                'n2': 'Gold',
+                'n1': 'Silver'
+            },
+            'different': {
+                'n3': 'Emerald',
+                'n2': 'Sapphire',
+                'n1': 'Ruby'
+            }
+        };
+        
+        // ----- Helper Functions -----
+        function showLoading(message) {
+            loadingText.textContent = message;
+            loadingOverlay.classList.add('active');
+        }
+        
+        function hideLoading() {
+            loadingOverlay.classList.remove('active');
+        }
+        
+        function showStatus(message, isError = false, type = '') {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message show';
+            
+            if (type === 'info') {
+                statusMessage.classList.add('status-info');
+            } else if (isError) {
+                statusMessage.classList.add('status-error');
+            } else {
+                statusMessage.classList.add('status-success');
+            }
+            
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 3000);
+        }
+        
+        function updateStatusIndicator(system, status, message) {
+            const statusMap = {
+                'qrCard': { element: qrCardStatus, dot: qrCardStatusDot },
+                'passenger': { element: passengerStatus, dot: passengerStatusDot },
+                'shift': { element: shiftStatus, dot: shiftStatusDot }
+            };
+            
+            const { element, dot } = statusMap[system];
+            element.textContent = message;
+            
+            if (status === 'connected') {
+                dot.className = 'firebase-dot firebase-connected';
+            } else if (status === 'disconnected') {
+                dot.className = 'firebase-dot firebase-disconnected';
+            } else if (status === 'loading') {
+                dot.className = 'firebase-dot';
+                dot.style.backgroundColor = '#f39c12';
+            }
+        }
+        
+        // ----- Maldives Time Functions -----
+        function getMaldivesTime() {
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            return new Date(utc + (5 * 3600000));
+        }
+        
+        function formatDateToYYYYMMDD(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        function getCurrentDate() {
+            return formatDateToYYYYMMDD(getMaldivesTime());
+        }
+        
+        function getCurrentTime() {
+            const maldivesTime = getMaldivesTime();
+            return maldivesTime.toTimeString().split(' ')[0].slice(0, 5);
+        }
+        
+        // ----- Tab Switching -----
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${tabId}`) {
+                        content.classList.add('active');
+                    }
+                });
+                
+                if (tabId === 'entries') {
+                    loadPendingEntries();
+                } else if (tabId === 'approved') {
+                    loadApprovedEntries();
+                }
+            });
+        });
+        
+        // ----- Initialize Systems -----
+        async function initializeSystems() {
+            showLoading('Initializing systems...');
+            
+            try {
+                // 1. Load user data
+                userData = JSON.parse(localStorage.getItem("loggedInUser"));
+                if (userData) {
+                    userDisplay.textContent = userData.name || userData.username;
+                } else {
+                    window.location.href = "login.html";
+                    return;
+                }
+                
+                // 2. Initialize QRCard Firebase
+                if (typeof firebaseConfig !== 'undefined') {
+                    try {
+                        const qrCardApp = firebase.initializeApp(firebaseConfig, 'qrCardApp');
+                        qrCardDb = firebase.firestore(qrCardApp);
+                        updateStatusIndicator('qrCard', 'connected', 'Connected');
+                        console.log('✅ QRCard Firebase initialized');
+                    } catch (e) {
+                        if (e.code === 'app/duplicate-app') {
+                            qrCardDb = firebase.app('qrCardApp').firestore();
+                            updateStatusIndicator('qrCard', 'connected', 'Connected');
+                        } else {
+                            throw e;
+                        }
+                    }
+                } else {
+                    updateStatusIndicator('qrCard', 'disconnected', 'Config missing');
+                    showStatus('QRCard Firebase config not found', true);
+                }
+                
+                // 3. Initialize Passenger Firebase
+                if (typeof fireC1 !== 'undefined') {
+                    try {
+                        const passengerApp = firebase.initializeApp(fireC1, 'passengerApp');
+                        passengerDb = firebase.firestore(passengerApp);
+                        updateStatusIndicator('passenger', 'connected', 'Connected');
+                        console.log('✅ Passenger Firebase initialized');
+                    } catch (e) {
+                        if (e.code === 'app/duplicate-app') {
+                            passengerDb = firebase.app('passengerApp').firestore();
+                            updateStatusIndicator('passenger', 'connected', 'Connected');
+                        } else {
+                            throw e;
+                        }
+                    }
+                } else {
+                    updateStatusIndicator('passenger', 'disconnected', 'Config missing');
+                    showStatus('Passenger Firebase config not found', true);
+                }
+                
+                // 4. Initialize Shift System
+                if (typeof shiftFirebaseConfig !== 'undefined') {
+                    try {
+                        const shiftApp = firebase.initializeApp(shiftFirebaseConfig, 'shiftApp');
+                        shiftDb = firebase.firestore(shiftApp);
+                        updateStatusIndicator('shift', 'connected', 'Connected');
+                        console.log('✅ Shift Firebase initialized');
+                        
+                        // Load current shift
+                        await loadCurrentShift();
+                    } catch (e) {
+                        if (e.code === 'app/duplicate-app') {
+                            shiftDb = firebase.app('shiftApp').firestore();
+                            updateStatusIndicator('shift', 'connected', 'Connected');
+                            await loadCurrentShift();
+                        } else {
+                            throw e;
+                        }
+                    }
+                } else {
+                    updateStatusIndicator('shift', 'disconnected', 'Config missing');
+                    showStatus('Shift system config not found', true);
+                }
+                
+                // 5. Load existing data
+                await Promise.all([
+                    loadQRCards(),
+                    loadPendingFromLocalStorage(),
+                    loadApprovedFromFirebase()
+                ]);
+                
+                hideLoading();
+                showStatus('All systems initialized successfully!', false, 'info');
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Initialization error:', error);
+                showStatus('Initialization failed: ' + error.message, true);
+            }
+        }
+        
+        // ----- Shift Management -----
+        async function loadCurrentShift() {
+            try {
+                updateStatusIndicator('shift', 'loading', 'Checking shift...');
+                
+                const today = getCurrentDate();
+                const docId = `shift_${today.replace(/-/g, '_')}`;
+                
+                const shiftDoc = await shiftDb.collection('shifts').doc(docId).get();
+                
+                if (shiftDoc.exists) {
+                    const shiftData = shiftDoc.data();
+                    
+                    // Check for open shift
+                    if (shiftData.morning && shiftData.morning.status === 'open') {
+                        currentShiftType = 'morning';
+                        currentShiftDate = today;
+                        currentShiftStatus = 'open';
+                        shiftText.textContent = `Morning Shift - ${today}`;
+                        shiftIndicator.classList.add('shift-active');
+                        updateStatusIndicator('shift', 'connected', 'Morning Shift Active');
+                    } else if (shiftData.evening && shiftData.evening.status === 'open') {
+                        currentShiftType = 'evening';
+                        currentShiftDate = today;
+                        currentShiftStatus = 'open';
+                        shiftText.textContent = `Evening Shift - ${today}`;
+                        shiftIndicator.classList.add('shift-active');
+                        updateStatusIndicator('shift', 'connected', 'Evening Shift Active');
+                    } else {
+                        currentShiftStatus = 'closed';
+                        shiftText.textContent = 'No active shift';
+                        shiftIndicator.classList.add('shift-inactive');
+                        updateStatusIndicator('shift', 'disconnected', 'No active shift');
+                        showStatus('No active shift found. Please open a shift first.', true);
+                    }
+                } else {
+                    currentShiftStatus = 'closed';
+                    shiftText.textContent = 'No shift data';
+                    shiftIndicator.classList.add('shift-inactive');
+                    updateStatusIndicator('shift', 'disconnected', 'No shift data');
+                    showStatus('No shift data found for today', true);
+                }
+                
+            } catch (error) {
+                console.error('Error loading shift:', error);
+                currentShiftStatus = 'error';
+                shiftText.textContent = 'Error loading shift';
+                shiftIndicator.classList.add('shift-inactive');
+                updateStatusIndicator('shift', 'disconnected', 'Error');
+                showStatus('Error loading shift data', true);
+            }
+        }
+        
+        // ----- Data Loading Functions -----
+        async function loadQRCards() {
+            if (!qrCardDb) return;
+            
+            try {
+                const snapshot = await qrCardDb.collection('flightEntries')
+                    .orderBy('timestamp', 'desc')
+                    .limit(100)
+                    .get();
+                
+                allQRCards = [];
+                snapshot.forEach(doc => {
+                    allQRCards.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                console.log(`Loaded ${allQRCards.length} QRCard entries`);
+            } catch (error) {
+                console.error('Error loading QRCard entries:', error);
+            }
+        }
+        
+        async function loadPendingFromLocalStorage() {
+            const localData = localStorage.getItem('pendingEntries');
+            if (localData) {
+                pendingEntries = JSON.parse(localData);
+                updatePendingCount();
+            }
+        }
+        
+        async function loadApprovedFromFirebase() {
+            if (!passengerDb) return;
+            
+            try {
+                const snapshot = await passengerDb.collection('passengers')
+                    .orderBy('approvedAt', 'desc')
+                    .limit(50)
+                    .get();
+                
+                approvedEntries = [];
+                snapshot.forEach(doc => {
+                    approvedEntries.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateApprovedCount();
+                renderApprovedEntries();
+                
+            } catch (error) {
+                console.error('Error loading approved entries:', error);
+            }
+        }
+        
+        // ----- Code Parsing Functions (from QRCard) -----
+        function normalizeSpaces(text) {
+            return text.replace(/\s+/g, ' ').trim();
+        }
+        
+        function extractFFPFieldsFromCode(codeValue, carrierCode = '') {
+            const words = codeValue.split(' ').filter(word => word.trim() !== '');
+            
+            let ffpOwner = '';
+            let ffpNumber = '';
+            let ffpTier = '';
+            let originalTier = '';
+            
+            if (words.length >= 2) {
+                const lastWord = words[words.length - 1];
+                const secondLastWord = words[words.length - 2];
+                
+                if (secondLastWord.length < 4) {
+                    ffpOwner = '';
+                    ffpNumber = '';
+                    ffpTier = '';
+                    originalTier = '';
+                } else {
+                    ffpNumber = secondLastWord;
+                    
+                    if (words.length >= 3) {
+                        const thirdLastWord = words[words.length - 3];
+                        if (thirdLastWord.length === 2 && /^[A-Z]{2}$/.test(thirdLastWord)) {
+                            ffpOwner = thirdLastWord;
+                        }
+                    }
+                    
+                    if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
+                        originalTier = lastWord.toUpperCase();
+                        ffpTier = convertFFPTier(carrierCode, ffpOwner, originalTier);
+                    }
+                }
+            }
+            
+            return { ffpOwner, ffpNumber, ffpTier, originalTier };
+        }
+        
+        function convertFFPTier(carrierCode, ffpOwner, originalTier) {
+            if (!originalTier || originalTier.trim() === '') {
+                return originalTier || '';
+            }
+            
+            const tier = originalTier.toUpperCase();
+            
+            if (carrierCode && ffpOwner && carrierCode.toUpperCase() !== ffpOwner.toUpperCase()) {
+                if (oneWorldAirlines.includes(ffpOwner.toUpperCase())) {
+                    if (tier === 'N1' || tier === 'N2') {
+                        return 'Emerald';
+                    } else if (tier === 'N3') {
+                        return 'Sapphire';
+                    } else if (tier === 'N0') {
+                        return 'N0';
+                    }
+                } else {
+                    if (tier === 'N1' || tier === 'P') {
+                        return 'Platinum';
+                    } else if (tier === 'N2' || tier === 'G') {
+                        return 'Gold';
+                    } else if (tier === 'N3' || tier === 'S') {
+                        return 'Silver';
+                    } else if (tier === 'N0') {
+                        return 'N0';
+                    }
+                }
+            } else {
+                if (tier === 'N1' || tier === 'P') {
+                    return 'Platinum';
+                } else if (tier === 'N2' || tier === 'G') {
+                    return 'Gold';
+                } else if (tier === 'N3' || tier === 'S') {
+                    return 'Silver';
+                } else if (tier === 'N0') {
+                    return 'N0';
+                }
+            }
+            
+            return originalTier;
+        }
+        
+        function extractDataFromCode(codeValue) {
+            let data = {
+                firstName: '',
+                lastName: '',
+                carrierCode: '',
+                destination: '',
+                origin: '',
+                flightNumber: '',
+                seatNumber: '',
+                cabinCode: '',
+                secNumber: '',
+                ffpOwner: '',
+                ffpNumber: '',
+                ffpTier: '',
+                originalTier: ''
+            };
+            
+            codeValue = normalizeSpaces(codeValue.toUpperCase());
+            
+            const mlePos = codeValue.indexOf('MLE');
+            
+            if (mlePos !== -1) {
+                // Extract name fields
+                const textBeforeMLE = codeValue.substring(0, mlePos);
+                let processedText = '';
+                
+                if (textBeforeMLE.length >= 8) {
+                    processedText = textBeforeMLE.substring(2, textBeforeMLE.length - 7);
+                } else if (textBeforeMLE.length > 2) {
+                    processedText = textBeforeMLE.substring(2);
+                }
+                
+                if (processedText.includes('/')) {
+                    const nameParts = processedText.split('/');
+                    if (nameParts.length >= 2) {
+                        data.lastName = nameParts[0].trim();
+                        data.firstName = nameParts[1].trim();
+                    } else if (nameParts.length === 1) {
+                        data.lastName = nameParts[0].trim();
+                    }
+                } else {
+                    data.lastName = processedText.trim();
+                }
+                
+                // Extract MLE word
+                let wordStart = mlePos;
+                let wordEnd = mlePos + 3;
+                
+                while (wordStart > 0 && /[A-Z0-9]/.test(codeValue[wordStart - 1])) {
+                    wordStart--;
+                }
+                
+                while (wordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[wordEnd])) {
+                    wordEnd++;
+                }
+                
+                const mleWord = codeValue.substring(wordStart, wordEnd);
+                
+                // Extract carrier code
+                data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
+                
+                // Extract destination
+                if (mleWord.length >= 5) {
+                    data.destination = mleWord.substring(3, mleWord.length - 2);
+                }
+                
+                // Extract origin
+                if (mleWord.length >= 3) {
+                    data.origin = mleWord.substring(0, 3);
+                }
+                
+                // Extract flight number
+                let nextWordStart = wordEnd;
+                
+                while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
+                    nextWordStart++;
+                }
+                
+                let nextWordEnd = nextWordStart;
+                while (nextWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[nextWordEnd])) {
+                    nextWordEnd++;
+                }
+                
+                if (nextWordStart < codeValue.length) {
+                    data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
+                }
+                
+                // Extract seat number, cabin code, and sec number
+                let seatWordStart = nextWordEnd;
+                
+                while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
+                    seatWordStart++;
+                }
+                
+                let seatWordEnd = seatWordStart;
+                while (seatWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[seatWordEnd])) {
+                    seatWordEnd++;
+                }
+                
+                if (seatWordStart < codeValue.length) {
+                    const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
+                    
+                    // Extract seat number
+                    if (seatWord.length >= 9) {
+                        data.seatNumber = seatWord.substring(5, seatWord.length - 4);
+                    }
+                    
+                    // Extract cabin code
+                    if (seatWord.length >= 4) {
+                        data.cabinCode = seatWord.substring(3, 4);
+                    }
+                    
+                    // Extract SEC number
+                    if (seatWord.length >= 4) {
+                        const last4Chars = seatWord.substring(seatWord.length - 4);
+                        if (/^\d{4}$/.test(last4Chars)) {
+                            data.secNumber = last4Chars;
+                        } else {
+                            let digitsEnd = seatWord.length;
+                            let digitsStart = seatWord.length - 1;
+                            
+                            while (digitsStart >= 0 && /\d/.test(seatWord[digitsStart])) {
+                                digitsStart--;
+                            }
+                            
+                            digitsStart++;
+                            
+                            if (digitsStart < digitsEnd) {
+                                data.secNumber = seatWord.substring(digitsStart, digitsEnd);
+                            }
+                        }
+                    }
+                }
+                
+                // Extract FFP fields
+                const ffpFields = extractFFPFieldsFromCode(codeValue, data.carrierCode);
+                data.ffpOwner = ffpFields.ffpOwner;
+                data.ffpNumber = ffpFields.ffpNumber;
+                data.ffpTier = ffpFields.ffpTier;
+                data.originalTier = ffpFields.originalTier;
+            }
+            
+            return data;
+        }
+        
+        // ----- Passenger Approval Functions -----
+        function parsePassengerCode(code) {
+            code = code.trim().toUpperCase();
+            const parts = code.split(/\s+/);
+            
+            const idxMLE = code.indexOf('MLE');
+            let name = '', pnr = '';
+            
+            if (idxMLE !== -1) {
+                let fullNamePart = code.substring(0, idxMLE).trim();
+                if (fullNamePart.length > 8) {
+                    name = fullNamePart.substring(2, fullNamePart.length - 7).trim();
+                    pnr = fullNamePart.substring(fullNamePart.length - 7).trim();
+                }
+            }
+            
+            let flightNo = '';
+            let flightTokenIndex = -1;
+            
+            for (let i = 0; i < parts.length; i++) {
+                if (parts[i].includes('MLE')) {
+                    flightTokenIndex = i;
+                    const mleToken = parts[i];
+                    flightNo = mleToken.slice(-2) + (parts[i + 1] || '').slice(0, 4);
+                    break;
+                }
+            }
+            
+            let seatNo = '';
+            let seatClass = '';
+            
+            if (flightTokenIndex !== -1 && parts[flightTokenIndex + 2]) {
+                let seatToken = parts[flightTokenIndex + 2];
+                if (seatToken.length > 9) {
+                    if (seatToken.length >= 4) {
+                        seatClass = seatToken.charAt(3);
+                    }
+                    
+                    if (seatToken.length >= 8) {
+                        const rowPart = seatToken.substring(4, 7);
+                        const seatLetter = seatToken.charAt(7);
+                        const rowNumber = parseInt(rowPart, 10).toString();
+                        seatNo = rowNumber + seatLetter;
+                    }
+                }
+            }
+            
+            // FQTV detection
+            let fqtv = null;
+            let fqtvTierCode = '';
+            let hasNoFqtv = false;
+            
+            const allPossibleAirlineCodes = Object.keys(airlines);
+            
+            for (let i = 0; i < parts.length; i++) {
+                const currentToken = parts[i].toUpperCase();
+                
+                for (const airlineCode of allPossibleAirlineCodes) {
+                    if (currentToken === airlineCode) {
+                        if (i + 1 < parts.length) {
+                            const nextToken = parts[i + 1];
+                            
+                            if (/^\d+$/.test(nextToken)) {
+                                fqtv = airlineCode + ' ' + nextToken;
+                                
+                                for (let j = i + 2; j < parts.length && j < i + 5; j++) {
+                                    const tierToken = parts[j].toUpperCase();
+                                    if (tierToken.includes('SAPPHIRE')) {
+                                        fqtvTierCode = 'n2';
+                                    } else if (tierToken.includes('EMERALD')) {
+                                        fqtvTierCode = 'n3';
+                                    } else if (tierToken.includes('RUBY')) {
+                                        fqtvTierCode = 'n1';
+                                    } else if (tierToken.includes('PLATINUM')) {
+                                        fqtvTierCode = 'n3';
+                                    } else if (tierToken.includes('GOLD')) {
+                                        fqtvTierCode = 'n2';
+                                    } else if (tierToken.includes('SILVER')) {
+                                        fqtvTierCode = 'n1';
+                                    } else if (tierToken === 'N0') {
+                                        hasNoFqtv = true;
+                                        fqtv = '';
+                                    } else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') {
+                                        fqtvTierCode = tierToken.toLowerCase();
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!fqtv && !hasNoFqtv) {
+                for (let i = 0; i < parts.length - 2; i++) {
+                    if ((parts[i] === 'LX' || parts[i] === 'LH') && 
+                        /^\d+$/.test(parts[i + 1])) {
+                        fqtv = parts[i] + ' ' + parts[i + 1];
+                        break;
+                    }
+                }
+            }
+            
+            if (!hasNoFqtv && fqtv) {
+                fqtv = fqtv.trim();
+                
+                if (fqtv) {
+                    const airlineCode = fqtv.substring(0, 2).toUpperCase();
+                    if (allPossibleAirlineCodes.includes(airlineCode)) {
+                        fqtv = fqtv.replace(/^([A-Z0-9]{2})\s+/, '$1-');
+                    }
+                }
+                
+                if (fqtv && fqtvTierCode) {
+                    const flightAirlineCode = flightNo.slice(0, 2).toUpperCase();
+                    let fqtvAirlineCode = '';
+                    
+                    const fqtvUpper = fqtv.toUpperCase();
+                    const dashMatch = fqtvUpper.match(/^([A-Z0-9]{2})[- ]/);
+                    if (dashMatch) {
+                        fqtvAirlineCode = dashMatch[1];
+                    } else {
+                        fqtvAirlineCode = fqtvUpper.substring(0, 2);
+                    }
+                    
+                    let tierName;
+                    if (fqtvAirlineCode && flightAirlineCode && 
+                        fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
+                        tierName = fqtvTierMappings.same[fqtvTierCode] || '';
+                    } else {
+                        tierName = fqtvTierMappings.different[fqtvTierCode] || '';
+                    }
+                    
+                    if (tierName) {
+                        const standardTierRegex = /\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver)$/i;
+                        if (!standardTierRegex.test(fqtv)) {
+                            fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
+                            fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
+                            fqtv = `${fqtv}/${tierName}`;
+                        }
+                    }
+                }
+            }
+            
+            // SPECIAL HANDLING FOR SQ FLIGHTS
+            if (flightNo.startsWith('SQ')) {
+                seatNo = '';
+                pnr = '';
+            }
+            
+            return {
+                name: name,
+                pnr: pnr,
+                flightNo: flightNo,
+                seatNo: seatNo,
+                seatClass: seatClass,
+                fqtv: hasNoFqtv ? '' : (fqtv || '')
+            };
+        }
+        
+        // ----- Dual Save Function -----
+        async function saveToBothSystems(codeValue) {
+            if (isProcessing) return false;
+            
+            isProcessing = true;
+            duplicateWarning.classList.remove('show');
+            
+            try {
+                // 1. Check if shift is active
+                if (currentShiftStatus !== 'open') {
+                    showStatus('No active shift! Please open a shift first.', true);
+                    isProcessing = false;
+                    return false;
+                }
+                
+                // 2. Check for duplicate in pending entries
+                const isDuplicate = pendingEntries.some(entry => 
+                    entry.code === codeValue && entry.date === currentShiftDate
+                );
+                
+                if (isDuplicate) {
+                    duplicateWarning.classList.add('show');
+                    showStatus('This code has already been saved!', true);
+                    isProcessing = false;
+                    return false;
+                }
+                
+                // 3. Parse the code for both systems
+                const qrCardData = extractDataFromCode(codeValue);
+                const passengerData = parsePassengerCode(codeValue);
+                
+                // 4. Check if valid data was extracted
+                if (!qrCardData.firstName && !qrCardData.lastName) {
+                    showStatus('Invalid QR code format', true);
+                    isProcessing = false;
+                    return false;
+                }
+                
+                // 5. Save to QRCard System
+                let qrCardSuccess = false;
+                if (qrCardDb) {
+                    qrCardSuccess = await saveToQRCardSystem(qrCardData, codeValue);
+                }
+                
+                // 6. Save to Passenger System (pending approval)
+                let passengerSuccess = false;
+                if (currentShiftDate && currentShiftType) {
+                    passengerSuccess = saveToPassengerSystem(passengerData, codeValue);
+                }
+                
+                // 7. Clear the input field
+                codeField.value = '';
+                
+                // 8. Show success message
+                if (qrCardSuccess || passengerSuccess) {
+                    const message = [
+                        qrCardSuccess ? 'QRCard system' : null,
+                        passengerSuccess ? 'Passenger system' : null
+                    ].filter(Boolean).join(' and ');
+                    
+                    showStatus(`Saved to ${message} successfully!`);
+                    
+                    // Update UI
+                    loadPendingEntries();
+                    
+                    return true;
+                } else {
+                    showStatus('Failed to save to any system', true);
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('Error saving to both systems:', error);
+                showStatus('Error: ' + error.message, true);
+                return false;
+            } finally {
+                isProcessing = false;
+            }
+        }
+        
+        async function saveToQRCardSystem(data, originalCode) {
+            try {
+                // Determine cabin from cabin code
+                let cabin = 'Economy';
+                switch(data.cabinCode) {
+                    case 'J':
+                        cabin = 'Business';
+                        break;
+                    case 'Y':
+                        cabin = 'Economy';
+                        break;
+                    case 'F':
+                        cabin = 'First';
+                        break;
+                }
+                
+                // Determine Guest Category
+                const guestCategory = getGuestCategoryFromCabinAndFFP(data.cabinCode, cabin, data.ffpNumber, data.ffpTier);
+                
+                // Convert FFP tier to full names if needed
+                let ffpTier = data.ffpTier || '';
+                if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
+                if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
+                if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
+                
+                const entry = {
+                    flightDate: getCurrentDate(),
+                    carrierCode: data.carrierCode,
+                    flightNumber: data.flightNumber,
+                    secNumber: data.secNumber,
+                    ffpOwner: data.ffpOwner,
+                    ffpNumber: data.ffpNumber,
+                    ffpTier: ffpTier,
+                    originalTier: data.originalTier,
+                    paxType: 'Adult',
+                    cabin: cabin,
+                    cabinCode: data.cabinCode,
+                    seatNumber: data.seatNumber,
+                    origin: data.origin,
+                    destination: data.destination,
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    guestCategory: guestCategory,
+                    originalCode: originalCode,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                const docRef = await qrCardDb.collection('flightEntries').add(entry);
+                console.log('Saved to QRCard system with ID:', docRef.id);
+                
+                // Refresh QRCard data
+                await loadQRCards();
+                
+                return true;
+            } catch (error) {
+                console.error('Error saving to QRCard system:', error);
+                return false;
+            }
+        }
+        
+        function getGuestCategoryFromCabinAndFFP(cabinCode, cabinName, ffpNumber, ffpTier) {
+            const cabinCodeUpper = (cabinCode || '').toUpperCase();
+            const cabinNameLower = (cabinName || '').toLowerCase();
+            const isEconomy = (cabinCodeUpper === 'Y' || cabinNameLower.includes('economy'));
+            
+            const ffpTierUpper = (ffpTier || '').toUpperCase();
+            const isN0Tier = ffpTierUpper === 'N0' || ffpTierUpper.includes('N0');
+            const isTierEmpty = !ffpTier || ffpTier.trim() === '';
+            const isFFPNumberEmpty = !ffpNumber || ffpNumber.trim() === '';
+            
+            if (isEconomy && (isN0Tier || isTierEmpty || isFFPNumberEmpty)) {
+                return 'Guest';
+            } else if (isEconomy && ffpNumber && ffpNumber.trim() !== '') {
+                return 'Primary';
+            } else {
+                return 'Primary';
+            }
+        }
+        
+        function saveToPassengerSystem(data, originalCode) {
+            try {
+                const entry = {
+                    date: currentShiftDate,
+                    user: userData.name,
+                    shift: currentShiftType,
+                    code: originalCode,
+                    name: data.name,
+                    pnr: data.pnr,
+                    flight: data.flightNo,
+                    airline: data.flightNo.slice(0, 2),
+                    seat: data.seatNo,
+                    class: data.seatClass,
+                    serial: '',
+                    remarks: '',
+                    fqtv: data.fqtv,
+                    numPax: 1,
+                    approved: false,
+                    addedAt: new Date().toISOString()
+                };
+                
+                pendingEntries.push(entry);
+                localStorage.setItem('pendingEntries', JSON.stringify(pendingEntries));
+                
+                updatePendingCount();
+                console.log('Saved to passenger system (pending)');
+                
+                return true;
+            } catch (error) {
+                console.error('Error saving to passenger system:', error);
+                return false;
+            }
+        }
+        
+        // ----- Pending Entries Management -----
+        function updatePendingCount() {
+            pendingCount.textContent = `${pendingEntries.length} entries`;
+        }
+        
+        function loadPendingEntries() {
+            const flightFilter = filterFlight.value.toUpperCase();
+            const dateFilter = filterDate.value;
+            const nameFilter = filterName.value.toUpperCase();
+            
+            let filteredEntries = pendingEntries;
+            
+            if (flightFilter) {
+                filteredEntries = filteredEntries.filter(entry => 
+                    entry.flight.toUpperCase().includes(flightFilter)
+                );
+            }
+            
+            if (dateFilter) {
+                filteredEntries = filteredEntries.filter(entry => 
+                    entry.date === dateFilter
+                );
+            }
+            
+            if (nameFilter) {
+                filteredEntries = filteredEntries.filter(entry => 
+                    entry.name.toUpperCase().includes(nameFilter)
+                );
+            }
+            
+            renderPendingEntries(filteredEntries);
+        }
+        
+        function renderPendingEntries(entries) {
+            const tbody = document.getElementById('pendingEntries');
+            
+            if (entries.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+                            No pending entries found.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            entries.forEach((entry, index) => {
+                const isFqtvRequired = entry.class === 'Y' && (!entry.fqtv || entry.fqtv.trim() === '');
+                
+                let cabinBadge = '';
+                if (entry.class === 'J') {
+                    cabinBadge = '<span class="badge business-badge">Business</span>';
+                } else if (entry.class === 'Y') {
+                    cabinBadge = '<span class="badge economy-badge">Economy</span>';
+                } else if (entry.class === 'F') {
+                    cabinBadge = '<span class="badge first-badge">First</span>';
+                }
+                
+                let fqtvDisplay = entry.fqtv || '';
+                if (isFqtvRequired && !fqtvDisplay) {
+                    fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED</span>';
+                }
+                
+                html += `
+                    <tr class="${isFqtvRequired ? 'fqtv-required' : ''}">
+                        <td>${entry.name}</td>
+                        <td>${entry.flight} ${cabinBadge}</td>
+                        <td>${entry.seat}</td>
+                        <td>${entry.class || '-'}</td>
+                        <td>${fqtvDisplay}</td>
+                        <td>${entry.numPax}</td>
+                        <td>${entry.date}</td>
+                        <td>${entry.code.substring(0, 20)}...</td>
+                        <td class="action-buttons">
+                            <button class="action-btn primary-btn" onclick="approveSingleEntry(${index})">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button class="action-btn danger-btn" onclick="deletePendingEntry(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        // ----- Approval Functions -----
+        async function approveSingleEntry(index) {
+            if (isApproving) return;
+            
+            isApproving = true;
+            
+            try {
+                const entry = pendingEntries[index];
+                
+                // Check if FQTV is required for economy class
+                if (entry.class === 'Y' && (!entry.fqtv || entry.fqtv.trim() === '')) {
+                    showStatus('Cannot approve: Economy Class requires FQTV', true);
+                    isApproving = false;
+                    return;
+                }
+                
+                // Process FQTV tier
+                let processedFqtv = entry.fqtv || '';
+                if (processedFqtv) {
+                    const tierLevel = processFqtvTier(processedFqtv, entry.flight);
+                    if (tierLevel && !processedFqtv.includes('/')) {
+                        processedFqtv = `${processedFqtv}/${tierLevel}`;
+                    }
+                }
+                
+                // Create approved entry
+                const approvedEntry = {
+                    airline: airlines[entry.airline] || entry.airline,
+                    approved: true,
+                    checkinTime: "",
+                    date: entry.date,
+                    flightNo: entry.flight.toUpperCase(),
+                    fqtv: processedFqtv,
+                    name: entry.name,
+                    numPax: entry.numPax || 1,
+                    remarks: entry.remarks || "-",
+                    seatNo: entry.seat.toUpperCase(),
+                    class: entry.class || "-",
+                    pnr: entry.pnr || "",
+                    serial: entry.serial || "-",
+                    shift: entry.shift,
+                    timeAdded: getCurrentTime(),
+                    approvedBy: userData.name,
+                    approvedAt: new Date().toISOString()
+                };
+                
+                // Save to passenger Firebase
+                if (passengerDb) {
+                    const docName = `${approvedEntry.date}_${approvedEntry.flightNo}_${approvedEntry.seatNo}_${Date.now()}`;
+                    await passengerDb.collection('passengers').doc(docName).set(approvedEntry);
+                    
+                    // Remove from pending
+                    pendingEntries.splice(index, 1);
+                    localStorage.setItem('pendingEntries', JSON.stringify(pendingEntries));
+                    
+                    // Add to approved cache
+                    approvedEntries.unshift({ id: docName, ...approvedEntry });
+                    
+                    // Update UI
+                    loadPendingEntries();
+                    renderApprovedEntries();
+                    updateApprovedCount();
+                    
+                    showStatus('Entry approved and saved to database!');
+                } else {
+                    showStatus('Cannot approve: Database not connected', true);
+                }
+                
+            } catch (error) {
+                console.error('Error approving entry:', error);
+                showStatus('Error approving entry: ' + error.message, true);
+            } finally {
+                isApproving = false;
+            }
+        }
+        
+        function processFqtvTier(fqtvNumber, flightCode) {
+            if (!fqtvNumber || fqtvNumber.trim() === '') return '';
+            
+            const fqtvUpper = fqtvNumber.toUpperCase();
+            
+            let tierCode = '';
+            if (fqtvUpper.includes(' N3') || fqtvUpper.endsWith('N3') || fqtvUpper.includes('/N3')) {
+                tierCode = 'n3';
+            } else if (fqtvUpper.includes(' N2') || fqtvUpper.endsWith('N2') || fqtvUpper.includes('/N2')) {
+                tierCode = 'n2';
+            } else if (fqtvUpper.includes(' N1') || fqtvUpper.endsWith('N1') || fqtvUpper.includes('/N1')) {
+                tierCode = 'n1';
+            }
+            
+            if (!tierCode) {
+                const tierMatch = fqtvUpper.match(/([Nn][123])$/);
+                if (tierMatch) {
+                    tierCode = tierMatch[1].toLowerCase();
+                }
+            }
+            
+            if (!tierCode) return '';
+            
+            let fqtvAirlineCode = '';
+            const fqtvMatch = fqtvUpper.match(/^([A-Z0-9]{2})[- ]/);
+            if (fqtvMatch) {
+                fqtvAirlineCode = fqtvMatch[1];
+            } else {
+                fqtvAirlineCode = fqtvUpper.substring(0, 2);
+            }
+            
+            const flightAirlineCode = flightCode.slice(0, 2).toUpperCase();
+            
+            let tierMapping;
+            if (fqtvAirlineCode && flightAirlineCode && 
+                fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
+                tierMapping = fqtvTierMappings.same;
+            } else {
+                tierMapping = fqtvTierMappings.different;
+            }
+            
+            return tierMapping[tierCode] || '';
+        }
+        
+        function deletePendingEntry(index) {
+            if (confirm('Are you sure you want to delete this pending entry?')) {
+                pendingEntries.splice(index, 1);
+                localStorage.setItem('pendingEntries', JSON.stringify(pendingEntries));
+                loadPendingEntries();
+                showStatus('Entry deleted');
+            }
+        }
+        
+        // ----- Approved Entries -----
+        function updateApprovedCount() {
+            approvedCount.textContent = `${approvedEntries.length} entries`;
+        }
+        
+        function renderApprovedEntries() {
+            const tbody = document.getElementById('approvedEntries');
+            
+            if (approvedEntries.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #666;">
+                            No approved entries yet.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            approvedEntries.slice(0, 50).forEach(entry => {
+                let cabinBadge = '';
+                if (entry.class === 'J') {
+                    cabinBadge = '<span class="badge business-badge">Business</span>';
+                } else if (entry.class === 'Y') {
+                    cabinBadge = '<span class="badge economy-badge">Economy</span>';
+                } else if (entry.class === 'F') {
+                    cabinBadge = '<span class="badge first-badge">First</span>';
+                }
+                
+                html += `
+                    <tr>
+                        <td>${entry.name}</td>
+                        <td>${entry.flightNo} ${cabinBadge}</td>
+                        <td>${entry.seatNo}</td>
+                        <td>${entry.class}</td>
+                        <td>${entry.fqtv || '-'}</td>
+                        <td>${entry.approvedBy}</td>
+                        <td>${entry.date}</td>
+                        <td>${entry.timeAdded}</td>
+                        <td><span class="badge primary-badge">Approved</span></td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+        
+        // ----- Export Functions -----
+        async function exportQRCardData() {
+            try {
+                showLoading('Generating QRCard export...');
+                
+                const headers = [
+                    'Flight_Date', 'Carrier_Code', 'Flight_Number', 'Sec_Number',
+                    'FFP_Owner', 'FFP_Number', 'FFP_Tier', 'Guest_Type',
+                    'Cabin', 'Seat_Number', 'Origin', 'Destination',
+                    'First_Name', 'Last_Name', 'PAX_Type'
+                ];
+                
+                let csvContent = headers.join(',') + '\n';
+                
+                allQRCards.forEach(entry => {
+                    const row = [
+                        entry.flightDate,
+                        entry.carrierCode,
+                        entry.flightNumber,
+                        entry.secNumber,
+                        entry.ffpOwner,
+                        entry.ffpNumber,
+                        entry.ffpTier,
+                        entry.guestCategory,
+                        entry.cabin,
+                        entry.seatNumber,
+                        entry.origin,
+                        entry.destination,
+                        entry.firstName,
+                        entry.lastName,
+                        entry.paxType
+                    ];
+                    
+                    const escapedRow = row.map(value => {
+                        if (value === null || value === undefined) return '""';
+                        const stringValue = String(value);
+                        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                            return `"${stringValue.replace(/"/g, '""')}"`;
+                        }
+                        return stringValue;
+                    });
+                    
+                    csvContent += escapedRow.join(',') + '\n';
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                const dateStr = getCurrentDate();
+                link.setAttribute('href', url);
+                link.setAttribute('download', `qrcard_data_${dateStr}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                hideLoading();
+                showStatus(`Exported ${allQRCards.length} QRCard records`);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error exporting QRCard data:', error);
+                showStatus('Error exporting data', true);
+            }
+        }
+        
+        async function exportPassengerData() {
+            try {
+                showLoading('Generating passenger export...');
+                
+                const headers = [
+                    'Date', 'Flight', 'Seat', 'Class', 'FQTV',
+                    'Name', 'Pax', 'Remarks', 'PNR', 'Serial',
+                    'Shift', 'Approved_By', 'Approval_Time'
+                ];
+                
+                let csvContent = headers.join(',') + '\n';
+                
+                approvedEntries.forEach(entry => {
+                    const row = [
+                        entry.date,
+                        entry.flightNo,
+                        entry.seatNo,
+                        entry.class,
+                        entry.fqtv || '',
+                        entry.name,
+                        entry.numPax,
+                        entry.remarks,
+                        entry.pnr,
+                        entry.serial,
+                        entry.shift,
+                        entry.approvedBy,
+                        entry.timeAdded
+                    ];
+                    
+                    const escapedRow = row.map(value => {
+                        if (value === null || value === undefined) return '""';
+                        const stringValue = String(value);
+                        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                            return `"${stringValue.replace(/"/g, '""')}"`;
+                        }
+                        return stringValue;
+                    });
+                    
+                    csvContent += escapedRow.join(',') + '\n';
+                });
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                const dateStr = getCurrentDate();
+                link.setAttribute('href', url);
+                link.setAttribute('download', `passenger_data_${dateStr}.csv`);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                hideLoading();
+                showStatus(`Exported ${approvedEntries.length} passenger records`);
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error exporting passenger data:', error);
+                showStatus('Error exporting data', true);
+            }
+        }
+        
+        async function exportAllData() {
+            try {
+                showLoading('Generating combined export...');
+                
+                // Export both
+                await Promise.all([
+                    exportQRCardData(),
+                    exportPassengerData()
+                ]);
+                
+                hideLoading();
+                showStatus('Both exports completed successfully!');
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error exporting all data:', error);
+                showStatus('Error exporting data', true);
+            }
+        }
+        
+        // ----- Event Listeners -----
+        codeField.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            
+            if (codeField.value.length > 10) {
+                autoSaveTimeout = setTimeout(() => {
+                    saveToBothSystems(codeField.value);
+                }, AUTO_SAVE_DELAY);
+            }
+        });
+        
+        codeField.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(autoSaveTimeout);
+                saveToBothSystems(codeField.value);
+            }
+        });
+        
+        manualSaveBtn.addEventListener('click', function() {
+            clearTimeout(autoSaveTimeout);
+            saveToBothSystems(codeField.value);
+        });
+        
+        clearBtn.addEventListener('click', function() {
+            codeField.value = '';
+            codeField.focus();
+            duplicateWarning.classList.remove('show');
+        });
+        
+        refreshShiftBtn.addEventListener('click', async function() {
+            showLoading('Refreshing shift...');
+            await loadCurrentShift();
+            hideLoading();
+            showStatus('Shift refreshed', false, 'info');
+        });
+        
+        approveAllBtn.addEventListener('click', async function() {
+            if (confirm(`Approve all ${pendingEntries.length} pending entries?`)) {
+                showLoading('Approving all entries...');
+                
+                // Create array of approval promises
+                const approvalPromises = [];
+                for (let i = pendingEntries.length - 1; i >= 0; i--) {
+                    approvalPromises.push(approveSingleEntry(i));
+                    // Small delay between approvals
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+                // Wait for all approvals to complete
+                await Promise.all(approvalPromises);
+                
+                hideLoading();
+                showStatus(`Approved ${pendingEntries.length} entries!`);
+            }
+        });
+        
+        clearAllBtn.addEventListener('click', function() {
+            if (confirm('Clear all pending entries? This cannot be undone.')) {
+                pendingEntries.length = 0;
+                localStorage.setItem('pendingEntries', JSON.stringify(pendingEntries));
+                loadPendingEntries();
+                showStatus('All pending entries cleared');
+            }
+        });
+        
+        exportQRCards.addEventListener('click', exportQRCardData);
+        exportPassengers.addEventListener('click', exportPassengerData);
+        exportAll.addEventListener('click', exportAllData);
+        
+        filterFlight.addEventListener('input', loadPendingEntries);
+        filterDate.addEventListener('change', loadPendingEntries);
+        filterName.addEventListener('input', loadPendingEntries);
+        
+        // Make functions available globally for inline onclick handlers
+        window.approveSingleEntry = approveSingleEntry;
+        window.deletePendingEntry = deletePendingEntry;
+        
+        // ----- Initialize the application -----
+        initializeSystems();
+        
+    });
+    </script>
+</body>
+</html>
