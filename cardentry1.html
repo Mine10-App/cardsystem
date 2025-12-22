@@ -1285,7 +1285,7 @@ let approvedEntriesCache = {};
 
 // ----- Delay Charge Calculation Constants -----
 const FREE_HOURS = 3; // First 3 hours free
-const CHARGE_PER_HOUR = 0; // Charge amount per hour per pax (currently 0 as requested)
+const CHARGE_PER_HOUR = 0; // Charge amount per hour per pax (0 as requested)
 const MIN_STAY_MINUTES = 60; // Minimum stay to be considered
 
 // ----- Maldives Timezone Functions -----
@@ -2031,122 +2031,6 @@ function processFqtvTier(fqtvNumber, flightCode) {
   }
   
   return tierMapping[tierCode] || '';
-}
-
-// ----- Excel Download Function -----
-function downloadQRExcel() {
-  if (qrEntries.length === 0) {
-    showAlert("No QR entries to download", true);
-    return;
-  }
-  
-  try {
-    // Prepare data in the requested format
-    const excelData = qrEntries.map(entry => {
-      // Format date from YYYY-MM-DD to DD/MM/YYYY for Excel
-      let formattedDate = entry.flightDate || getCurrentDate();
-      if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = formattedDate.split('-');
-        formattedDate = `${day}/${month}/${year}`;
-      }
-      
-      // Ensure FFP_Tier is capitalized properly
-      let ffpTier = entry.ffpTier || '';
-      if (ffpTier) {
-        ffpTier = ffpTier.charAt(0).toUpperCase() + ffpTier.slice(1).toLowerCase();
-      }
-      
-      // Ensure Guest_Type is capitalized properly
-      let guestType = entry.guestCategory || 'Guest';
-      guestType = guestType.charAt(0).toUpperCase() + guestType.slice(1).toLowerCase();
-      
-      // Ensure Cabin is capitalized properly
-      let cabin = entry.cabin || 'Economy';
-      cabin = cabin.charAt(0).toUpperCase() + cabin.slice(1).toLowerCase();
-      
-      // Ensure PAX_Type is capitalized properly
-      let paxType = entry.paxType || 'Adult';
-      paxType = paxType.charAt(0).toUpperCase() + paxType.slice(1).toLowerCase();
-      
-      return [
-        formattedDate,                   // Flight_Date (DD/MM/YYYY)
-        entry.carrierCode || '',         // Carrier_Code
-        entry.flightNumber || '',        // Flight_Number
-        entry.secNumber || '',           // Sec_Number
-        entry.ffpOwner || '',            // FFP_Owner
-        entry.ffpNumber || '',           // FFP_Number
-        ffpTier,                         // FFP_Tier
-        guestType,                       // Guest_Type
-        cabin,                           // Cabin
-        entry.seatNumber || '',          // Seat_Number
-        entry.origin || '',              // Origin
-        entry.destination || '',         // Destination
-        entry.firstName || '',           // First_Name
-        entry.lastName || '',            // Last_Name
-        paxType                          // PAX_Type
-      ];
-    });
-    
-    // Add header row
-    const header = [
-      'Flight_Date',
-      'Carrier_Code',
-      'Flight_Number',
-      'Sec_Number',
-      'FFP_Owner',
-      'FFP_Number',
-      'FFP_Tier',
-      'Guest_Type',
-      'Cabin',
-      'Seat_Number',
-      'Origin',
-      'Destination',
-      'First_Name',
-      'Last_Name',
-      'PAX_Type'
-    ];
-    
-    // Create CSV content
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    // Add header
-    csvContent += header.join(",") + "\r\n";
-    
-    // Add data rows
-    excelData.forEach(row => {
-      // Escape special characters and wrap in quotes if needed
-      const escapedRow = row.map(field => {
-        if (field === null || field === undefined) return '';
-        const str = String(field);
-        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-          return '"' + str.replace(/"/g, '""') + '"';
-        }
-        return str;
-      });
-      csvContent += escapedRow.join(",") + "\r\n";
-    });
-    
-    // Create download link
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    
-    // Generate filename with current date
-    const today = getMaldivesTime();
-    const dateStr = formatDateForDocumentId(today);
-    link.setAttribute("download", `QR_Entries_${dateStr}.csv`);
-    
-    // Trigger download
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showAlert(`QR report downloaded with ${qrEntries.length} entries`);
-    
-  } catch (error) {
-    console.error("Error downloading Excel:", error);
-    showAlert("Error downloading QR report: " + error.message, true);
-  }
 }
 
 // ----- User Authentication -----
@@ -3540,7 +3424,7 @@ function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
   }
   
   // Calculate total charge (0 per hour as requested)
-  const totalCharge = chargeableHours * CHARGE_PER_HOUR * numPax;
+  const totalCharge = 0; // Always 0 as requested
   
   return {
     totalStayMinutes,
@@ -3549,7 +3433,7 @@ function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
     lateDepartureMinutes,
     chargeableHours,
     totalCharge,
-    chargePerPax: chargeableHours * CHARGE_PER_HOUR
+    chargePerPax: 0 // Always 0 as requested
   };
 }
 
@@ -3622,26 +3506,18 @@ function handleCalculateDelay() {
   if (calculation.chargeableHours > 0) {
     delayCalcDetails.innerHTML = `
       <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
-      <p><strong>Entry Time:</strong> ${formatTime(entryTime)}</p>
-      <p><strong>Exit Time:</strong> ${formatTime(exitTime)}</p>
-      <p><strong>STD:</strong> ${formatTime(stdTime)}</p>
       <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
-      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
       <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
       <p><strong>Number of Pax:</strong> ${numPax}</p>
-      <p><strong>Charge per Pax:</strong> $${calculation.chargePerPax.toFixed(2)}</p>
+      <p><strong>Remarks to be saved:</strong> <em>"Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)"</em></p>
       <p><strong>Total Charge:</strong> <span class="delay-amount">$${calculation.totalCharge.toFixed(2)}</span></p>
     `;
   } else {
     delayCalcDetails.innerHTML = `
       <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
-      <p><strong>Entry Time:</strong> ${formatTime(entryTime)}</p>
-      <p><strong>Exit Time:</strong> ${formatTime(exitTime)}</p>
-      <p><strong>STD:</strong> ${formatTime(stdTime)}</p>
       <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
-      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
       <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
-      <p><strong>Status:</strong> <span class="no-charge">No Charge - Within free period</span></p>
+      <p><strong>Status:</strong> <span class="no-charge">No Charge - Within ${FREE_HOURS}h free period</span></p>
     `;
   }
 }
@@ -3674,18 +3550,10 @@ async function saveDelayChargeEntry() {
   // Calculate delay charge
   const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
   
-  // Generate remarks
-  let remarks = `Delay Charge - Entry: ${entryTime}, Exit: ${exitTime}, STD: ${stdTime}`;
-  remarks += `, Stay: ${calculation.totalStayHours}h ${calculation.remainingMinutes}m`;
+  // Generate remarks as requested: "Delay charges for X pax for Y hour(s)"
+  let remarks = `Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)`;
   
-  if (calculation.chargeableHours > 0) {
-    remarks += `, Chargeable: ${calculation.chargeableHours}h, Pax: ${numPax}`;
-    remarks += `, Total Charge: $${calculation.totalCharge.toFixed(2)}`;
-  } else {
-    remarks += `, No charge (within ${FREE_HOURS}h free period)`;
-  }
-  
-  // Create delay charge entry
+  // Create delay charge entry with Pax set to 0 as requested
   const delayEntry = {
     date: currentShiftDate,
     user: userDisplay.textContent,
@@ -3700,7 +3568,7 @@ async function saveDelayChargeEntry() {
     serial: `DELAY_${Date.now()}`,
     remarks: remarks,
     fqtv: '',
-    numPax: numPax,
+    numPax: 0, // Set to 0 as requested
     approved: false,
     isDelayCharge: true,
     delayDetails: {
@@ -3921,139 +3789,7 @@ window.testQRConnection = async function() {
   }
 };
 
-// ----- Download QR Excel Report -----
-window.downloadQRExcel = function() {
-  if (qrEntries.length === 0) {
-    showAlert("No QR entries to download", true);
-    return;
-  }
-  
-  try {
-    // Prepare data in the requested format
-    const excelData = qrEntries.map(entry => {
-      // Format date from YYYY-MM-DD to DD/MM/YYYY for Excel
-      let formattedDate = entry.flightDate || getCurrentDate();
-      if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [year, month, day] = formattedDate.split('-');
-        formattedDate = `${day}/${month}/${year}`;
-      }
-      
-      // Ensure FFP_Tier is capitalized properly
-      let ffpTier = entry.ffpTier || '';
-      if (ffpTier) {
-        ffpTier = ffpTier.charAt(0).toUpperCase() + ffpTier.slice(1).toLowerCase();
-      }
-      
-      // Ensure Guest_Type is capitalized properly
-      let guestType = entry.guestCategory || 'Guest';
-      guestType = guestType.charAt(0).toUpperCase() + guestType.slice(1).toLowerCase();
-      
-      // Ensure Cabin is capitalized properly
-      let cabin = entry.cabin || 'Economy';
-      cabin = cabin.charAt(0).toUpperCase() + cabin.slice(1).toLowerCase();
-      
-      // Ensure PAX_Type is capitalized properly
-      let paxType = entry.paxType || 'Adult';
-      paxType = paxType.charAt(0).toUpperCase() + paxType.slice(1).toLowerCase();
-      
-      return [
-        formattedDate,                   // Flight_Date (DD/MM/YYYY)
-        entry.carrierCode || '',         // Carrier_Code
-        entry.flightNumber || '',        // Flight_Number
-        entry.secNumber || '',           // Sec_Number
-        entry.ffpOwner || '',            // FFP_Owner
-        entry.ffpNumber || '',           // FFP_Number
-        ffpTier,                         // FFP_Tier
-        guestType,                       // Guest_Type
-        cabin,                           // Cabin
-        entry.seatNumber || '',          // Seat_Number
-        entry.origin || '',              // Origin
-        entry.destination || '',         // Destination
-        entry.firstName || '',           // First_Name
-        entry.lastName || '',            // Last_Name
-        paxType                          // PAX_Type
-      ];
-    });
-    
-    // Add header row
-    const header = [
-      'Flight_Date',
-      'Carrier_Code',
-      'Flight_Number',
-      'Sec_Number',
-      'FFP_Owner',
-      'FFP_Number',
-      'FFP_Tier',
-      'Guest_Type',
-      'Cabin',
-      'Seat_Number',
-      'Origin',
-      'Destination',
-      'First_Name',
-      'Last_Name',
-      'PAX_Type'
-    ];
-    
-    // Create CSV content
-    let csvContent = "data:text/csv;charset=utf-8,";
-    
-    // Add header
-    csvContent += header.join(",") + "\r\n";
-    
-    // Add data rows
-    excelData.forEach(row => {
-      // Escape special characters and wrap in quotes if needed
-      const escapedRow = row.map(field => {
-        if (field === null || field === undefined) return '';
-        const str = String(field);
-        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
-          return '"' + str.replace(/"/g, '""') + '"';
-        }
-        return str;
-      });
-      csvContent += escapedRow.join(",") + "\r\n";
-    });
-    
-    // Create download link
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    
-    // Generate filename with current date
-    const today = getMaldivesTime();
-    const dateStr = formatDateForDocumentId(today);
-    link.setAttribute("download", `QR_Entries_${dateStr}.csv`);
-    
-    // Trigger download
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showAlert(`QR report downloaded with ${qrEntries.length} entries`);
-    
-  } catch (error) {
-    console.error("Error downloading Excel:", error);
-    showAlert("Error downloading QR report: " + error.message, true);
-  }
-};
-
-// ----- Add Download Button to Float Navigation -----
-document.addEventListener('DOMContentLoaded', function() {
-  // Add download button to float navigation
-  const floatNav = document.querySelector('.float-nav');
-  const downloadBtn = document.createElement('button');
-  downloadBtn.className = 'float-btn';
-  downloadBtn.id = 'downloadQRBtn';
-  downloadBtn.style.background = 'var(--success)';
-  downloadBtn.innerHTML = '<i class="fas fa-file-excel"></i><span class="float-tooltip">Download QR Report</span>';
-  downloadBtn.onclick = window.downloadQRExcel;
-  
-  // Insert before the home button (second position)
-  const homeBtn = floatNav.querySelector('a[href="dash.html"]');
-  floatNav.insertBefore(downloadBtn, homeBtn);
-  
-  console.log("✅ QR Excel download button added to float navigation");
-});
+// REMOVED: Excel download function and button as requested
 </script>
 </body>
 </html>
