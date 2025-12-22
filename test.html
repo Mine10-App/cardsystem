@@ -23,6 +23,7 @@
     --shift-blue-dark: #182848;
     --qr-green: #27ae60;
     --qr-green-dark: #219653;
+    --qr-blue: #3498db;
   }
   
   * {
@@ -686,6 +687,24 @@
     margin-left: 5px;
   }
   
+  .dual-db-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--qr-blue);
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 5px;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.8; }
+    50% { opacity: 1; }
+    100% { opacity: 0.8; }
+  }
+  
   @media (max-width: 768px) {
     .user-shift-container {
       flex-direction: column;
@@ -741,6 +760,7 @@
     <div id="qrFlightIndicator" class="qr-flight-indicator" style="display: none;">
       <i class="fas fa-plane"></i>
       <span>QR Flight Detected: Will use QR parsing logic</span>
+      <span class="dual-db-badge">Dual Save</span>
     </div>
     
     <div class="form-group">
@@ -919,10 +939,8 @@ const airlines = {
   '3U':'Sichuan Airlines','A1': 'Avia Maldives', 'DR': 'DER Turistic Service AG', 'HP':'Hotel Plan', 'HU':'Humming Bird',
   'KU':'Kouni UK', 'NT' : 'Nanto Tours','MT':'Maldives Travel Factory', 'WI':'Wako International', 'KC':'Air Astana','HIS':'Japan HIS Tours',
   'JD':'Capital Airlines', 'J2':'Azerbaijan Airlines', 'VO':'Voyages Maldives', 'WK':'Edelweiss','DE':'Condor','NO':'Neos','4Y':'Discover Airlines',
-  // Add more airlines for FQTV detection
   'JL':'Japan Airlines', 'QF':'Qantas Airways', 'CX':'Cathay Pacific', 'AA':'American Airlines',
   'LA':'LATAM Airlines', 'AY':'Finnair', 'IB':'Iberia', 'QR':'Qatar Airways',
-  // Added for better FQTV detection
   'LX':'Swiss International Air Lines', 'LH':'Lufthansa', 'AC':'Air Canada', 'NH':'All Nippon Airways',
   'BR':'EVA Air', 'CI':'China Airlines', 'NZ':'Air New Zealand', 'VA':'Virgin Australia',
   'AF':'Air France', 'KL':'KLM', 'DL':'Delta Air Lines', 'UA':'United Airlines',
@@ -1007,7 +1025,6 @@ function initializeQRFirebase() {
   try {
     console.log("Initializing QR Firebase from firebase-config.js...");
     
-    // Check if firebase-config.js is loaded
     if (typeof firebaseConfig === 'undefined') {
       console.error("❌ firebase-config.js not loaded or firebaseConfig not defined");
       showAlert("QR Firebase configuration not found", true);
@@ -1018,16 +1035,13 @@ function initializeQRFirebase() {
     
     let qrApp;
     try {
-      // Try to get existing app for QR
       qrApp = firebase.app('qrFlights');
       console.log("✅ Using existing QR Firebase app");
     } catch (e) {
-      // Create new app for QR flights using config from firebase-config.js
       qrApp = firebase.initializeApp(firebaseConfig, 'qrFlights');
       console.log("✅ Created new QR Firebase app from firebase-config.js");
     }
     
-    // Initialize Firestore
     qrDb = firebase.firestore(qrApp);
     console.log("✅ QR Firestore initialized successfully from firebase-config.js");
     
@@ -1045,7 +1059,7 @@ let shiftCacheInitialized = false;
 let shiftCache = {
   data: null,
   timestamp: 0,
-  ttl: 10 * 60 * 1000, // 10 minutes
+  ttl: 10 * 60 * 1000,
   dateKey: '',
   shiftType: '',
   openTime: ''
@@ -1196,7 +1210,6 @@ function initializeShiftFirebase() {
   try {
     console.log("Initializing Shift Firebase...");
     
-    // Check if fireshift.js loaded the config
     if (typeof shiftFirebaseConfig === 'undefined') {
       console.error("❌ Shift Firebase config not found in fireshift.js");
       showAlert("Shift system configuration not found", true);
@@ -1207,16 +1220,13 @@ function initializeShiftFirebase() {
     
     let app;
     try {
-      // Try to get existing app
       app = firebase.app('shiftSystem');
       console.log("✅ Using existing Shift Firebase app");
     } catch (e) {
-      // Create new app for shifts
       app = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
       console.log("✅ Created new Shift Firebase app");
     }
     
-    // Initialize Firestore
     shiftDb = firebase.firestore(app);
     shiftCacheInitialized = true;
     console.log("✅ Shift Firestore initialized successfully");
@@ -1230,7 +1240,7 @@ function initializeShiftFirebase() {
   }
 }
 
-// ----- QR Flight Parsing Logic (from QRCard) -----
+// ----- QR Flight Parsing Logic -----
 function parseQRCode(codeValue) {
   console.log("🔍 Parsing QR flight code:", codeValue);
   
@@ -1255,7 +1265,6 @@ function parseQRCode(codeValue) {
   const mlePos = codeValue.indexOf('MLE');
   
   if (mlePos !== -1) {
-    // Extract name fields
     const textBeforeMLE = codeValue.substring(0, mlePos);
     let processedText = '';
     
@@ -1277,7 +1286,6 @@ function parseQRCode(codeValue) {
       data.lastName = processedText.trim();
     }
     
-    // Extract MLE word
     let wordStart = mlePos;
     let wordEnd = mlePos + 3;
     
@@ -1291,20 +1299,16 @@ function parseQRCode(codeValue) {
     
     const mleWord = codeValue.substring(wordStart, wordEnd);
     
-    // Extract carrier code
     data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
     
-    // Extract destination
     if (mleWord.length >= 5) {
       data.destination = mleWord.substring(3, mleWord.length - 2);
     }
     
-    // Extract origin
     if (mleWord.length >= 3) {
       data.origin = mleWord.substring(0, 3);
     }
     
-    // Extract flight number
     let nextWordStart = wordEnd;
     
     while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
@@ -1320,7 +1324,6 @@ function parseQRCode(codeValue) {
       data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
     }
     
-    // Extract seat number, cabin code, and sec number
     let seatWordStart = nextWordEnd;
     
     while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
@@ -1335,17 +1338,14 @@ function parseQRCode(codeValue) {
     if (seatWordStart < codeValue.length) {
       const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
       
-      // Extract seat number
       if (seatWord.length >= 9) {
         data.seatNumber = seatWord.substring(5, seatWord.length - 4);
       }
       
-      // Extract cabin code
       if (seatWord.length >= 4) {
         data.cabinCode = seatWord.substring(3, 4);
       }
       
-      // Extract SEC number
       if (seatWord.length >= 4) {
         const last4Chars = seatWord.substring(seatWord.length - 4);
         if (/^\d{4}$/.test(last4Chars)) {
@@ -1367,7 +1367,6 @@ function parseQRCode(codeValue) {
       }
     }
     
-    // Extract FFP fields
     const words = codeValue.split(' ').filter(word => word.trim() !== '');
     
     if (words.length >= 2) {
@@ -1479,7 +1478,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // Check morning shift
   if (shiftData.morning && shiftData.morning.status === 'open') {
     result.success = true;
     result.isActive = true;
@@ -1491,7 +1489,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // Check evening shift
   if (shiftData.evening && shiftData.evening.status === 'open') {
     result.success = true;
     result.isActive = true;
@@ -1503,7 +1500,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // If we have shift data but no open shift
   if (shiftData.morning || shiftData.evening) {
     result.success = true;
     result.shiftName = "Shift Not Open";
@@ -1521,7 +1517,6 @@ async function fetchCurrentOpenShift() {
     refreshShiftBtn.disabled = true;
     refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
-    // Initialize Firebase if not done yet
     if (!shiftCacheInitialized) {
       if (!initializeShiftFirebase()) {
         showNoShiftMessage();
@@ -1531,7 +1526,6 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    // Check cache first
     const now = Date.now();
     if (shiftCache.data && (now - shiftCache.timestamp < shiftCache.ttl)) {
       console.log("📊 Using cached shift data");
@@ -1544,7 +1538,6 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    // Get Maldives time
     const maldivesNow = getMaldivesTime();
     const todayDateForYYYYMMDD = formatDateToYYYYMMDD(maldivesNow);
     const todayDateForDocId = formatDateForDocumentId(maldivesNow);
@@ -1553,7 +1546,6 @@ async function fetchCurrentOpenShift() {
     console.log("📅 Today's date:", todayDateForYYYYMMDD);
     console.log("📄 Document ID:", todayDocId);
     
-    // Try today's shift document first
     let shiftData = null;
     let foundDate = todayDateForYYYYMMDD;
     let shiftCheck = null;
@@ -1573,7 +1565,6 @@ async function fetchCurrentOpenShift() {
           console.log("🎉 Active shift found for today");
         } else {
           console.log("⚠️ No active shift today, checking previous day...");
-          // Check previous day
           const previousResult = await checkPreviousDayForOpenShift();
           if (previousResult.success && previousResult.shiftCheck.isActive) {
             shiftData = previousResult.shiftData;
@@ -1585,7 +1576,6 @@ async function fetchCurrentOpenShift() {
         }
       } else {
         console.log("⚠️ No shift document for today, checking previous day...");
-        // Check previous day
         const previousResult = await checkPreviousDayForOpenShift();
         if (previousResult.success && previousResult.shiftCheck.isActive) {
           shiftData = previousResult.shiftData;
@@ -1612,14 +1602,12 @@ async function fetchCurrentOpenShift() {
       return;
     }
     
-    // Update cache
     shiftCache.data = shiftData;
     shiftCache.timestamp = now;
     shiftCache.dateKey = foundDate;
     shiftCache.shiftType = shiftCheck.shiftType;
     shiftCache.openTime = shiftCheck.openTime;
     
-    // Update UI
     updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
     
     console.log("✅ Shift loaded successfully");
@@ -1687,15 +1675,12 @@ async function checkPreviousDayForOpenShift() {
 
 // ----- Update Shift UI -----
 function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
-  // Set global variables
   currentShiftType = shiftCheck.shiftType;
   currentShiftDate = foundDate;
   currentShiftStatus = 'open';
   
-  // Format date for display
   const displayDate = formatDateForDisplay(foundDate);
   
-  // Add indicator if from previous day
   let dateIndicator = "";
   if (isFromPreviousDay) {
     const foundDateObj = new Date(foundDate);
@@ -1710,20 +1695,15 @@ function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
     }
   }
   
-  // Update UI elements
   shiftDisplay.textContent = shiftCheck.shiftName;
   dateDisplay.textContent = displayDate + dateIndicator;
   
-  // Enable passenger entry card
   passengerEntryCard.classList.remove("disabled");
   
-  // Save to localStorage for persistence
   saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
   
-  // Update existing entries with new date if needed
   updateExistingEntriesDate();
   
-  // Show success message
   showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
   
   console.log("✅ Shift UI updated:", {
@@ -1756,7 +1736,6 @@ function loadCurrentShiftFromLocalStorage() {
     if (savedShift) {
       const shiftInfo = JSON.parse(savedShift);
       
-      // Check if cache is fresh (less than 10 minutes old)
       const lastUpdated = new Date(shiftInfo.lastUpdated);
       const now = getMaldivesTime();
       const minutesDiff = (now - lastUpdated) / (1000 * 60);
@@ -1768,7 +1747,6 @@ function loadCurrentShiftFromLocalStorage() {
         currentShiftDate = shiftInfo.shiftDate;
         currentShiftStatus = shiftInfo.shiftStatus;
         
-        // Format date for display
         let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
         if (shiftInfo.isFromPreviousDay) {
           const shiftDateObj = new Date(shiftInfo.shiftDate);
@@ -1783,7 +1761,6 @@ function loadCurrentShiftFromLocalStorage() {
           }
         }
         
-        // Update UI
         shiftDisplay.textContent = shiftInfo.shiftName;
         dateDisplay.textContent = displayDate;
         passengerEntryCard.classList.remove("disabled");
@@ -1845,12 +1822,10 @@ async function refreshShiftData() {
     refreshShiftBtn.disabled = true;
     refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
     
-    // Clear cache
     shiftCache.data = null;
     shiftCache.timestamp = 0;
     localStorage.removeItem('currentShiftInfo');
     
-    // Fetch fresh data
     await fetchCurrentOpenShift();
     
     console.log("✅ Shift data refreshed");
@@ -2240,20 +2215,42 @@ function saveEditedEntry(rowIndex) {
   localStorage.setItem('codesData', JSON.stringify(data));
 }
 
-// ----- Save QR Entry to Firebase using firebase-config.js -----
-async function saveQREntryToFirebase(qrEntry, originalCode) {
-  // Initialize QR Firebase if not already initialized
-  if (!qrDb) {
-    if (!initializeQRFirebase()) {
-      showAlert('Failed to initialize QR Firebase system', true);
-      return false;
-    }
-  }
+// ----- Check if Entry Fits QR Database Criteria -----
+function fitsQRDatabaseCriteria(qrParsedData) {
+  // Check if we have the minimum required fields for QR database
+  const hasMinimumFields = 
+    (qrParsedData.carrierCode && qrParsedData.carrierCode.trim() !== '') &&
+    (qrParsedData.flightNumber && qrParsedData.flightNumber.trim() !== '') &&
+    (qrParsedData.lastName && qrParsedData.lastName.trim() !== '');
   
+  // Check if it's a QR flight
+  const isQRFlight = qrParsedData.carrierCode && qrParsedData.carrierCode.toUpperCase() === 'QR';
+  
+  return hasMinimumFields && isQRFlight;
+}
+
+// ----- Save to Both Databases (For QR Flights) -----
+async function saveToBothDatabases(qrParsedData, regularEntry, originalCode) {
+  console.log("💾 Saving to both databases...");
+  
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const cleanName = (qrParsedData.firstName + '_' + qrParsedData.lastName).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+  
+  let qrSuccess = false;
+  let regularSuccess = false;
+  
+  // 1. Save to QR Database (firebase-config.js)
   try {
+    if (!qrDb) {
+      if (!initializeQRFirebase()) {
+        throw new Error("QR Firebase not initialized");
+      }
+    }
+    
     // Determine cabin from cabin code
     let cabin = 'Economy';
-    switch(qrEntry.cabinCode) {
+    switch(qrParsedData.cabinCode) {
       case 'J':
         cabin = 'Business';
         break;
@@ -2266,22 +2263,22 @@ async function saveQREntryToFirebase(qrEntry, originalCode) {
     }
     
     // Determine Guest Category using QR logic
-    const guestCategory = getQRGuestCategory(qrEntry.cabinCode, cabin, qrEntry.ffpNumber, qrEntry.ffpTier);
+    const guestCategory = getQRGuestCategory(qrParsedData.cabinCode, cabin, qrParsedData.ffpNumber, qrParsedData.ffpTier);
     
     // Convert FFP tier to full names if needed
-    let ffpTier = qrEntry.ffpTier || '';
+    let ffpTier = qrParsedData.ffpTier || '';
     if (ffpTier === 'P' || ffpTier === 'p') ffpTier = 'Platinum';
     if (ffpTier === 'G' || ffpTier === 'g') ffpTier = 'Gold';
     if (ffpTier === 'S' || ffpTier === 's') ffpTier = 'Silver';
     
     // Clear FFP fields for QR with N0/empty tier
-    let finalFfpOwner = qrEntry.ffpOwner || '';
-    let finalFfpNumber = qrEntry.ffpNumber || '';
+    let finalFfpOwner = qrParsedData.ffpOwner || '';
+    let finalFfpNumber = qrParsedData.ffpNumber || '';
     let finalFfpTier = ffpTier;
     
-    const carrierUpper = (qrEntry.carrierCode || '').toUpperCase();
+    const carrierUpper = (qrParsedData.carrierCode || '').toUpperCase();
     const tierUpper = (ffpTier || '').toUpperCase();
-    const originalTierUpper = (qrEntry.originalTier || '').toUpperCase();
+    const originalTierUpper = (qrParsedData.originalTier || '').toUpperCase();
     
     if (carrierUpper === 'QR') {
       const isExactlyN0 = tierUpper === 'N0' || originalTierUpper === 'N0';
@@ -2295,50 +2292,160 @@ async function saveQREntryToFirebase(qrEntry, originalCode) {
       }
     }
     
-    const entry = {
+    const qrEntry = {
       flightDate: currentShiftDate,
-      carrierCode: qrEntry.carrierCode,
-      flightNumber: qrEntry.flightNumber,
-      secNumber: qrEntry.secNumber,
+      carrierCode: qrParsedData.carrierCode,
+      flightNumber: qrParsedData.flightNumber,
+      secNumber: qrParsedData.secNumber,
       ffpOwner: finalFfpOwner,
       ffpNumber: finalFfpNumber,
       ffpTier: finalFfpTier,
-      originalTier: qrEntry.originalTier,
+      originalTier: qrParsedData.originalTier,
       paxType: 'Adult',
       cabin: cabin,
-      cabinCode: qrEntry.cabinCode,
-      seatNumber: qrEntry.seatNumber,
-      origin: qrEntry.origin,
-      destination: qrEntry.destination,
-      firstName: qrEntry.firstName,
-      lastName: qrEntry.lastName,
+      cabinCode: qrParsedData.cabinCode,
+      seatNumber: qrParsedData.seatNumber,
+      origin: qrParsedData.origin,
+      destination: qrParsedData.destination,
+      firstName: qrParsedData.firstName,
+      lastName: qrParsedData.lastName,
       guestCategory: guestCategory,
       originalCode: originalCode,
       approvedBy: userData ? userData.name : 'Unknown',
       approvedAt: getMaldivesDateTimeISO(),
       shift: currentShiftType,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      
+      // Include regular database fields for reference
+      regularFlightNo: regularEntry.flightNo,
+      regularName: regularEntry.name,
+      regularSeatNo: regularEntry.seatNo,
+      regularClass: regularEntry.class,
+      regularFqtv: regularEntry.fqtv
     };
     
-    // Create document name
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const cleanName = (qrEntry.firstName + '_' + qrEntry.lastName).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
-    const docName = `${currentShiftDate}_QR_${qrEntry.flightNumber}_${cleanName}_${timestamp}_${randomSuffix}`;
+    const qrDocName = `${currentShiftDate}_QR_${qrParsedData.flightNumber}_${cleanName}_${timestamp}_${randomSuffix}`;
     
-    // Save to Firebase using the firebase-config.js configuration
-    await qrDb.collection('flightEntries').doc(docName).set(entry);
+    await qrDb.collection('flightEntries').doc(qrDocName).set(qrEntry);
     
-    console.log('✅ QR entry saved to Firebase (firebase-config.js) with ID:', docName);
-    showAlert(`QR flight entry saved successfully to Firebase!`);
-    
-    return true;
+    console.log('✅ QR entry saved to QR database with ID:', qrDocName);
+    qrSuccess = true;
     
   } catch (error) {
-    console.error('❌ Error saving QR entry to Firebase (firebase-config.js):', error);
+    console.error('❌ Error saving QR entry to QR database:', error);
     showAlert('Error saving QR entry: ' + error.message, true);
+    qrSuccess = false;
+  }
+  
+  // 2. Save to Regular Database
+  try {
+    // Add QR flight indicator to regular entry
+    regularEntry.isQRFlight = true;
+    regularEntry.qrParsed = true;
+    regularEntry.qrDatabaseId = qrSuccess ? `${currentShiftDate}_QR_${qrParsedData.flightNumber}_${cleanName}_${timestamp}_${randomSuffix}` : null;
+    
+    const regularDocName = `${currentShiftDate}_QR_${regularEntry.flightNo}_${cleanName}_${timestamp}`;
+    
+    if (window.passengerDb) {
+      await window.passengerDb.collection('passengers').doc(regularDocName).set(regularEntry);
+      
+      // Add to background sync queue
+      addToBackgroundSaveQueue(regularEntry, regularDocName, regularEntry.localId);
+      
+      console.log('✅ Regular entry saved to regular database with ID:', regularDocName);
+      regularSuccess = true;
+    } else {
+      console.log('⚠️ Regular Firebase not available, saving locally only');
+      
+      // Save locally if Firebase not available
+      let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+      approvedLocalData.push({
+        ...regularEntry,
+        docName: regularDocName,
+        synced: false,
+        syncedAt: null
+      });
+      localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
+      
+      regularSuccess = true;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error saving QR entry to regular database:', error);
+    showAlert('Error saving to regular database: ' + error.message, true);
+    regularSuccess = false;
+  }
+  
+  return { qrSuccess, regularSuccess };
+}
+
+// ----- Save to Regular Database Only (For Non-QR Flights) -----
+async function saveToRegularDatabaseOnly(regularEntry) {
+  console.log("💾 Saving to regular database only...");
+  
+  try {
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    
+    let docName;
+    const flightUpper = regularEntry.flightNo.toUpperCase();
+    const nameUpper = regularEntry.name.toUpperCase();
+    const cleanName = nameUpper.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+    
+    if (flightUpper.startsWith('SQ')) {
+      docName = `${regularEntry.date}_${flightUpper}_${cleanName}_${timestamp}_${randomSuffix}`;
+    } else {
+      const seatUpper = regularEntry.seatNo.toUpperCase();
+      docName = `${regularEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
+    }
+    
+    if (window.passengerDb) {
+      await window.passengerDb.collection('passengers').doc(docName).set(regularEntry);
+      
+      // Add to background sync queue
+      addToBackgroundSaveQueue(regularEntry, docName, regularEntry.localId);
+      
+      console.log('✅ Entry saved to regular database with ID:', docName);
+      return true;
+    } else {
+      console.log('⚠️ Regular Firebase not available, saving locally only');
+      
+      // Save locally if Firebase not available
+      let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+      approvedLocalData.push({
+        ...regularEntry,
+        docName: docName,
+        synced: false,
+        syncedAt: null
+      });
+      localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
+      
+      return true;
+    }
+    
+  } catch (error) {
+    console.error('❌ Error saving to regular database:', error);
+    showAlert('Error saving to database: ' + error.message, true);
     return false;
   }
+}
+
+// ----- Process FQTV for Regular Database -----
+function processFqtvForRegularDB(fqtvValue, flightCode) {
+  if (!fqtvValue || fqtvValue.trim() === '') return '';
+  
+  let processedFqtv = fqtvValue.trim();
+  
+  // Apply tier processing
+  const tierLevel = processFqtvTier(processedFqtv, flightCode);
+  if (tierLevel) {
+    // Remove existing tier indicators
+    processedFqtv = processedFqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
+    processedFqtv = processedFqtv.replace(/\/[Nn][123]\s*$/, '').trim();
+    processedFqtv = `${processedFqtv}/${tierLevel}`;
+  }
+  
+  return processedFqtv;
 }
 
 // ----- Approve Entry -----
@@ -2363,7 +2470,7 @@ async function approveEntry(index) {
       return;
     }
 
-    // Check for QR flight
+    // Check if it's a QR flight
     const isQRFlight = entry.flight && entry.flight.toUpperCase().startsWith('QR');
     
     if (isQRFlight) {
@@ -2372,21 +2479,64 @@ async function approveEntry(index) {
       // Parse using QR logic
       const qrParsedData = parseQRCode(entry.code || '');
       
-      // Save to Firebase using firebase-config.js
-      const success = await saveQREntryToFirebase(qrParsedData, entry.code || '');
+      // Check if fits QR database criteria
+      const fitsQRDb = fitsQRDatabaseCriteria(qrParsedData);
       
-      if (success) {
-        // Remove from local data
-        data.splice(index, 1);
-        localStorage.setItem('codesData', JSON.stringify(data));
-        renderEntries();
+      if (fitsQRDb) {
+        console.log("✅ QR flight fits criteria - saving to both databases");
+        
+        // Process FQTV for regular database
+        const processedFqtv = processFqtvForRegularDB(entry.fqtv, entry.flight);
+        
+        const regularEntry = {
+          airline: airlines[entry.airline] || entry.airline || 'Qatar Airways',
+          approved: true,
+          checkinTime: "",
+          date: currentShiftDate,
+          flightNo: entry.flight.toUpperCase(),
+          fqtv: processedFqtv,
+          name: entry.name || `${qrParsedData.firstName} ${qrParsedData.lastName}`.trim(),
+          numPax: Number(entry.numPax) || 1,
+          remarks: entry.remarks || "QR Flight - Auto-processed",
+          seatNo: entry.seat || qrParsedData.seatNumber || "",
+          class: entry.class || (qrParsedData.cabinCode === 'J' ? 'Business' : 
+                               qrParsedData.cabinCode === 'F' ? 'First' : 'Economy'),
+          pnr: entry.pnr || "",
+          serial: entry.serial || "-",
+          shift: currentShiftType,
+          timeAdded: getCurrentTime(),
+          approvedBy: userData ? userData.name : 'Unknown',
+          approvedAt: getMaldivesDateTimeISO(),
+          localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        };
+        
+        // Save to both databases
+        const saveResult = await saveToBothDatabases(qrParsedData, regularEntry, entry.code || '');
+        
+        if (saveResult.qrSuccess || saveResult.regularSuccess) {
+          // Remove from local data
+          data.splice(index, 1);
+          localStorage.setItem('codesData', JSON.stringify(data));
+          renderEntries();
+          
+          if (saveResult.qrSuccess && saveResult.regularSuccess) {
+            showAlert(`QR flight saved to BOTH databases successfully!`);
+          } else if (saveResult.qrSuccess) {
+            showAlert(`QR flight saved to QR database only!`, false, true);
+          } else if (saveResult.regularSuccess) {
+            showAlert(`QR flight saved to regular database only!`, false, true);
+          }
+        }
+        
+        isApproving = false;
+        return;
+      } else {
+        console.log("⚠️ QR flight doesn't fit QR database criteria - saving to regular database only");
+        // Fall through to regular processing
       }
-      
-      isApproving = false;
-      return;
     }
 
-    // Original logic for non-QR flights
+    // Original logic for non-QR flights or QR flights that don't fit criteria
     if (isFqtvRequired(entry.class, entry.fqtv)) {
       showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
       isApproving = false;
@@ -2433,7 +2583,7 @@ async function approveEntry(index) {
       }
     }
 
-    const approvedEntry = {
+    const regularEntry = {
       airline: airlines[entry.airline] || entry.airline,
       approved: true,
       checkinTime: "",
@@ -2454,41 +2604,18 @@ async function approveEntry(index) {
       localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    // 3. Create document name
-    let docName;
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    // Save to regular database only
+    const success = await saveToRegularDatabaseOnly(regularEntry);
     
-    if (flightUpper.startsWith('SQ')) {
-      const cleanName = nameUpper.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
-      docName = `${approvedEntry.date}_${flightUpper}_${cleanName}_${timestamp}_${randomSuffix}`;
-    } else {
-      docName = `${approvedEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
-    }
-    
-    // 4. Update local storage and UI immediately
-    saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
-    
-    let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-    approvedLocalData.push({
-      ...approvedEntry,
-      docName: docName,
-      synced: false,
-      syncedAt: null
-    });
-    localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-    
-    data.splice(index, 1);
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    renderEntries();
-    showAlert(`Entry approved successfully!`);
-    
-    // 5. Save to Firebase in background
-    if (window.passengerDb) {
-      addToBackgroundSaveQueue(approvedEntry, docName, approvedEntry.localId);
-    } else {
-      showAlert("Approved locally, will sync to server when connection available", true);
+    if (success) {
+      // Update local storage and UI
+      saveToApprovedCache(entry.flight, entry.seat, regularEntry.date, entry.name);
+      
+      data.splice(index, 1);
+      localStorage.setItem('codesData', JSON.stringify(data));
+      
+      renderEntries();
+      showAlert(`Entry approved successfully!`);
     }
     
   } catch (e) {
@@ -2526,7 +2653,6 @@ function parseCode(){
   
   if (isQRFlight) {
     qrFlightIndicator.style.display = 'flex';
-    // Parse using QR logic for display
     const qrData = parseQRCode(code);
     
     if (qrData.firstName || qrData.lastName) {
@@ -2935,7 +3061,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log("🔄 No fresh cache, fetching shift data from server");
     showNoShiftMessage();
     
-    // Fetch shift data after a short delay
     setTimeout(() => {
       fetchCurrentOpenShift();
     }, 1000);
