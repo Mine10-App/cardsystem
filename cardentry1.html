@@ -23,6 +23,8 @@
     --shift-blue-dark: #182848;
     --qr-green: #27ae60;
     --qr-green-dark: #219653;
+    --delay-orange: #FF9800;
+    --delay-orange-dark: #F57C00;
   }
   
   * {
@@ -697,6 +699,149 @@
     background: linear-gradient(135deg, var(--gold-dark), var(--qr-green-dark));
   }
   
+  /* Delay Charge Styles */
+  .delay-charge-btn {
+    background: var(--delay-orange);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+  }
+  
+  .delay-charge-btn:hover {
+    background: var(--delay-orange-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  
+  .delay-entry {
+    background-color: rgba(255, 152, 0, 0.1) !important;
+    border-left: 4px solid var(--delay-orange) !important;
+  }
+  
+  .delay-badge {
+    background: var(--delay-orange);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-left: 5px;
+  }
+  
+  /* Modal Styles */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .modal.show {
+    display: flex;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border: 2px solid var(--delay-orange);
+    position: relative;
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--delay-orange);
+  }
+  
+  .modal-header h3 {
+    margin: 0;
+    color: var(--delay-orange);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--delay-orange);
+    padding: 5px;
+    line-height: 1;
+  }
+  
+  .close-modal:hover {
+    color: var(--delay-orange-dark);
+  }
+  
+  .time-input-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .time-input-group .form-group {
+    flex: 1;
+  }
+  
+  .delay-calc-result {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(255, 152, 0, 0.1);
+    border-radius: 6px;
+    border-left: 4px solid var(--delay-orange);
+  }
+  
+  .delay-calc-result h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--delay-orange);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .delay-calc-details {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .delay-calc-details p {
+    margin: 5px 0;
+  }
+  
+  .delay-amount {
+    font-weight: bold;
+    color: var(--delay-orange-dark);
+  }
+  
+  .no-charge {
+    color: var(--success);
+    font-weight: bold;
+  }
+  
   @media (max-width: 768px) {
     .user-shift-container {
       flex-direction: column;
@@ -713,6 +858,15 @@
       min-width: 150px;
       text-align: right;
     }
+    
+    .time-input-group {
+      flex-direction: column;
+    }
+    
+    .modal-content {
+      width: 95%;
+      padding: 20px;
+    }
   }
 </style>
 </head>
@@ -728,7 +882,79 @@
   <span id="alertMessage">Operation completed successfully</span>
 </div>
 
+<!-- Delay Charge Modal -->
+<div class="modal" id="delayChargeModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3><i class="fas fa-clock"></i> Delay Charge Entry</h3>
+      <button class="close-modal" id="closeModalBtn">&times;</button>
+    </div>
+    
+    <div class="form-group">
+      <label for="delayFlightInput"><i class="fas fa-plane"></i> Flight Number</label>
+      <div class="input-with-icon">
+        <i class="fas fa-plane-departure"></i>
+        <input type="text" id="delayFlightInput" placeholder="Enter flight number (e.g., EK654)">
+      </div>
+    </div>
+    
+    <div class="time-input-group">
+      <div class="form-group">
+        <label for="entryTimeInput"><i class="fas fa-sign-in-alt"></i> Entry Time</label>
+        <div class="input-with-icon">
+          <i class="fas fa-clock"></i>
+          <input type="time" id="entryTimeInput" value="00:00">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="exitTimeInput"><i class="fas fa-sign-out-alt"></i> Exit Time</label>
+        <div class="input-with-icon">
+          <i class="fas fa-clock"></i>
+          <input type="time" id="exitTimeInput" value="00:00">
+        </div>
+      </div>
+    </div>
+    
+    <div class="time-input-group">
+      <div class="form-group">
+        <label for="stdTimeInput"><i class="fas fa-plane-departure"></i> STD (Departure Time)</label>
+        <div class="input-with-icon">
+          <i class="fas fa-plane"></i>
+          <input type="time" id="stdTimeInput" value="00:00">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="delayPaxInput"><i class="fas fa-users"></i> Number of Pax</label>
+        <div class="input-with-icon">
+          <i class="fas fa-user-friends"></i>
+          <input type="number" id="delayPaxInput" value="1" min="1" step="1">
+        </div>
+      </div>
+    </div>
+    
+    <div id="delayCalcResult" class="delay-calc-result" style="display: none;">
+      <h4><i class="fas fa-calculator"></i> Delay Calculation</h4>
+      <div id="delayCalcDetails" class="delay-calc-details"></div>
+    </div>
+    
+    <div class="button-group">
+      <button id="calculateDelayBtn" class="delay-charge-btn">
+        <i class="fas fa-calculator"></i> Calculate Delay
+      </button>
+      <button id="saveDelayBtn" class="delay-charge-btn" style="background: var(--delay-orange-dark);">
+        <i class="fas fa-save"></i> Save Delay Charge
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="float-nav">
+  <button id="delayChargeBtn" class="float-btn" style="background: var(--delay-orange);">
+    <i class="fas fa-clock"></i>
+    <span class="float-tooltip">Delay Charge Entry</span>
+  </button>
   <button id="refreshShiftBtn" class="float-btn shift-refresh-float">
     <i class="fas fa-sync-alt"></i>
     <span class="float-tooltip">Refresh Shift</span>
@@ -1005,6 +1231,20 @@ const qrProcessingIndicator = document.getElementById('qrProcessingIndicator');
 const qrStatus = document.getElementById('qrStatus');
 const qrEntriesCount = document.getElementById('qrEntriesCount');
 
+// ----- Delay Charge Elements -----
+const delayChargeModal = document.getElementById('delayChargeModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
+const delayChargeBtn = document.getElementById('delayChargeBtn');
+const delayFlightInput = document.getElementById('delayFlightInput');
+const entryTimeInput = document.getElementById('entryTimeInput');
+const exitTimeInput = document.getElementById('exitTimeInput');
+const stdTimeInput = document.getElementById('stdTimeInput');
+const delayPaxInput = document.getElementById('delayPaxInput');
+const calculateDelayBtn = document.getElementById('calculateDelayBtn');
+const saveDelayBtn = document.getElementById('saveDelayBtn');
+const delayCalcResult = document.getElementById('delayCalcResult');
+const delayCalcDetails = document.getElementById('delayCalcDetails');
+
 // ----- Global Variables -----
 let isApproving = false;
 let currentShiftType = null;
@@ -1042,6 +1282,11 @@ let shiftCache = {
 
 // ----- Approved Entries Cache -----
 let approvedEntriesCache = {};
+
+// ----- Delay Charge Calculation Constants -----
+const FREE_HOURS = 3; // First 3 hours free
+const CHARGE_PER_HOUR = 0; // Charge amount per hour per pax (currently 0 as requested)
+const MIN_STAY_MINUTES = 60; // Minimum stay to be considered
 
 // ----- Maldives Timezone Functions -----
 function getMaldivesTime() {
@@ -2638,9 +2883,14 @@ async function renderEntries() {
       
       const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
       const isQRFlight = e.flight.toUpperCase().startsWith('QR');
+      const isDelayEntry = e.isDelayCharge || false;
       
       if (isFqtvNeeded) {
         tr.classList.add('fqtv-required');
+      }
+      
+      if (isDelayEntry) {
+        tr.classList.add('delay-entry');
       }
       
       let fqtvDisplay = e.fqtv || '';
@@ -2674,9 +2924,17 @@ async function renderEntries() {
       actionsCell.appendChild(approveBtn);
       actionsCell.appendChild(deleteBtn);
       
+      let flightDisplay = escapeHtml(e.flight);
+      if (isQRFlight) {
+        flightDisplay += ' <span class="qr-success-badge">QR</span>';
+      }
+      if (isDelayEntry) {
+        flightDisplay += ' <span class="delay-badge">DELAY</span>';
+      }
+      
       tr.innerHTML = `
         <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="flight">${escapeHtml(e.flight)}${isQRFlight ? ' <span class="qr-success-badge">QR</span>' : ''}</td>
+        <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
         <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
         <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
         <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
@@ -3242,6 +3500,245 @@ function handleFieldExit() {
   }
 }
 
+// ----- DELAY CHARGE FUNCTIONS -----
+
+// ----- Calculate Delay Charge -----
+function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
+  // Parse time strings to hours and minutes
+  const [entryHour, entryMin] = entryTime.split(':').map(Number);
+  const [exitHour, exitMin] = exitTime.split(':').map(Number);
+  const [stdHour, stdMin] = stdTime.split(':').map(Number);
+  
+  // Convert to minutes
+  const entryTotalMinutes = entryHour * 60 + entryMin;
+  const exitTotalMinutes = exitHour * 60 + exitMin;
+  const stdTotalMinutes = stdHour * 60 + stdMin;
+  
+  // Calculate total stay minutes
+  let totalStayMinutes = exitTotalMinutes - entryTotalMinutes;
+  
+  // Handle overnight stays
+  if (totalStayMinutes < 0) {
+    totalStayMinutes += 24 * 60; // Add 24 hours
+  }
+  
+  // Calculate hours and minutes
+  const totalStayHours = Math.floor(totalStayMinutes / 60);
+  const remainingMinutes = totalStayMinutes % 60;
+  
+  // Check if stayed beyond STD
+  let lateDepartureMinutes = 0;
+  if (exitTotalMinutes > stdTotalMinutes) {
+    lateDepartureMinutes = exitTotalMinutes - stdTotalMinutes;
+  }
+  
+  // Calculate chargeable hours (exceed 3 hours)
+  let chargeableHours = 0;
+  if (totalStayMinutes > FREE_HOURS * 60) {
+    const exceedMinutes = totalStayMinutes - (FREE_HOURS * 60);
+    chargeableHours = Math.ceil(exceedMinutes / 60); // Round up to nearest hour
+  }
+  
+  // Calculate total charge (0 per hour as requested)
+  const totalCharge = chargeableHours * CHARGE_PER_HOUR * numPax;
+  
+  return {
+    totalStayMinutes,
+    totalStayHours,
+    remainingMinutes,
+    lateDepartureMinutes,
+    chargeableHours,
+    totalCharge,
+    chargePerPax: chargeableHours * CHARGE_PER_HOUR
+  };
+}
+
+// ----- Show Delay Charge Modal -----
+function showDelayChargeModal() {
+  if (!currentShiftType || currentShiftStatus !== 'open') {
+    showAlert('No active shift or shift not open!', true);
+    return;
+  }
+  
+  // Reset form
+  delayFlightInput.value = '';
+  entryTimeInput.value = '00:00';
+  exitTimeInput.value = '00:00';
+  stdTimeInput.value = '00:00';
+  delayPaxInput.value = '1';
+  delayCalcResult.style.display = 'none';
+  
+  // Set current time for entry and exit
+  const currentTime = getCurrentTime();
+  entryTimeInput.value = currentTime;
+  exitTimeInput.value = currentTime;
+  
+  // Show modal
+  delayChargeModal.classList.add('show');
+  
+  // Focus on flight input
+  setTimeout(() => {
+    delayFlightInput.focus();
+  }, 100);
+}
+
+// ----- Calculate Delay Button Handler -----
+function handleCalculateDelay() {
+  const flightNo = delayFlightInput.value.trim();
+  const entryTime = entryTimeInput.value;
+  const exitTime = exitTimeInput.value;
+  const stdTime = stdTimeInput.value;
+  const numPax = parseInt(delayPaxInput.value) || 1;
+  
+  // Validate inputs
+  if (!flightNo) {
+    showAlert('Please enter flight number', true);
+    delayFlightInput.focus();
+    return;
+  }
+  
+  if (!entryTime || !exitTime || !stdTime) {
+    showAlert('Please enter all time fields', true);
+    return;
+  }
+  
+  if (entryTime === '00:00' || exitTime === '00:00' || stdTime === '00:00') {
+    showAlert('Please set proper time values', true);
+    return;
+  }
+  
+  // Calculate delay charge
+  const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
+  
+  // Format times for display
+  const formatTime = (time) => {
+    const [hours, minutes] = time.split(':');
+    return `${hours}:${minutes}`;
+  };
+  
+  // Show calculation result
+  delayCalcResult.style.display = 'block';
+  
+  if (calculation.chargeableHours > 0) {
+    delayCalcDetails.innerHTML = `
+      <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
+      <p><strong>Entry Time:</strong> ${formatTime(entryTime)}</p>
+      <p><strong>Exit Time:</strong> ${formatTime(exitTime)}</p>
+      <p><strong>STD:</strong> ${formatTime(stdTime)}</p>
+      <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
+      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
+      <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
+      <p><strong>Number of Pax:</strong> ${numPax}</p>
+      <p><strong>Charge per Pax:</strong> $${calculation.chargePerPax.toFixed(2)}</p>
+      <p><strong>Total Charge:</strong> <span class="delay-amount">$${calculation.totalCharge.toFixed(2)}</span></p>
+    `;
+  } else {
+    delayCalcDetails.innerHTML = `
+      <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
+      <p><strong>Entry Time:</strong> ${formatTime(entryTime)}</p>
+      <p><strong>Exit Time:</strong> ${formatTime(exitTime)}</p>
+      <p><strong>STD:</strong> ${formatTime(stdTime)}</p>
+      <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
+      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
+      <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
+      <p><strong>Status:</strong> <span class="no-charge">No Charge - Within free period</span></p>
+    `;
+  }
+}
+
+// ----- Save Delay Charge Entry -----
+async function saveDelayChargeEntry() {
+  const flightNo = delayFlightInput.value.trim().toUpperCase();
+  const entryTime = entryTimeInput.value;
+  const exitTime = exitTimeInput.value;
+  const stdTime = stdTimeInput.value;
+  const numPax = parseInt(delayPaxInput.value) || 1;
+  
+  // Validate inputs
+  if (!flightNo) {
+    showAlert('Please enter flight number', true);
+    delayFlightInput.focus();
+    return;
+  }
+  
+  if (!entryTime || !exitTime || !stdTime) {
+    showAlert('Please enter all time fields', true);
+    return;
+  }
+  
+  if (entryTime === '00:00' || exitTime === '00:00' || stdTime === '00:00') {
+    showAlert('Please set proper time values', true);
+    return;
+  }
+  
+  // Calculate delay charge
+  const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
+  
+  // Generate remarks
+  let remarks = `Delay Charge - Entry: ${entryTime}, Exit: ${exitTime}, STD: ${stdTime}`;
+  remarks += `, Stay: ${calculation.totalStayHours}h ${calculation.remainingMinutes}m`;
+  
+  if (calculation.chargeableHours > 0) {
+    remarks += `, Chargeable: ${calculation.chargeableHours}h, Pax: ${numPax}`;
+    remarks += `, Total Charge: $${calculation.totalCharge.toFixed(2)}`;
+  } else {
+    remarks += `, No charge (within ${FREE_HOURS}h free period)`;
+  }
+  
+  // Create delay charge entry
+  const delayEntry = {
+    date: currentShiftDate,
+    user: userDisplay.textContent,
+    shift: currentShiftType,
+    code: 'DELAY_CHARGE',
+    name: 'DELAY CHARGE',
+    pnr: 'DELAY',
+    flight: flightNo,
+    airline: flightNo.substring(0, 2),
+    seat: 'DELAY',
+    class: 'Y',
+    serial: `DELAY_${Date.now()}`,
+    remarks: remarks,
+    fqtv: '',
+    numPax: numPax,
+    approved: false,
+    isDelayCharge: true,
+    delayDetails: {
+      entryTime: entryTime,
+      exitTime: exitTime,
+      stdTime: stdTime,
+      totalStayMinutes: calculation.totalStayMinutes,
+      totalStayHours: calculation.totalStayHours,
+      remainingMinutes: calculation.remainingMinutes,
+      chargeableHours: calculation.chargeableHours,
+      totalCharge: calculation.totalCharge,
+      calculatedAt: getMaldivesDateTimeISO()
+    }
+  };
+  
+  // Save the entry
+  let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+  data.push(delayEntry);
+  localStorage.setItem('codesData', JSON.stringify(data));
+  
+  // Close modal
+  delayChargeModal.classList.remove('show');
+  
+  // Show success message
+  showAlert(`Delay charge entry saved for flight ${flightNo}`, false);
+  
+  // Render entries
+  renderEntries();
+  
+  // Reset form
+  delayFlightInput.value = '';
+  entryTimeInput.value = '00:00';
+  exitTimeInput.value = '00:00';
+  stdTimeInput.value = '00:00';
+  delayPaxInput.value = '1';
+  delayCalcResult.style.display = 'none';
+}
+
 // ----- Event Listeners -----
 manualSaveBtn.addEventListener('click', async function() {
   if (isProcessing) return;
@@ -3275,12 +3772,29 @@ manualSaveBtn.addEventListener('click', async function() {
 
 refreshShiftBtn.addEventListener('click', refreshShiftData);
 
+// Delay charge event listeners
+delayChargeBtn.addEventListener('click', showDelayChargeModal);
+closeModalBtn.addEventListener('click', () => {
+  delayChargeModal.classList.remove('show');
+});
+
+calculateDelayBtn.addEventListener('click', handleCalculateDelay);
+saveDelayBtn.addEventListener('click', saveDelayChargeEntry);
+
+// Close modal when clicking outside
+delayChargeModal.addEventListener('click', (e) => {
+  if (e.target === delayChargeModal) {
+    delayChargeModal.classList.remove('show');
+  }
+});
+
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
   console.log("🚀 Initializing unified passenger approval system...");
   console.log("📋 System Configuration:");
   console.log("- Card System: cardsystem-21773");
   console.log("- QR System: qrcards-2378e");
+  console.log("- Delay Charge System: Enabled");
   
   // Clear old processed codes
   clearOldProcessedCodes();
