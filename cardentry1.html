@@ -1304,7 +1304,7 @@ async function loadQREntries() {
     
     const snapshot = await qrDb.collection('flightEntries')
       .orderBy('timestamp', 'desc')
-      .limit(50)
+      .limit(200)
       .get();
     
     qrEntries = [];
@@ -1786,6 +1786,122 @@ function processFqtvTier(fqtvNumber, flightCode) {
   }
   
   return tierMapping[tierCode] || '';
+}
+
+// ----- Excel Download Function -----
+function downloadQRExcel() {
+  if (qrEntries.length === 0) {
+    showAlert("No QR entries to download", true);
+    return;
+  }
+  
+  try {
+    // Prepare data in the requested format
+    const excelData = qrEntries.map(entry => {
+      // Format date from YYYY-MM-DD to DD/MM/YYYY for Excel
+      let formattedDate = entry.flightDate || getCurrentDate();
+      if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = formattedDate.split('-');
+        formattedDate = `${day}/${month}/${year}`;
+      }
+      
+      // Ensure FFP_Tier is capitalized properly
+      let ffpTier = entry.ffpTier || '';
+      if (ffpTier) {
+        ffpTier = ffpTier.charAt(0).toUpperCase() + ffpTier.slice(1).toLowerCase();
+      }
+      
+      // Ensure Guest_Type is capitalized properly
+      let guestType = entry.guestCategory || 'Guest';
+      guestType = guestType.charAt(0).toUpperCase() + guestType.slice(1).toLowerCase();
+      
+      // Ensure Cabin is capitalized properly
+      let cabin = entry.cabin || 'Economy';
+      cabin = cabin.charAt(0).toUpperCase() + cabin.slice(1).toLowerCase();
+      
+      // Ensure PAX_Type is capitalized properly
+      let paxType = entry.paxType || 'Adult';
+      paxType = paxType.charAt(0).toUpperCase() + paxType.slice(1).toLowerCase();
+      
+      return [
+        formattedDate,                   // Flight_Date (DD/MM/YYYY)
+        entry.carrierCode || '',         // Carrier_Code
+        entry.flightNumber || '',        // Flight_Number
+        entry.secNumber || '',           // Sec_Number
+        entry.ffpOwner || '',            // FFP_Owner
+        entry.ffpNumber || '',           // FFP_Number
+        ffpTier,                         // FFP_Tier
+        guestType,                       // Guest_Type
+        cabin,                           // Cabin
+        entry.seatNumber || '',          // Seat_Number
+        entry.origin || '',              // Origin
+        entry.destination || '',         // Destination
+        entry.firstName || '',           // First_Name
+        entry.lastName || '',            // Last_Name
+        paxType                          // PAX_Type
+      ];
+    });
+    
+    // Add header row
+    const header = [
+      'Flight_Date',
+      'Carrier_Code',
+      'Flight_Number',
+      'Sec_Number',
+      'FFP_Owner',
+      'FFP_Number',
+      'FFP_Tier',
+      'Guest_Type',
+      'Cabin',
+      'Seat_Number',
+      'Origin',
+      'Destination',
+      'First_Name',
+      'Last_Name',
+      'PAX_Type'
+    ];
+    
+    // Create CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Add header
+    csvContent += header.join(",") + "\r\n";
+    
+    // Add data rows
+    excelData.forEach(row => {
+      // Escape special characters and wrap in quotes if needed
+      const escapedRow = row.map(field => {
+        if (field === null || field === undefined) return '';
+        const str = String(field);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      });
+      csvContent += escapedRow.join(",") + "\r\n";
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    
+    // Generate filename with current date
+    const today = getMaldivesTime();
+    const dateStr = formatDateForDocumentId(today);
+    link.setAttribute("download", `QR_Entries_${dateStr}.csv`);
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showAlert(`QR report downloaded with ${qrEntries.length} entries`);
+    
+  } catch (error) {
+    console.error("Error downloading Excel:", error);
+    showAlert("Error downloading QR report: " + error.message, true);
+  }
 }
 
 // ----- User Authentication -----
@@ -3290,6 +3406,140 @@ window.testQRConnection = async function() {
     console.error("Connection test error:", error);
   }
 };
+
+// ----- Download QR Excel Report -----
+window.downloadQRExcel = function() {
+  if (qrEntries.length === 0) {
+    showAlert("No QR entries to download", true);
+    return;
+  }
+  
+  try {
+    // Prepare data in the requested format
+    const excelData = qrEntries.map(entry => {
+      // Format date from YYYY-MM-DD to DD/MM/YYYY for Excel
+      let formattedDate = entry.flightDate || getCurrentDate();
+      if (formattedDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [year, month, day] = formattedDate.split('-');
+        formattedDate = `${day}/${month}/${year}`;
+      }
+      
+      // Ensure FFP_Tier is capitalized properly
+      let ffpTier = entry.ffpTier || '';
+      if (ffpTier) {
+        ffpTier = ffpTier.charAt(0).toUpperCase() + ffpTier.slice(1).toLowerCase();
+      }
+      
+      // Ensure Guest_Type is capitalized properly
+      let guestType = entry.guestCategory || 'Guest';
+      guestType = guestType.charAt(0).toUpperCase() + guestType.slice(1).toLowerCase();
+      
+      // Ensure Cabin is capitalized properly
+      let cabin = entry.cabin || 'Economy';
+      cabin = cabin.charAt(0).toUpperCase() + cabin.slice(1).toLowerCase();
+      
+      // Ensure PAX_Type is capitalized properly
+      let paxType = entry.paxType || 'Adult';
+      paxType = paxType.charAt(0).toUpperCase() + paxType.slice(1).toLowerCase();
+      
+      return [
+        formattedDate,                   // Flight_Date (DD/MM/YYYY)
+        entry.carrierCode || '',         // Carrier_Code
+        entry.flightNumber || '',        // Flight_Number
+        entry.secNumber || '',           // Sec_Number
+        entry.ffpOwner || '',            // FFP_Owner
+        entry.ffpNumber || '',           // FFP_Number
+        ffpTier,                         // FFP_Tier
+        guestType,                       // Guest_Type
+        cabin,                           // Cabin
+        entry.seatNumber || '',          // Seat_Number
+        entry.origin || '',              // Origin
+        entry.destination || '',         // Destination
+        entry.firstName || '',           // First_Name
+        entry.lastName || '',            // Last_Name
+        paxType                          // PAX_Type
+      ];
+    });
+    
+    // Add header row
+    const header = [
+      'Flight_Date',
+      'Carrier_Code',
+      'Flight_Number',
+      'Sec_Number',
+      'FFP_Owner',
+      'FFP_Number',
+      'FFP_Tier',
+      'Guest_Type',
+      'Cabin',
+      'Seat_Number',
+      'Origin',
+      'Destination',
+      'First_Name',
+      'Last_Name',
+      'PAX_Type'
+    ];
+    
+    // Create CSV content
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Add header
+    csvContent += header.join(",") + "\r\n";
+    
+    // Add data rows
+    excelData.forEach(row => {
+      // Escape special characters and wrap in quotes if needed
+      const escapedRow = row.map(field => {
+        if (field === null || field === undefined) return '';
+        const str = String(field);
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+      });
+      csvContent += escapedRow.join(",") + "\r\n";
+    });
+    
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    
+    // Generate filename with current date
+    const today = getMaldivesTime();
+    const dateStr = formatDateForDocumentId(today);
+    link.setAttribute("download", `QR_Entries_${dateStr}.csv`);
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showAlert(`QR report downloaded with ${qrEntries.length} entries`);
+    
+  } catch (error) {
+    console.error("Error downloading Excel:", error);
+    showAlert("Error downloading QR report: " + error.message, true);
+  }
+};
+
+// ----- Add Download Button to Float Navigation -----
+document.addEventListener('DOMContentLoaded', function() {
+  // Add download button to float navigation
+  const floatNav = document.querySelector('.float-nav');
+  const downloadBtn = document.createElement('button');
+  downloadBtn.className = 'float-btn';
+  downloadBtn.id = 'downloadQRBtn';
+  downloadBtn.style.background = 'var(--success)';
+  downloadBtn.innerHTML = '<i class="fas fa-file-excel"></i><span class="float-tooltip">Download QR Report</span>';
+  downloadBtn.onclick = window.downloadQRExcel;
+  
+  // Insert before the home button (second position)
+  const homeBtn = floatNav.querySelector('a[href="dash.html"]');
+  floatNav.insertBefore(downloadBtn, homeBtn);
+  
+  console.log("✅ QR Excel download button added to float navigation");
+});
 </script>
 </body>
 </html>
