@@ -3416,11 +3416,11 @@ function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
     lateDepartureMinutes = exitTotalMinutes - stdTotalMinutes;
   }
   
-  // Calculate chargeable hours (exceed 3 hours)
+  // Calculate chargeable hours (exceed 3 hours - FLOOR not CEIL)
   let chargeableHours = 0;
   if (totalStayMinutes > FREE_HOURS * 60) {
     const exceedMinutes = totalStayMinutes - (FREE_HOURS * 60);
-    chargeableHours = Math.ceil(exceedMinutes / 60); // Round up to nearest hour
+    chargeableHours = Math.floor(exceedMinutes / 60); // FLOOR - only complete hours
   }
   
   // Calculate total charge (0 per hour as requested)
@@ -3494,12 +3494,6 @@ function handleCalculateDelay() {
   // Calculate delay charge
   const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
   
-  // Format times for display
-  const formatTime = (time) => {
-    const [hours, minutes] = time.split(':');
-    return `${hours}:${minutes}`;
-  };
-  
   // Show calculation result
   delayCalcResult.style.display = 'block';
   
@@ -3507,7 +3501,8 @@ function handleCalculateDelay() {
     delayCalcDetails.innerHTML = `
       <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
       <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
-      <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
+      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
+      <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h (complete hours only)</p>
       <p><strong>Number of Pax:</strong> ${numPax}</p>
       <p><strong>Remarks to be saved:</strong> <em>"Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)"</em></p>
       <p><strong>Total Charge:</strong> <span class="delay-amount">$${calculation.totalCharge.toFixed(2)}</span></p>
@@ -3516,6 +3511,7 @@ function handleCalculateDelay() {
     delayCalcDetails.innerHTML = `
       <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
       <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
+      <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
       <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
       <p><strong>Status:</strong> <span class="no-charge">No Charge - Within ${FREE_HOURS}h free period</span></p>
     `;
