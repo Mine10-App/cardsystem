@@ -923,13 +923,10 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
+<script src="./firebackup.js"></script>
 <script src="./fireC1.js"></script>
 <!-- Shift System Firebase Configuration -->
 <script src="./fireshift.js"></script>
-<!-- QR System Firebase Configuration - MODIFIED APPROACH -->
-
-
 <script>
 // ----- Airlines dropdown -----
 const airlines = {
@@ -1149,7 +1146,7 @@ function loadQRFirebaseConfig() {
   }
 }
 
-// ----- Initialize QR Firebase with Better Error Handling -----
+// ----- Initialize QR Firebase -----
 function initializeQRFirebase() {
   try {
     console.log("🔄 Initializing QR Firebase...");
@@ -1195,27 +1192,17 @@ function initializeQRFirebase() {
       
       qrDb.settings(settings);
       
-      // Test connection with a simple operation
-      const testDoc = qrDb.collection('flightEntries').doc('connection-test');
-      await testDoc.set({
-        test: true,
-        timestamp: getMaldivesDateTimeISO()
-      }, { merge: true });
-      
-      console.log("✅ QR Firebase connection test successful");
+      console.log("✅ QR Firestore initialized");
       qrFirebaseInitialized = true;
       qrSystemAvailable = true;
       showAlert("QR system connected successfully", false, false, true);
-      
-      // Clean up test document
-      await testDoc.delete();
       
       return true;
       
     } catch (firestoreError) {
       console.error("❌ Error initializing QR Firestore:", firestoreError);
       
-      // Even if test fails, still initialize for offline mode
+      // Still try to initialize
       qrDb = firebase.firestore(qrApp);
       qrFirebaseInitialized = true;
       qrSystemAvailable = true;
@@ -1238,7 +1225,7 @@ function initializeQRFirebase() {
   }
 }
 
-// ----- Load QR Entries with Error Handling -----
+// ----- Load QR Entries -----
 async function loadQREntries() {
   if (!qrFirebaseInitialized || !qrSystemAvailable) {
     console.log("QR system not available, skipping load");
@@ -1272,8 +1259,8 @@ async function loadQREntries() {
   }
 }
 
-// ----- Save to QR System with Robust Error Handling -----
-async function saveToQRSystem(codeValue, extractedData) {
+// ----- Save to QR System -----
+async function saveToQRSystem(codeValue) {
   if (!qrFirebaseInitialized || !qrSystemAvailable) {
     console.log("QR system not available, skipping save");
     return false;
@@ -1339,7 +1326,6 @@ async function saveToQRSystem(codeValue, extractedData) {
       errorMessage = 'Permission denied - check Firebase Firestore rules';
       console.error('🔒 Firestore Rules Issue: Go to Firebase Console → Firestore Database → Rules');
       console.error('🔒 Project:', qrFirebaseConfig.projectId);
-      console.error('🔒 Current Rules should allow write access');
     } else if (error.message.includes('timeout')) {
       errorMessage = 'Save timeout - check connection';
     } else if (error.message.includes('network')) {
@@ -1349,14 +1335,14 @@ async function saveToQRSystem(codeValue, extractedData) {
     qrStatus.innerHTML = `<span style="color: var(--error);"><i class="fas fa-exclamation-circle"></i> QR save failed: ${errorMessage}</span>`;
     
     // Store locally for later sync
-    storeQRDataLocally(codeValue, extractedData);
+    storeQRDataLocally(codeValue);
     
     return false;
   }
 }
 
-// ----- Store QR Data Locally for Later Sync -----
-function storeQRDataLocally(codeValue, extractedData) {
+// ----- Store QR Data Locally -----
+function storeQRDataLocally(codeValue) {
   try {
     const qrData = extractQRDataFromCode(codeValue);
     qrData.localSaveTime = getMaldivesDateTimeISO();
@@ -1382,9 +1368,8 @@ function storeQRDataLocally(codeValue, extractedData) {
   }
 }
 
-// ----- Extract QR Data from Code (QRCard Logic) -----
+// ----- Extract QR Data from Code -----
 function extractQRDataFromCode(codeValue) {
-  // This function extracts data according to QRCard logic
   let data = {
     firstName: '',
     lastName: '',
@@ -1617,15 +1602,13 @@ function extractQRDataFromCode(codeValue) {
   return data;
 }
 
-// ----- Convert FFP Tier (QRCard Logic) -----
+// ----- Convert FFP Tier -----
 function convertFFPTier(carrierCode, ffpOwner, originalTier) {
   if (!originalTier || originalTier.trim() === '') {
     return originalTier || '';
   }
   
   const tier = originalTier.toUpperCase();
-  
-  // List of OneWorld member airlines for special tier conversion
   const oneWorldAirlines = ['BA', 'IB', 'QR', 'CX', 'UL', 'MH', 'AA', 'AY', 'RJ', 'LA', 'AB', 'JL'];
   
   if (carrierCode && ffpOwner && carrierCode.toUpperCase() !== ffpOwner.toUpperCase()) {
@@ -1756,11 +1739,1298 @@ function initializeShiftFirebase() {
   }
 }
 
-// ----- All other functions remain exactly the same as previous version -----
-// ... (copy all the remaining functions from previous version) ...
+// ----- Check for Open Shift -----
+function checkForOpenShift(shiftData) {
+  console.log("🔍 Checking for open shift in data...");
+  
+  let result = {
+    success: false,
+    isActive: false,
+    shiftName: "No Shift Open",
+    shiftType: "",
+    openTime: "",
+    details: {}
+  };
+  
+  if (!shiftData) {
+    return result;
+  }
+  
+  // Check morning shift
+  if (shiftData.morning && shiftData.morning.status === 'open') {
+    result.success = true;
+    result.isActive = true;
+    result.shiftName = "Morning Shift";
+    result.shiftType = "morning";
+    result.openTime = shiftData.morning.open || "";
+    result.details = shiftData.morning;
+    console.log("✓ Morning shift is OPEN");
+    return result;
+  }
+  
+  // Check evening shift
+  if (shiftData.evening && shiftData.evening.status === 'open') {
+    result.success = true;
+    result.isActive = true;
+    result.shiftName = "Evening Shift";
+    result.shiftType = "evening";
+    result.openTime = shiftData.evening.open || "";
+    result.details = shiftData.evening;
+    console.log("✓ Evening shift is OPEN");
+    return result;
+  }
+  
+  // If we have shift data but no open shift
+  if (shiftData.morning || shiftData.evening) {
+    result.success = true;
+    result.shiftName = "Shift Not Open";
+    console.log("⚠️ Shift exists but not open");
+  }
+  
+  return result;
+}
+
+// ----- Fetch Current Open Shift -----
+async function fetchCurrentOpenShift() {
+  console.log("🌐 Fetching current open shift...");
+  
+  try {
+    refreshShiftBtn.disabled = true;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // Initialize Firebase if not done yet
+    if (!shiftCacheInitialized) {
+      if (!initializeShiftFirebase()) {
+        showNoShiftMessage();
+        refreshShiftBtn.disabled = false;
+        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        return;
+      }
+    }
+    
+    // Check cache first
+    const now = Date.now();
+    if (shiftCache.data && (now - shiftCache.timestamp < shiftCache.ttl)) {
+      console.log("📊 Using cached shift data");
+      const shiftCheck = checkForOpenShift(shiftCache.data);
+      if (shiftCheck.isActive) {
+        updateShiftUI(shiftCheck, shiftCache.dateKey, shiftCache.dateKey !== getCurrentDate());
+        refreshShiftBtn.disabled = false;
+        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+        return;
+      }
+    }
+    
+    // Get Maldives time
+    const maldivesNow = getMaldivesTime();
+    const todayDateForYYYYMMDD = formatDateToYYYYMMDD(maldivesNow);
+    const todayDateForDocId = formatDateForDocumentId(maldivesNow);
+    const todayDocId = `shift_${todayDateForDocId}`;
+    
+    console.log("📅 Today's date:", todayDateForYYYYMMDD);
+    console.log("📄 Document ID:", todayDocId);
+    
+    // Try today's shift document first
+    let shiftData = null;
+    let foundDate = todayDateForYYYYMMDD;
+    let shiftCheck = null;
+    let isFromPreviousDay = false;
+    
+    try {
+      const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
+      
+      if (todayShiftDoc.exists) {
+        shiftData = todayShiftDoc.data();
+        console.log("✅ Found today's shift document");
+        console.log("Shift data:", shiftData);
+        
+        shiftCheck = checkForOpenShift(shiftData);
+        
+        if (shiftCheck.isActive) {
+          console.log("🎉 Active shift found for today");
+        } else {
+          console.log("⚠️ No active shift today, checking previous day...");
+          // Check previous day
+          const previousResult = await checkPreviousDayForOpenShift();
+          if (previousResult.success && previousResult.shiftCheck.isActive) {
+            shiftData = previousResult.shiftData;
+            foundDate = previousResult.foundDate;
+            shiftCheck = previousResult.shiftCheck;
+            isFromPreviousDay = true;
+            console.log(`✅ Found open shift from ${foundDate} (previous day)`);
+          }
+        }
+      } else {
+        console.log("⚠️ No shift document for today, checking previous day...");
+        // Check previous day
+        const previousResult = await checkPreviousDayForOpenShift();
+        if (previousResult.success && previousResult.shiftCheck.isActive) {
+          shiftData = previousResult.shiftData;
+          foundDate = previousResult.foundDate;
+          shiftCheck = previousResult.shiftCheck;
+          isFromPreviousDay = true;
+          console.log(`✅ Found open shift from ${foundDate} (previous day)`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error fetching shift document:", error);
+      showAlert("Error fetching shift data", true);
+      refreshShiftBtn.disabled = false;
+      refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      return;
+    }
+    
+    if (!shiftCheck || !shiftCheck.isActive) {
+      console.log("❌ No active shift found anywhere");
+      showNoShiftMessage();
+      showAlert("No active shift found. Please open a shift in Shift Management.", true);
+      refreshShiftBtn.disabled = false;
+      refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+      return;
+    }
+    
+    // Update cache
+    shiftCache.data = shiftData;
+    shiftCache.timestamp = now;
+    shiftCache.dateKey = foundDate;
+    shiftCache.shiftType = shiftCheck.shiftType;
+    shiftCache.openTime = shiftCheck.openTime;
+    
+    // Update UI
+    updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
+    
+    console.log("✅ Shift loaded successfully");
+    
+  } catch (error) {
+    console.error("❌ Error fetching shift data:", error);
+    showNoShiftMessage();
+    showAlert("Error loading shift information: " + error.message, true);
+  } finally {
+    refreshShiftBtn.disabled = false;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+  }
+}
+
+// ----- Check Previous Day for Open Shift -----
+async function checkPreviousDayForOpenShift() {
+  try {
+    const todayMaldives = getMaldivesTime();
+    const yesterday = new Date(todayMaldives);
+    yesterday.setDate(todayMaldives.getDate() - 1);
+    
+    const yesterdayForDocId = formatDateForDocumentId(yesterday);
+    const yesterdayDocId = `shift_${yesterdayForDocId}`;
+    const yesterdayDate = formatDateToYYYYMMDD(yesterday);
+    
+    console.log(`🔍 Checking previous day: ${yesterdayDocId} (${yesterdayDate})`);
+    
+    const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
+    
+    if (yesterdayDoc.exists) {
+      const shiftData = yesterdayDoc.data();
+      console.log(`✅ Found shift document for previous day`);
+      
+      const shiftCheck = checkForOpenShift(shiftData);
+      
+      if (shiftCheck.isActive) {
+        return {
+          success: true,
+          shiftData: shiftData,
+          foundDate: yesterdayDate,
+          foundDateForDocId: yesterdayForDocId,
+          shiftCheck: shiftCheck,
+          isFromPreviousDay: true
+        };
+      } else {
+        console.log("⚠️ Previous day shift exists but not open");
+      }
+    } else {
+      console.log("⚠️ No shift document for previous day");
+    }
+    
+    return {
+      success: false,
+      message: "No open shift found in previous day"
+    };
+    
+  } catch (error) {
+    console.error("❌ Error checking previous day:", error);
+    return {
+      success: false,
+      message: "Error: " + error.message
+    };
+  }
+}
+
+// ----- Update Shift UI -----
+function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
+  // Set global variables
+  currentShiftType = shiftCheck.shiftType;
+  currentShiftDate = foundDate;
+  currentShiftStatus = 'open';
+  
+  // Format date for display
+  const displayDate = formatDateForDisplay(foundDate);
+  
+  // Add indicator if from previous day
+  let dateIndicator = "";
+  if (isFromPreviousDay) {
+    const foundDateObj = new Date(foundDate);
+    const todayDateStr = getCurrentDate();
+    const todayDateObj = new Date(todayDateStr);
+    const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff === 1) {
+      dateIndicator = " (Yesterday)";
+    } else if (daysDiff > 1) {
+      dateIndicator = ` (${daysDiff} days ago)`;
+    }
+  }
+  
+  // Update UI elements
+  shiftDisplay.textContent = shiftCheck.shiftName;
+  dateDisplay.textContent = displayDate + dateIndicator;
+  
+  // Enable passenger entry card
+  passengerEntryCard.classList.remove("disabled");
+  
+  // Save to localStorage for persistence
+  saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
+  
+  // Update existing entries with new date if needed
+  updateExistingEntriesDate();
+  
+  // Show success message
+  showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
+  
+  console.log("✅ Shift UI updated:", {
+    shift: shiftCheck.shiftName,
+    date: foundDate,
+    isFromPreviousDay: isFromPreviousDay
+  });
+}
+
+// ----- Save Shift to LocalStorage -----
+function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFromPreviousDay = false) {
+  const shiftInfo = {
+    shiftName: shiftName,
+    shiftType: currentShiftType,
+    shiftDate: foundDate,
+    shiftStatus: shiftStatus,
+    isFromPreviousDay: isFromPreviousDay,
+    lastUpdated: getMaldivesDateTimeISO(),
+    fetchedAt: getCurrentTime()
+  };
+  
+  localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
+  console.log("💾 Shift saved to localStorage:", shiftInfo);
+}
+
+// ----- Load Shift from LocalStorage -----
+function loadCurrentShiftFromLocalStorage() {
+  try {
+    const savedShift = localStorage.getItem('currentShiftInfo');
+    if (savedShift) {
+      const shiftInfo = JSON.parse(savedShift);
+      
+      // Check if cache is fresh (less than 10 minutes old)
+      const lastUpdated = new Date(shiftInfo.lastUpdated);
+      const now = getMaldivesTime();
+      const minutesDiff = (now - lastUpdated) / (1000 * 60);
+      
+      if (minutesDiff < 10 && shiftInfo.shiftStatus === 'open') {
+        console.log("📂 Loading shift from localStorage (fresh cache)");
+        
+        currentShiftType = shiftInfo.shiftType;
+        currentShiftDate = shiftInfo.shiftDate;
+        currentShiftStatus = shiftInfo.shiftStatus;
+        
+        // Format date for display
+        let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
+        if (shiftInfo.isFromPreviousDay) {
+          const shiftDateObj = new Date(shiftInfo.shiftDate);
+          const todayDateStr = getCurrentDate();
+          const todayDateObj = new Date(todayDateStr);
+          const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff === 1) {
+            displayDate += " (Yesterday)";
+          } else if (daysDiff > 1) {
+            displayDate += ` (${daysDiff} days ago)`;
+          }
+        }
+        
+        // Update UI
+        shiftDisplay.textContent = shiftInfo.shiftName;
+        dateDisplay.textContent = displayDate;
+        passengerEntryCard.classList.remove("disabled");
+        
+        console.log("✅ Shift loaded from cache:", shiftInfo.shiftName);
+        return true;
+      } else {
+        console.log("🔄 LocalStorage cache expired, fetching fresh data");
+        localStorage.removeItem('currentShiftInfo');
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error loading shift from localStorage:", error);
+    localStorage.removeItem('currentShiftInfo');
+  }
+  return false;
+}
+
+// ----- Show No Shift Message -----
+function showNoShiftMessage() {
+  shiftDisplay.textContent = "No Shift";
+  dateDisplay.textContent = "-";
+  passengerEntryCard.classList.add("disabled");
+  currentShiftType = null;
+  currentShiftDate = null;
+  currentShiftStatus = 'not_started';
+  
+  console.log("⚠️ No active shift - system disabled");
+}
+
+// ----- Update Existing Entries Date -----
+function updateExistingEntriesDate() {
+  if (!currentShiftType || !currentShiftDate) return;
+  
+  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
+  
+  let updated = false;
+  data = data.map(entry => {
+    if (!entry.approved && entry.date !== currentShiftDate) {
+      entry.date = currentShiftDate;
+      entry.shift = currentShiftType;
+      updated = true;
+    }
+    return entry;
+  });
+  
+  if (updated) {
+    localStorage.setItem('codesData', JSON.stringify(data));
+    renderEntries();
+    console.log("📝 Updated existing entries to current shift date");
+  }
+}
+
+// ----- Refresh Shift Data -----
+async function refreshShiftData() {
+  console.log("🔄 Manual shift refresh requested");
+  
+  try {
+    refreshShiftBtn.disabled = true;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    
+    // Clear cache
+    shiftCache.data = null;
+    shiftCache.timestamp = 0;
+    localStorage.removeItem('currentShiftInfo');
+    
+    // Fetch fresh data
+    await fetchCurrentOpenShift();
+    
+    console.log("✅ Shift data refreshed");
+    
+  } catch (error) {
+    console.error("❌ Error refreshing shift:", error);
+    showAlert("Error refreshing shift data", true);
+  } finally {
+    refreshShiftBtn.disabled = false;
+    refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+  }
+}
+
+// ----- Background Save Queue Management -----
+function addToBackgroundSaveQueue(approvedEntry, docName, localId) {
+  backgroundSaveQueue.push({ approvedEntry, docName, localId });
+  
+  if (!isBackgroundSaving) {
+    processBackgroundSaveQueue();
+  }
+}
+
+async function processBackgroundSaveQueue() {
+  if (isBackgroundSaving || backgroundSaveQueue.length === 0) return;
+  
+  isBackgroundSaving = true;
+  
+  while (backgroundSaveQueue.length > 0) {
+    const item = backgroundSaveQueue[0];
+    
+    try {
+      await window.passengerDb.collection('passengers').doc(item.docName).set(item.approvedEntry);
+      console.log(`✅ Firebase save completed: ${item.docName}`);
+      
+      markAsSyncedInLocalStorage(item.localId);
+      backgroundSaveQueue.shift();
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error('❌ Firebase save failed:', error);
+      const failedItem = backgroundSaveQueue.shift();
+      backgroundSaveQueue.push(failedItem);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  
+  isBackgroundSaving = false;
+}
+
+function markAsSyncedInLocalStorage(localId) {
+  try {
+    let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+    
+    approvedLocalData = approvedLocalData.map(item => {
+      if (item.localId === localId) {
+        return {
+          ...item,
+          synced: true,
+          syncedAt: getMaldivesDateTimeISO()
+        };
+      }
+      return item;
+    });
+    
+    localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
+  } catch (error) {
+    console.error('Error marking as synced:', error);
+  }
+}
+
+// ----- Load Approved Entries Cache -----
+function loadApprovedEntriesCache() {
+  try {
+    const cacheData = localStorage.getItem('approvedEntriesCache');
+    if (cacheData) {
+      approvedEntriesCache = JSON.parse(cacheData);
+      console.log(`✅ Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
+    }
+  } catch (error) {
+    console.error('❌ Error loading approved entries cache:', error);
+    approvedEntriesCache = {};
+  }
+}
+
+// ----- Save Approved Entry to Cache -----
+function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
+  const flightUpper = flight.toUpperCase();
+  const nameUpper = name ? name.toUpperCase() : '';
+  const seatUpper = seat ? seat.toUpperCase() : '';
+  const timestamp = Date.now();
+  
+  if (flightUpper.startsWith('SQ')) {
+    if (nameUpper) {
+      const uniqueKey = `${date}_SQ_${nameUpper}_${timestamp}`;
+      approvedEntriesCache[uniqueKey] = {
+        date: date,
+        flight: flightUpper,
+        name: nameUpper,
+        seat: seatUpper || '',
+        cachedAt: getMaldivesDateTimeISO(),
+        docId: docId,
+        timestamp: timestamp
+      };
+    }
+  } else {
+    const seatKey = `${date}_${flightUpper}_${seatUpper}`;
+    approvedEntriesCache[seatKey] = {
+      date: date,
+      flight: flightUpper,
+      seat: seatUpper,
+      cachedAt: getMaldivesDateTimeISO(),
+      docId: docId
+    };
+  }
+  
+  localStorage.setItem('approvedEntriesCache', JSON.stringify(approvedEntriesCache));
+}
+
+// ----- Check Duplicate in Cache -----
+function checkDuplicateInCache(flight, seat, date, name = null) {
+  const flightUpper = flight.toUpperCase();
+  const nameUpper = name ? name.toUpperCase() : '';
+  const seatUpper = seat ? seat.toUpperCase() : '';
+  
+  if (flightUpper.startsWith('SQ')) {
+    if (nameUpper) {
+      for (const key in approvedEntriesCache) {
+        const entry = approvedEntriesCache[key];
+        
+        if (entry.date !== date) continue;
+        if (entry.flight !== flightUpper) continue;
+        if (entry.name !== nameUpper) continue;
+        
+        return { 
+          isDuplicate: true, 
+          message: `${name} is already approved for flight ${flight} today`
+        };
+      }
+    }
+    return { isDuplicate: false };
+  }
+  
+  const seatKey = `${date}_${flightUpper}_${seatUpper}`;
+  if (approvedEntriesCache[seatKey]) {
+    return { 
+      isDuplicate: true, 
+      message: `Seat ${seat} is already approved for flight ${flight}`
+    };
+  }
+  
+  return { isDuplicate: false };
+}
+
+// ----- Clear input fields -----
+function clearInputFields() {
+  nameInput.value = '';
+  pnrInput.value = '';
+  flightInput.value = '';
+  airlineSelect.value = '';
+  seatInput.value = '';
+  classInput.value = '';
+  numPaxInput.value = '1';
+  fqtvInput.value = '';
+  serialInput.value = '';
+  remarksInput.value = '';
+  qrStatus.innerHTML = '';
+  
+  clearNotification.classList.add('show');
+  setTimeout(() => {
+    clearNotification.classList.remove('show');
+  }, 3000);
+}
+
+// ----- Check if FQTV is required -----
+function isFqtvRequired(classValue, fqtvValue) {
+  return classValue && classValue.toUpperCase() === 'Y' && 
+         (!fqtvValue || fqtvValue.trim() === '');
+}
+
+// ----- Duplicate Entry Check -----
+function isDuplicateEntry(entry) {
+  const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+  const flightUpper = entry.flight.toUpperCase();
+  const nameUpper = entry.name.toUpperCase();
+  const seatUpper = entry.seat.toUpperCase();
+  
+  if (flightUpper.startsWith('SQ')) {
+    return data.some(existingEntry => 
+      existingEntry.date === currentShiftDate && 
+      existingEntry.flight.toUpperCase() === flightUpper && 
+      existingEntry.name.toUpperCase() === nameUpper &&
+      !existingEntry.approved
+    );
+  }
+  
+  return data.some(existingEntry => 
+    existingEntry.date === currentShiftDate && 
+    existingEntry.flight.toUpperCase() === flightUpper && 
+    existingEntry.name.toUpperCase() === nameUpper &&
+    existingEntry.seat.toUpperCase() === seatUpper &&
+    !existingEntry.approved
+  );
+}
+
+// ----- Save Entry -----
+async function saveEntry(entry){
+  if (!currentShiftType || currentShiftStatus !== 'open') {
+    showAlert('No active shift or shift not open!', true);
+    return;
+  }
+  
+  entry.date = currentShiftDate;
+  entry.shift = currentShiftType;
+  
+  if (isDuplicateEntry(entry)) {
+    console.log('Duplicate passenger detected, skipping save');
+    showAlert(`${entry.name} is already entered for flight ${entry.flight}`, true);
+    
+    codeInput.value = '';
+    codeInput.focus();
+    setTimeout(clearInputFields, 2000);
+    return;
+  }
+  
+  // Check if it's a QR flight
+  const flightUpper = entry.flight.toUpperCase();
+  const isQRFlight = flightUpper.startsWith('QR');
+  
+  // Save to QR system if it's a QR flight
+  let qrSaved = false;
+  if (isQRFlight) {
+    try {
+      qrSaved = await saveToQRSystem(entry.code);
+      if (qrSaved) {
+        console.log('✅ QR data saved successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error saving QR data:', error);
+    }
+  }
+  
+  let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+  data.push(entry);
+  localStorage.setItem('codesData', JSON.stringify(data));
+  
+  if (!renderTimeout) {
+    renderTimeout = setTimeout(() => {
+      renderEntries();
+      renderTimeout = null;
+    }, 50);
+  }
+
+  // Show appropriate message
+  if (isQRFlight && qrSaved) {
+    showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
+  } else if (isQRFlight && !qrSaved) {
+    showAlert(`Entry saved! ${entry.name} - QR system save failed`, true);
+  } else {
+    showAlert(`Entry saved! ${entry.name}`);
+  }
+
+  codeInput.value = '';
+  codeInput.focus();
+  setTimeout(clearInputFields, 2000);
+}
+
+// ----- Optimized Render Function -----
+async function renderEntries() {
+  if (isRendering) {
+    clearTimeout(renderTimeout);
+    renderTimeout = setTimeout(renderEntries, 100);
+    return;
+  }
+  
+  isRendering = true;
+  
+  try {
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]').filter(e => !e.approved);
+    const dataString = JSON.stringify(data);
+    
+    if (dataString === lastRenderData && entriesList.children.length > 0) {
+      isRendering = false;
+      return;
+    }
+    
+    lastRenderData = dataString;
+    entriesCount.textContent = `${data.length} entries`;
+    
+    entriesList.innerHTML = '';
+    
+    const fragment = document.createDocumentFragment();
+    
+    for (const [i, e] of data.entries()) {
+      const tr = document.createElement('tr');
+      
+      const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
+      const isQRFlight = e.flight.toUpperCase().startsWith('QR');
+      
+      if (isFqtvNeeded) {
+        tr.classList.add('fqtv-required');
+      }
+      
+      let fqtvDisplay = e.fqtv || '';
+      if (isFqtvNeeded && !fqtvDisplay) {
+        fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED </span>';
+      }
+      
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'action-btn';
+      approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
+      approveBtn.onclick = (function(index) {
+        return function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          approveEntry(index);
+        };
+      })(i);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'action-btn';
+      deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+      deleteBtn.onclick = (function(index) {
+        return function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          deleteEntry(index);
+        };
+      })(i);
+      
+      const actionsCell = document.createElement('td');
+      actionsCell.appendChild(approveBtn);
+      actionsCell.appendChild(deleteBtn);
+      
+      tr.innerHTML = `
+        <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="flight">${escapeHtml(e.flight)}${isQRFlight ? ' <span class="qr-success-badge">QR</span>' : ''}</td>
+        <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
+        <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
+        <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
+        <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(e.remarks)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="pnr">${escapeHtml(e.pnr)}</td>
+        <td>${formatDateForDisplay(e.date)}</td>
+        <td>${e.shift || currentShiftType || '-'}</td>
+      `;
+      
+      tr.appendChild(actionsCell);
+      fragment.appendChild(tr);
+    }
+    
+    entriesList.appendChild(fragment);
+    addAutoSaveListeners();
+    
+  } catch (error) {
+    console.error('Error rendering entries:', error);
+  } finally {
+    isRendering = false;
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function addAutoSaveListeners() {
+  const editableCells = document.querySelectorAll('.editable-cell');
+  editableCells.forEach(cell => {
+    cell.addEventListener('blur', function() {
+      const row = this.closest('tr');
+      const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+      saveEditedEntry(rowIndex);
+    });
+  });
+}
+
+function saveEditedEntry(rowIndex) {
+  const data = JSON.parse(localStorage.getItem('codesData')||'[]');
+  const entry = data[rowIndex];
+  
+  if (!entry) return;
+  
+  const rows = entriesList.querySelectorAll('tr');
+  const targetRow = rows[rowIndex];
+  
+  if (!targetRow) return;
+  
+  entry.name = targetRow.cells[0].textContent.trim();
+  entry.flight = targetRow.cells[1].textContent.trim();
+  entry.seat = targetRow.cells[2].textContent.trim();
+  entry.class = targetRow.cells[3].textContent.trim();
+  
+  let fqtvValue = targetRow.cells[4].textContent.trim();
+  fqtvValue = fqtvValue.replace('FQTV REQUIRED', '').trim();
+  entry.fqtv = fqtvValue;
+  
+  entry.numPax = Number(targetRow.cells[5].textContent.trim()) || 1;
+  entry.serial = targetRow.cells[6].textContent.trim();
+  entry.remarks = targetRow.cells[7].textContent.trim();
+  entry.pnr = targetRow.cells[8].textContent.trim();
+  
+  localStorage.setItem('codesData', JSON.stringify(data));
+}
+
+// ----- Approve Entry -----
+async function approveEntry(index) {
+  if (!currentShiftType || currentShiftStatus !== 'open') {
+    showAlert('No active shift or shift not open!', true);
+    return;
+  }
+  
+  if (isApproving) {
+    return;
+  }
+  
+  isApproving = true;
+  
+  try {
+    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+    const entry = data[index];
+    
+    if (!entry) {
+      isApproving = false;
+      return;
+    }
+
+    if (isFqtvRequired(entry.class, entry.fqtv)) {
+      showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
+      isApproving = false;
+      return;
+    }
+
+    const flightUpper = entry.flight.toUpperCase();
+    const nameUpper = entry.name.toUpperCase();
+    const seatUpper = entry.seat.toUpperCase();
+    
+    // 1. Local duplicate check
+    const duplicateCheck = checkDuplicateInCache(entry.flight, entry.seat, currentShiftDate, entry.name);
+    if (duplicateCheck.isDuplicate) {
+      showAlert(duplicateCheck.message, true);
+      isApproving = false;
+      
+      data.splice(index, 1);
+      localStorage.setItem('codesData', JSON.stringify(data));
+      renderEntries();
+      return;
+    }
+    
+    // ----- Process FQTV with tier level -----
+    let processedFqtv = '';
+    if (entry.fqtv && entry.fqtv.trim() !== '') {
+      let fqtvValue = entry.fqtv.trim();
+      
+      const tierMatch = fqtvValue.match(/\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S)$/i);
+      const hasTier = tierMatch !== null;
+      
+      if (hasTier) {
+        processedFqtv = fqtvValue;
+      } else {
+        fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
+        fqtvValue = fqtvValue.replace(/\/[Nn][123]\s*$/, '').trim();
+        
+        const tierLevel = processFqtvTier(fqtvValue, entry.flight);
+        
+        if (tierLevel) {
+          processedFqtv = `${fqtvValue}/${tierLevel}`;
+        } else {
+          processedFqtv = fqtvValue;
+        }
+      }
+    }
+
+    const approvedEntry = {
+      airline: airlines[entry.airline] || entry.airline,
+      approved: true,
+      checkinTime: "",
+      date: currentShiftDate,
+      flightNo: flightUpper,
+      fqtv: processedFqtv,
+      name: entry.name,
+      numPax: Number(entry.numPax) || 1,
+      remarks: entry.remarks || "-",
+      seatNo: seatUpper,
+      class: entry.class || "-",
+      pnr: entry.pnr,
+      serial: entry.serial || "-",
+      shift: currentShiftType,
+      timeAdded: getCurrentTime(),
+      approvedBy: userData ? userData.name : 'Unknown',
+      approvedAt: getMaldivesDateTimeISO(),
+      localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    };
+
+    // 3. Create document name
+    let docName;
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    
+    if (flightUpper.startsWith('SQ')) {
+      const cleanName = nameUpper.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
+      docName = `${approvedEntry.date}_${flightUpper}_${cleanName}_${timestamp}_${randomSuffix}`;
+    } else {
+      docName = `${approvedEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
+    }
+    
+    // 4. Update local storage and UI immediately
+    saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
+    
+    let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+    approvedLocalData.push({
+      ...approvedEntry,
+      docName: docName,
+      synced: false,
+      syncedAt: null
+    });
+    localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
+    
+    data.splice(index, 1);
+    localStorage.setItem('codesData', JSON.stringify(data));
+    
+    renderEntries();
+    showAlert(`Entry approved successfully!`);
+    
+    // 5. Save to Firebase in background
+    if (window.passengerDb) {
+      addToBackgroundSaveQueue(approvedEntry, docName, approvedEntry.localId);
+    } else {
+      showAlert("Approved locally, will sync to server when connection available", true);
+    }
+    
+  } catch (e) {
+    console.error('Error in approval:', e);
+    showAlert('Error: ' + e.message, true);
+  } finally {
+    isApproving = false;
+  }
+}
+
+// ----- Delete Entry -----
+function deleteEntry(index) {
+  if (isApproving) {
+    return;
+  }
+  
+  let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+  
+  if (index >= 0 && index < data.length) {
+    data.splice(index, 1);
+    localStorage.setItem('codesData', JSON.stringify(data));
+    renderEntries();
+    showAlert('Entry deleted successfully!');
+  }
+}
+
+// ----- Parse code -----
+function parseCode(){
+  const code = codeInput.value.trim().toUpperCase();
+  if(!code) return;
+  const parts = code.split(/\s+/);
+
+  const idxMLE = code.indexOf('MLE');
+  let name='', pnr='';
+  if(idxMLE!==-1){
+    let fullNamePart = code.substring(0,idxMLE).trim();
+    if(fullNamePart.length>8){
+      name = fullNamePart.substring(2, fullNamePart.length-7).trim();
+      pnr = fullNamePart.substring(fullNamePart.length-7).trim();
+    }
+  }
+
+  let flightNo=''; let flightTokenIndex=-1;
+  for(let i=0;i<parts.length;i++){
+    if(parts[i].includes('MLE')){
+      flightTokenIndex=i;
+      const mleToken = parts[i];
+      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
+      break;
+    }
+  }
+
+  if(flightNo.length>=2){
+    const iata = flightNo.slice(0,2);
+    airlineSelect.value = airlines[iata]?iata:'';
+  } else airlineSelect.value='';
+
+  let seatNo='';
+  let seatClass='';
+  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
+    let seatToken = parts[flightTokenIndex+2];
+    if(seatToken.length>9){
+      if (seatToken.length >= 4) {
+        seatClass = seatToken.charAt(3);
+      }
+      
+      if (seatToken.length >= 8) {
+        const rowPart = seatToken.substring(4, 7);
+        const seatLetter = seatToken.charAt(7);
+        const rowNumber = parseInt(rowPart, 10).toString();
+        seatNo = rowNumber + seatLetter;
+      }
+    }
+  }
+
+  // FQTV detection
+  let fqtv = null;
+  let fqtvTierCode = '';
+  let hasNoFqtv = false;
+
+  const allPossibleAirlineCodes = [
+    ...Object.keys(airlines),
+    'LX', 'LH', 'AC', 'NH', 'BR', 'CI', 'NZ', 'VA', 'AF', 'KL', 'DL', 'UA', 'B6', 'WN',
+    'WS', 'AS', 'F9', 'G4', 'NK', 'SY', '9W', 'AI', 'ET', 'KE', 'OZ', 'PR', 'TG'
+  ];
+
+  for (let i = 0; i < parts.length; i++) {
+    const currentToken = parts[i].toUpperCase();
+    
+    for (const airlineCode of allPossibleAirlineCodes) {
+      if (currentToken === airlineCode) {
+        if (i + 1 < parts.length) {
+          const nextToken = parts[i + 1];
+          
+          if (/^\d+$/.test(nextToken)) {
+            fqtv = airlineCode + ' ' + nextToken;
+            
+            for (let j = i + 2; j < parts.length && j < i + 5; j++) {
+              const tierToken = parts[j].toUpperCase();
+              if (tierToken.includes('SAPPHIRE')) {
+                fqtvTierCode = 'n2';
+              } else if (tierToken.includes('EMERALD')) {
+                fqtvTierCode = 'n3';
+              } else if (tierToken.includes('RUBY')) {
+                fqtvTierCode = 'n1';
+              } else if (tierToken.includes('PLATINUM')) {
+                fqtvTierCode = 'n3';
+              } else if (tierToken.includes('GOLD')) {
+                fqtvTierCode = 'n2';
+              } else if (tierToken.includes('SILVER')) {
+                fqtvTierCode = 'n1';
+              } else if (tierToken === 'N0') {
+                hasNoFqtv = true;
+                fqtv = '';
+              } else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') {
+                fqtvTierCode = tierToken.toLowerCase();
+              }
+            }
+            break;
+          }
+        }
+      }
+      
+      if (currentToken.startsWith(airlineCode) && currentToken.length > airlineCode.length) {
+        const remainder = currentToken.substring(airlineCode.length);
+        if (/^\d+$/.test(remainder)) {
+          fqtv = airlineCode + ' ' + remainder;
+          
+          for (let j = i + 1; j < parts.length && j < i + 4; j++) {
+            const tierToken = parts[j].toUpperCase();
+            if (tierToken.includes('SAPPHIRE')) fqtvTierCode = 'n2';
+            else if (tierToken.includes('EMERALD')) fqtvTierCode = 'n3';
+            else if (tierToken.includes('RUBY')) fqtvTierCode = 'n1';
+            else if (tierToken.includes('PLATINUM')) fqtvTierCode = 'n3';
+            else if (tierToken.includes('GOLD')) fqtvTierCode = 'n2';
+            else if (tierToken.includes('SILVER')) fqtvTierCode = 'n1';
+            else if (tierToken === 'N0') { hasNoFqtv = true; fqtv = ''; }
+            else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') fqtvTierCode = tierToken.toLowerCase();
+          }
+          break;
+        }
+      }
+    }
+    
+    if (fqtv) break;
+  }
+
+  if (!fqtv && !hasNoFqtv) {
+    for (let i = 0; i < parts.length - 2; i++) {
+      if ((parts[i] === 'LX' || parts[i] === 'LH') && 
+          /^\d+$/.test(parts[i + 1])) {
+        fqtv = parts[i] + ' ' + parts[i + 1];
+        break;
+      }
+    }
+  }
+
+  if (!hasNoFqtv && fqtv) {
+    fqtv = fqtv.trim();
+    
+    if (fqtv) {
+      const airlineCode = fqtv.substring(0, 2).toUpperCase();
+      
+      if (allPossibleAirlineCodes.includes(airlineCode)) {
+        fqtv = fqtv.replace(/^([A-Z0-9]{2})\s+/, '$1-');
+      }
+    }
+    
+    if (fqtv && fqtvTierCode) {
+      const flightAirlineCode = flightNo.slice(0, 2).toUpperCase();
+      let fqtvAirlineCode = '';
+      
+      const fqtvUpper = fqtv.toUpperCase();
+      
+      const dashMatch = fqtvUpper.match(/^([A-Z0-9]{2})[- ]/);
+      if (dashMatch) {
+        fqtvAirlineCode = dashMatch[1];
+      } else {
+        fqtvAirlineCode = fqtvUpper.substring(0, 2);
+      }
+      
+      let tierName;
+      if (fqtvAirlineCode && flightAirlineCode && 
+          fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
+        tierName = fqtvTierMappings.same[fqtvTierCode] || '';
+      } else {
+        tierName = fqtvTierMappings.different[fqtvTierCode] || '';
+      }
+      
+      if (tierName) {
+        const standardTierRegex = /\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver)$/i;
+        if (!standardTierRegex.test(fqtv)) {
+          fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
+          fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
+          fqtv = `${fqtv}/${tierName}`;
+        }
+      }
+    }
+  }
+
+  const lastTwo = code.slice(-2);
+  if (!hasNoFqtv && (flightNo.startsWith('BA') || flightNo.startsWith('MH')) && fqtv) {
+    if (lastTwo === 'Y1') {
+      if (!fqtv.includes('/')) {
+        fqtv += '/G';
+      } else if (!fqtv.includes('/G')) {
+        fqtv = fqtv.replace(/\/[^\/]+$/, '/G');
+      }
+    } else if (lastTwo === 'Y2') {
+      if (!fqtv.includes('/')) {
+        fqtv += '/S';
+      } else if (!fqtv.includes('/S')) {
+        fqtv = fqtv.replace(/\/[^\/]+$/, '/S');
+      }
+    }
+  } else if (flightNo.startsWith('OS')) {
+    const lastIndex = parts.length - 1;
+    const fourthLast = parts[lastIndex - 3] || '';
+    const thirdLast = parts[lastIndex - 2] || '';
+    const fourthLastToken = fourthLast.trim();
+    const thirdLastToken = thirdLast.trim();
+    
+    if (fourthLastToken.length === 2 && thirdLastToken.length > 4) {
+      if (!fqtv) {
+        fqtv = (fourthLastToken + ' ' + thirdLastToken).trim();
+      }
+    }
+  }
+
+  // SPECIAL HANDLING FOR SQ FLIGHTS
+  if (flightNo.startsWith('SQ')) {
+    seatNo = '';
+    pnr = '';
+  }
+
+  nameInput.value = name;
+  pnrInput.value = pnr;
+  flightInput.value = flightNo;
+  seatInput.value = seatNo;
+  classInput.value = seatClass;
+  fqtvInput.value = hasNoFqtv ? '' : (fqtv || '');
+  serialInput.value = '';
+  remarksInput.value = '';
+  numPaxInput.value = 1;
+}
+
+// ----- Barcode Scanner Detection -----
+function handleScannerInput() {
+  if (isProcessing) return;
+  
+  const currentValue = codeInput.value;
+  
+  if (currentValue.length > lastValue.length + 5) {
+    isScannerActive = true;
+    scannerIndicator.classList.add('show');
+    
+    clearTimeout(scannerTimer);
+    scannerTimer = setTimeout(() => {
+      processScannerInput();
+    }, 100);
+  } 
+  else if (currentValue !== lastValue) {
+    if (isScannerActive) {
+      isScannerActive = false;
+      scannerIndicator.classList.remove('show');
+    }
+    
+    clearTimeout(scannerTimer);
+    scannerTimer = setTimeout(() => {
+      processManualInput();
+    }, 800);
+  }
+  
+  lastValue = currentValue;
+}
+
+function processScannerInput() {
+  if (isProcessing) return;
+  isProcessing = true;
+  
+  scannerIndicator.classList.remove('show');
+  isScannerActive = false;
+  
+  parseCode();
+  const entry = {
+    date: currentShiftDate,
+    user: userDisplay.textContent,
+    shift: currentShiftType,
+    code: codeInput.value,
+    name: nameInput.value,
+    pnr: pnrInput.value,
+    flight: flightInput.value,
+    airline: airlineSelect.value,
+    seat: seatInput.value,
+    class: classInput.value,
+    serial: serialInput.value,
+    remarks: remarksInput.value,
+    fqtv: fqtvInput.value,
+    numPax: Number(numPaxInput.value)||1,
+    approved: false
+  };
+  saveEntry(entry);
+  
+  setTimeout(() => {
+    isProcessing = false;
+  }, 1000);
+}
+
+function processManualInput() {
+  if (isProcessing) return;
+  isProcessing = true;
+  
+  parseCode();
+  const entry = {
+    date: currentShiftDate,
+    user: userDisplay.textContent,
+    shift: currentShiftType,
+    code: codeInput.value,
+    name: nameInput.value,
+    pnr: pnrInput.value,
+    flight: flightInput.value,
+    airline: airlineSelect.value,
+    seat: seatInput.value,
+    class: classInput.value,
+    serial: serialInput.value,
+    remarks: remarksInput.value,
+    fqtv: fqtvInput.value,
+    numPax: Number(numPaxInput.value)||1,
+    approved: false
+  };
+  saveEntry(entry);
+  
+  setTimeout(() => {
+    isProcessing = false;
+  }, 1000);
+}
+
+function handleFieldExit() {
+  if (isProcessing) return;
+  
+  const code = codeInput.value.trim();
+  if (code) {
+    parseCode();
+    if (nameInput.value && flightInput.value) {
+      isProcessing = true;
+      const entry = {
+        date: currentShiftDate,
+        user: userDisplay.textContent,
+        shift: currentShiftType,
+        code: codeInput.value,
+        name: nameInput.value,
+        pnr: pnrInput.value,
+        flight: flightInput.value,
+        airline: airlineSelect.value,
+        seat: seatInput.value,
+        class: classInput.value,
+        serial: serialInput.value,
+        remarks: remarksInput.value,
+        fqtv: fqtvInput.value,
+        numPax: Number(numPaxInput.value)||1,
+        approved: false
+      };
+      saveEntry(entry);
+      
+      setTimeout(() => {
+        isProcessing = false;
+      }, 1000);
+    }
+  }
+}
 
 // ----- Event Listeners -----
-manualSaveBtn.addEventListener('click', async () => {
+manualSaveBtn.addEventListener('click', async function() {
   if (isProcessing) return;
   isProcessing = true;
   
@@ -1919,6 +3189,5 @@ window.testQRConnection = async function() {
   }
 };
 </script>
-
 </body>
 </html>
