@@ -966,6 +966,9 @@ const fqtvTierMappings = {
   }
 };
 
+// ----- QR System Storage -----
+let qrEntriesProcessed = [];
+
 // ----- Initialize Airline Dropdown -----
 const airlineSelect = document.getElementById('airlineSelect');
 for(let iata in airlines){
@@ -1123,6 +1126,70 @@ function showAlert(message, isError = false, isWarning = false, isInfo = false) 
   }, 3000);
 }
 
+// ----- Generate Unique Key for QR Code -----
+function generateUniqueKeyFromCode(codeValue) {
+  // Create a hash from the code for duplicate checking
+  let hash = 0;
+  for (let i = 0; i < codeValue.length; i++) {
+    const char = codeValue.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(16);
+}
+
+// ----- Check QR Duplicate -----
+function isQRDuplicate(uniqueKey) {
+  // Check local memory
+  if (qrEntriesProcessed.includes(uniqueKey)) {
+    return true;
+  }
+  
+  // Check localStorage
+  const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
+  if (processedCodes.includes(uniqueKey)) {
+    return true;
+  }
+  
+  return false;
+}
+
+// ----- Mark QR as Processed -----
+function markQRAsProcessed(uniqueKey) {
+  // Add to local memory
+  qrEntriesProcessed.push(uniqueKey);
+  
+  // Save to localStorage
+  const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
+  if (!processedCodes.includes(uniqueKey)) {
+    processedCodes.push(uniqueKey);
+    // Keep only last 1000 codes to avoid localStorage overflow
+    if (processedCodes.length > 1000) {
+      processedCodes.splice(0, processedCodes.length - 1000);
+    }
+    localStorage.setItem('qrProcessedCodes', JSON.stringify(processedCodes));
+  }
+}
+
+// ----- Clear Old Processed Codes -----
+function clearOldProcessedCodes() {
+  const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
+  // Keep only codes from last 7 days
+  const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+  const recentCodes = processedCodes.filter(code => {
+    // Extract timestamp if it's a timestamp-based code
+    const match = code.match(/_(\d+)$/);
+    if (match) {
+      const timestamp = parseInt(match[1]);
+      return timestamp > oneWeekAgo;
+    }
+    return true; // Keep if we can't determine age
+  });
+  
+  localStorage.setItem('qrProcessedCodes', JSON.stringify(recentCodes));
+  qrEntriesProcessed = recentCodes;
+}
+
 // ----- Load QR Firebase Config -----
 function loadQRFirebaseConfig() {
   try {
@@ -1269,13 +1336,28 @@ async function saveToQRSystem(codeValue) {
   try {
     qrProcessingIndicator.classList.add('show');
     
+    // Generate unique key for duplicate checking
+    const uniqueKey = generateUniqueKeyFromCode(codeValue);
+    
+    // Check for duplicates
+    if (isQRDuplicate(uniqueKey)) {
+      console.log("⚠️ Duplicate QR code detected, skipping save");
+      qrProcessingIndicator.classList.remove('show');
+      qrStatus.innerHTML = `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Duplicate QR code - already processed</span>`;
+      return false;
+    }
+    
     // Extract data for QR system using the QRCard logic
     const qrData = extractQRDataFromCode(codeValue);
+    
+    // Mark as processed to prevent duplicates
+    markQRAsProcessed(uniqueKey);
     
     // Add metadata
     qrData.processedAt = getMaldivesDateTimeISO();
     qrData.processedBy = userDisplay.textContent;
     qrData.sourceSystem = 'UnifiedCardEntry';
+    qrData.uniqueKey = uniqueKey;
     
     // Add timestamp
     if (!qrData.timestamp) {
@@ -1285,7 +1367,9 @@ async function saveToQRSystem(codeValue) {
     console.log("💾 Attempting to save QR data to project:", qrFirebaseConfig.projectId, {
       flight: qrData.flightNumber,
       passenger: `${qrData.firstName} ${qrData.lastName}`,
-      carrier: qrData.carrierCode
+      carrier: qrData.carrierCode,
+      seat: qrData.seatNumber,
+      secNumber: qrData.secNumber
     });
     
     // Save to Firebase
@@ -1351,10 +1435,9 @@ function storeQRDataLocally(codeValue) {
     // Get existing local QR data
     let localQRData = JSON.parse(localStorage.getItem('localQRData') || '[]');
     
-    // Check for duplicates
+    // Check for duplicates using uniqueKey
     const isDuplicate = localQRData.some(item => 
-      item.originalCode === qrData.originalCode && 
-      item.flightNumber === qrData.flightNumber
+      item.uniqueKey === qrData.uniqueKey
     );
     
     if (!isDuplicate) {
@@ -1388,7 +1471,8 @@ function extractQRDataFromCode(codeValue) {
     paxType: 'Adult',
     cabin: 'Economy',
     flightDate: getCurrentDate(),
-    originalCode: codeValue
+    originalCode: codeValue,
+    uniqueKey: generateUniqueKeyFromCode(codeValue)
   };
   
   codeValue = codeValue.toUpperCase().replace(/\s+/g, ' ').trim();
@@ -1476,11 +1560,16 @@ function extractQRDataFromCode(codeValue) {
     if (seatWordStart < codeValue.length) {
       const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
       
-      // Extract seat number
+      console.log("Seat word:", seatWord); // Debug log
+      
+      // Extract seat number (remove one letter from right)
       if (seatWord.length >= 9) {
-        const rowPart = seatWord.substring(5, seatWord.length - 4);
-        const seatLetter = seatWord.substring(seatWord.length - 4, seatWord.length - 3);
+        // Original: seatWord.substring(5, seatWord.length - 4) + seatWord.substring(seatWord.length - 4, seatWord.length - 3)
+        // Modified: Remove one letter from right
+        const rowPart = seatWord.substring(5, seatWord.length - 5); // Changed from -4 to -5
+        const seatLetter = seatWord.substring(seatWord.length - 5, seatWord.length - 4); // Changed indices
         data.seatNumber = rowPart + seatLetter;
+        console.log("Seat number extracted:", data.seatNumber); // Debug log
       }
       
       // Extract cabin code
@@ -1488,11 +1577,12 @@ function extractQRDataFromCode(codeValue) {
         data.cabinCode = seatWord.substring(3, 4);
       }
       
-      // Extract SEC number
+      // Extract SEC number (remove one letter from left)
       if (seatWord.length >= 4) {
         const last4Chars = seatWord.substring(seatWord.length - 4);
         if (/^\d{4}$/.test(last4Chars)) {
-          data.secNumber = last4Chars;
+          // Remove one letter from left: take last 3 digits
+          data.secNumber = last4Chars.substring(1); // Changed: remove first character
         } else {
           let digitsEnd = seatWord.length;
           let digitsStart = seatWord.length - 1;
@@ -1504,9 +1594,16 @@ function extractQRDataFromCode(codeValue) {
           digitsStart++;
           
           if (digitsStart < digitsEnd) {
-            data.secNumber = seatWord.substring(digitsStart, digitsEnd);
+            const secDigits = seatWord.substring(digitsStart, digitsEnd);
+            // Remove one letter from left if possible
+            if (secDigits.length >= 4) {
+              data.secNumber = secDigits.substring(1); // Remove first character
+            } else {
+              data.secNumber = secDigits;
+            }
           }
         }
+        console.log("SEC number extracted:", data.secNumber); // Debug log
       }
     }
     
@@ -3069,6 +3166,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- Card System: cardsystem-21773");
   console.log("- QR System: qrcards-2378e");
   
+  // Clear old processed codes
+  clearOldProcessedCodes();
+  
   // Load approved entries cache
   loadApprovedEntriesCache();
   
@@ -3140,6 +3240,7 @@ window.debugSystemsInfo = function() {
   console.log("QR Firebase Initialized:", qrFirebaseInitialized);
   console.log("QR System Available:", qrSystemAvailable);
   console.log("QR Entries Count:", qrEntries.length);
+  console.log("QR Processed Codes:", qrEntriesProcessed.length);
   
   console.log("\n=== SHIFT INFO ===");
   console.log("Current Shift Type:", currentShiftType);
@@ -3150,7 +3251,8 @@ window.debugSystemsInfo = function() {
         `Card System: ${window.passengerDb ? '✅ Initialized (cardsystem-21773)' : '❌ Not initialized'}\n` +
         `QR System: ${qrFirebaseInitialized ? '✅ Initialized (' + qrFirebaseConfig.projectId + ')' : '❌ Not initialized'}\n` +
         `QR Available: ${qrSystemAvailable ? '✅' : '❌'}\n` +
-        `QR Entries: ${qrEntries.length}\n\n` +
+        `QR Entries: ${qrEntries.length}\n` +
+        `QR Processed: ${qrEntriesProcessed.length}\n\n` +
         `Shift: ${currentShiftType || 'None'}\n` +
         `Date: ${currentShiftDate || '-'}\n` +
         `Status: ${currentShiftStatus}`);
