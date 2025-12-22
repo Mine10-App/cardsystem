@@ -21,6 +21,7 @@ const users = [
   { username: "Shimmu", name: "Shimmu Abdulla", passwordHash: "ca4b064b82ac1a7efabf0643e70bfaa5fe7cae8c06fefadef13deb1a4b2b8441", Level: "User" },
   { username: "Maii", name: "Fathimath Maisam", passwordHash: "9ccab5528b26251d3f6f935eec9bc78950ad7445e34dfcb23ac62e7e2839e5c3", Level: "User" },
     { username: "Aini", name: "Ainee Ahmed", passwordHash: "a2417b3cb565395ed7c462c9de0bd9e48bf8da104f9a7c1cf8b6f72aa0dadacf", Level: "User" },
+  { username: "leeli", name: "leeli lounge", passwordHash: "5994471abb01112afcc18159f6cc74b4f511b99806da59b3caf5a9c173cacfc5", Level: "User" },
    
   
 ];
