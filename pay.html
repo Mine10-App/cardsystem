@@ -1481,7 +1481,8 @@
   <!-- Shift System Firebase Configuration -->
   
 
-  <script>
+  
+<script>
 // ======== MAIN APPLICATION CODE ========
 
 // Store current payment data
@@ -1651,72 +1652,140 @@ function setDefaultShiftData() {
     console.log("Using default shift data (no Firebase date available)");
 }
 
-// Determine which shift is currently open
+// Determine which shift is currently open - UPDATED WITH "NO SHIFT OPEN" HANDLING
 function determineCurrentShift(data) {
-    const maldivesNow = getMaldivesDate();
-    const currentHour = maldivesNow.getUTCHours();
-    
-    console.log("Current Maldives hour:", currentHour);
-    console.log("Morning shift status:", data.morning?.status);
-    console.log("Evening shift status:", data.evening?.status);
-    
-    // Priority 1: Check status fields from Firebase
-    if (data.morning?.status === "open") {
-        currentShift = "Morning";
-        console.log("Shift determined by Firebase status: Morning (open)");
-    } else if (data.evening?.status === "open") {
-        currentShift = "Evening";
-        console.log("Shift determined by Firebase status: Evening (open)");
-    } 
-    // Priority 2: Use time-based logic if no status in Firebase
-    else if (currentHour >= 6 && currentHour < 18) {
-        currentShift = "Morning";
-        console.log("Shift determined by time: Morning (6AM-6PM)");
-    } else {
-        currentShift = "Evening";
-        console.log("Shift determined by time: Evening (6PM-6AM)");
-    }
-    
+  const maldivesNow = getMaldivesDate();
+  const currentHour = maldivesNow.getUTCHours();
+  
+  console.log("Current Maldives hour:", currentHour);
+  console.log("Morning shift status:", data.morning?.status);
+  console.log("Evening shift status:", data.evening?.status);
+  
+  // Check if shift data is available
+  if (!data.morning || data.morning.status === "not_available") {
+    currentShift = "No Shift Data";
+    console.log("No shift data available or shift not open");
     return currentShift;
+  }
+  
+  // Check both shift statuses
+  const morningOpen = data.morning?.status === "open";
+  const eveningOpen = data.evening?.status === "open";
+  
+  // Priority 1: Check status fields from Firebase
+  if (morningOpen) {
+    currentShift = "Morning";
+    console.log("Shift determined by Firebase status: Morning (open)");
+  } else if (eveningOpen) {
+    currentShift = "Evening";
+    console.log("Shift determined by Firebase status: Evening (open)");
+  } 
+  // If no shift is open, check time to suggest which shift should be open
+  else if (!morningOpen && !eveningOpen) {
+    // No shift is marked as open in Firebase
+    if (currentHour >= 6 && currentHour < 18) {
+      currentShift = "No Shift Open";
+      console.log("Morning shift hours but no shift is open");
+    } else {
+      currentShift = "No Shift Open";
+      console.log("Evening shift hours but no shift is open");
+    }
+  }
+  // Time-based fallback
+  else if (currentHour >= 6 && currentHour < 18) {
+    currentShift = "Morning";
+    console.log("Shift determined by time: Morning (6AM-6PM)");
+  } else {
+    currentShift = "Evening";
+    console.log("Shift determined by time: Evening (6PM-6AM)");
+  }
+  
+  return currentShift;
 }
 
-// Update shift display on the page using date FROM Firebase
+// Update shift display on the page using date FROM Firebase - UPDATED WITH NO SHIFT STYLING
 function updateShiftDisplay() {
-    if (!shiftData) {
-        document.getElementById("currentShiftDisplay").textContent = "Morning";
-        // Don't show date if no shift data
-        document.getElementById("currentDateDisplay").textContent = "--/--/----";
-        return;
+  if (!shiftData) {
+    document.getElementById("currentShiftDisplay").textContent = "No Shift Data";
+    document.getElementById("currentDateDisplay").textContent = "--/--/----";
+    return;
+  }
+  
+  // Get date FROM shiftData (from Firebase document)
+  let displayDate = "--/--/----";
+  if (shiftData.date) {
+    // Format date from Firebase (YYYY-MM-DD) to DD/MM/YYYY
+    const dateParts = shiftData.date.split('-');
+    if (dateParts.length === 3) {
+      displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+      console.log("Using date from Firebase shift document:", shiftData.date, "->", displayDate);
     }
-    
-    // Get date FROM shiftData (from Firebase document)
-    let displayDate = "--/--/----";
-    if (shiftData.date) {
-        // Format date from Firebase (YYYY-MM-DD) to DD/MM/YYYY
-        const dateParts = shiftData.date.split('-');
-        if (dateParts.length === 3) {
-            displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-            console.log("Using date from Firebase shift document:", shiftData.date, "->", displayDate);
-        }
-    }
-    
-    // Update display elements
-    document.getElementById("currentShiftDisplay").textContent = currentShift;
-    document.getElementById("currentDateDisplay").textContent = displayDate;
+  }
+  
+  // Update display elements with special styling for "No Shift Open"
+  const shiftDisplay = document.getElementById("currentShiftDisplay");
+  const dateDisplay = document.getElementById("currentDateDisplay");
+  
+  shiftDisplay.textContent = currentShift;
+  dateDisplay.textContent = displayDate;
+  
+  // Apply special styling if no shift is open
+  if (currentShift.includes("No Shift")) {
+    shiftDisplay.style.background = "linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)";
+    shiftDisplay.style.color = "white";
+    shiftDisplay.style.border = "2px solid #c0392b";
+    shiftDisplay.style.fontWeight = "bold";
+    shiftDisplay.style.animation = "pulse 2s infinite";
     
     // Also update the shift dropdown if supervisor
     if (isSupervisor && document.getElementById("shiftTypeSelect")) {
-        document.getElementById("shiftTypeSelect").value = currentShift;
+      document.getElementById("shiftTypeSelect").style.display = "none";
+      document.getElementById("shiftSelectContainer").innerHTML = `
+        <div class="input-group">
+          <label style="color: #e74c3c; font-weight: bold;">⚠️ NO SHIFT OPEN</label>
+          <div style="background: #f8d7da; padding: 8px; border-radius: 4px; border: 1px solid #f5c6cb;">
+            <p style="margin: 0; font-size: 12px; color: #721c24;">
+              Please open a shift in the shift management system first.
+            </p>
+          </div>
+        </div>
+      `;
     }
+  } else {
+    // Reset to normal styling
+    shiftDisplay.style.background = "";
+    shiftDisplay.style.color = "";
+    shiftDisplay.style.border = "";
+    shiftDisplay.style.fontWeight = "";
+    shiftDisplay.style.animation = "";
     
-    console.log(`Shift display updated: ${currentShift} | Date from Firebase: ${displayDate}`);
+    // Also update the shift dropdown if supervisor
+    if (isSupervisor && document.getElementById("shiftTypeSelect")) {
+      document.getElementById("shiftTypeSelect").value = currentShift;
+      document.getElementById("shiftSelectContainer").innerHTML = `
+        <div class="input-group">
+          <label for="shiftTypeSelect">Select Shift (Supervisor Only)</label>
+          <select id="shiftTypeSelect" onchange="updateShift()">
+            <option value="Morning">Morning Shift</option>
+            <option value="Evening">Evening Shift</option>
+          </select>
+        </div>
+      `;
+    }
+  }
+  
+  console.log(`Shift display updated: ${currentShift} | Date from Firebase: ${displayDate}`);
 }
 
 // Refresh shift data manually
 async function refreshShiftData() {
     showNotification("Refreshing shift data...", "info", 1500);
     await fetchShiftData();
-    showNotification(`Shift updated: ${currentShift}`, "success");
+    if (currentShift.includes("No Shift")) {
+      showNotification(`⚠️ No shift is currently open!`, "warning");
+    } else {
+      showNotification(`Shift updated: ${currentShift}`, "success");
+    }
 }
 
 // ======== END SHIFT SYSTEM FUNCTIONS ========
@@ -2364,6 +2433,12 @@ async function syncPendingPayments() {
 // ======== FIXED: SAVE PAYMENT - DOCUMENT ID IS RECEIPT NUMBER ========
 async function savePayment(data) {
   try {
+    // Check if a shift is open before saving
+    if (currentShift.includes("No Shift")) {
+      showNotification("⚠️ Cannot save payment: No shift is currently open!", "error");
+      throw new Error("No shift open");
+    }
+    
     // Generate receipt number
     if (!data.receiptNo) {
       data.receiptNo = await getNextReceiptNumber();
@@ -2816,6 +2891,12 @@ async function saveNow(){
   // Check if rates are loaded
   if (!window.rates) {
     showNotification("Error: Rates not loaded. Check rate.js", "error");
+    return;
+  }
+  
+  // Check if a shift is open
+  if (currentShift.includes("No Shift")) {
+    showNotification("⚠️ Cannot save payment: No shift is currently open!", "error");
     return;
   }
 
@@ -3854,6 +3935,6 @@ window.onload = async function(){
     }
   }, 2000);
 };
-  </script>
+</script>
 </body>
 </html>
