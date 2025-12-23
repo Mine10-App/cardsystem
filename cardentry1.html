@@ -2931,7 +2931,7 @@ async function approveEntry(index) {
       flightNo: flightUpper,
       fqtv: processedFqtv,
       name: entry.name,
-      numPax: Number(entry.numPax) || 1,
+      numPax: Number(entry.numPax) || 0,
       remarks: entry.remarks || "-",
       seatNo: seatUpper,
       class: entry.class || "-",
@@ -3321,13 +3321,8 @@ async function renderEntries() {
       actionsCell.appendChild(approveBtn);
       actionsCell.appendChild(deleteBtn);
       
+      // FIXED: Don't add QR or DELAY to flight number
       let flightDisplay = escapeHtml(e.flight);
-      if (isQRFlight) {
-        flightDisplay += ' <span class="qr-success-badge">QR</span>';
-      }
-      if (isDelayEntry) {
-        flightDisplay += ' <span class="delay-badge">DELAY</span>';
-      }
       
       tr.innerHTML = `
         <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
@@ -3394,7 +3389,7 @@ function saveEditedEntry(rowIndex) {
   fqtvValue = fqtvValue.replace('FQTV REQUIRED', '').trim();
   entry.fqtv = fqtvValue;
   
-  entry.numPax = Number(targetRow.cells[5].textContent.trim()) || 1;
+  entry.numPax = Number(targetRow.cells[5].textContent.trim()) || 0;
   entry.serial = targetRow.cells[6].textContent.trim();
   entry.remarks = targetRow.cells[7].textContent.trim();
   entry.pnr = targetRow.cells[8].textContent.trim();
@@ -3690,7 +3685,7 @@ function processScannerInput() {
     serial: serialInput.value,
     remarks: remarksInput.value,
     fqtv: fqtvInput.value,
-    numPax: Number(numPaxInput.value)||1,
+    numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
     approved: false
   };
   saveEntry(entry);
@@ -3719,7 +3714,7 @@ function processManualInput() {
     serial: serialInput.value,
     remarks: remarksInput.value,
     fqtv: fqtvInput.value,
-    numPax: Number(numPaxInput.value)||1,
+    numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
     approved: false
   };
   saveEntry(entry);
@@ -3751,7 +3746,7 @@ function handleFieldExit() {
         serial: serialInput.value,
         remarks: remarksInput.value,
         fqtv: fqtvInput.value,
-        numPax: Number(numPaxInput.value)||1,
+        numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
         approved: false
       };
       saveEntry(entry);
@@ -3928,7 +3923,7 @@ async function saveDelayChargeEntry() {
     serial: '', // EMPTY SERIAL
     remarks: remarks,
     fqtv: '',
-    numPax: 0, // SET TO 0 AS REQUESTED
+    numPax: 0, // SET TO 0 AS REQUESTED - FIXED
     approved: false,
     isDelayCharge: true,
     delayDetails: {
@@ -3965,114 +3960,6 @@ async function saveDelayChargeEntry() {
   stdTimeInput.value = '00:00';
   delayPaxInput.value = '1';
   delayCalcResult.style.display = 'none';
-}
-
-// ----- Optimized Render Function -----
-async function renderEntries() {
-  if (isRendering) {
-    clearTimeout(renderTimeout);
-    renderTimeout = setTimeout(renderEntries, 100);
-    return;
-  }
-  
-  isRendering = true;
-  
-  try {
-    const data = JSON.parse(localStorage.getItem('codesData') || '[]').filter(e => !e.approved);
-    const dataString = JSON.stringify(data);
-    
-    if (dataString === lastRenderData && entriesList.children.length > 0) {
-      isRendering = false;
-      return;
-    }
-    
-    lastRenderData = dataString;
-    entriesCount.textContent = `${data.length} entries`;
-    
-    entriesList.innerHTML = '';
-    
-    const fragment = document.createDocumentFragment();
-    
-    for (const [i, e] of data.entries()) {
-      const tr = document.createElement('tr');
-      
-      const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
-      const isQRFlight = e.flight.toUpperCase().startsWith('QR');
-      const isDelayEntry = e.isDelayCharge || false;
-      
-      if (isFqtvNeeded) {
-        tr.classList.add('fqtv-required');
-      }
-      
-      if (isDelayEntry) {
-        tr.classList.add('delay-entry');
-      }
-      
-      let fqtvDisplay = e.fqtv || '';
-      if (isFqtvNeeded && !fqtvDisplay) {
-        fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED </span>';
-      }
-      
-      const approveBtn = document.createElement('button');
-      approveBtn.className = 'action-btn';
-      approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
-      approveBtn.onclick = (function(index) {
-        return function(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          approveEntry(index);
-        };
-      })(i);
-      
-      const deleteBtn = document.createElement('button');
-      deleteBtn.className = 'action-btn';
-      deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-      deleteBtn.onclick = (function(index) {
-        return function(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          deleteEntry(index);
-        };
-      })(i);
-      
-      const actionsCell = document.createElement('td');
-      actionsCell.appendChild(approveBtn);
-      actionsCell.appendChild(deleteBtn);
-      
-      let flightDisplay = escapeHtml(e.flight);
-      if (isQRFlight) {
-        flightDisplay += ' <span class="qr-success-badge">QR</span>';
-      }
-      if (isDelayEntry) {
-        flightDisplay += ' <span class="delay-badge">DELAY</span>';
-      }
-      
-      tr.innerHTML = `
-        <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
-        <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
-        <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
-        <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
-        <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(e.remarks)}</td>
-        <td class="editable-cell" contenteditable="true" data-field="pnr">${escapeHtml(e.pnr)}</td>
-        <td>${formatDateForDisplay(e.date)}</td>
-        <td>${e.shift || currentShiftType || '-'}</td>
-      `;
-      
-      tr.appendChild(actionsCell);
-      fragment.appendChild(tr);
-    }
-    
-    entriesList.appendChild(fragment);
-    addAutoSaveListeners();
-    
-  } catch (error) {
-    console.error('Error rendering entries:', error);
-  } finally {
-    isRendering = false;
-  }
 }
 
 // ----- LOCAL STORAGE MANAGEMENT FUNCTIONS -----
@@ -4459,7 +4346,7 @@ manualSaveBtn.addEventListener('click', async function() {
     serial: serialInput.value,
     remarks: remarksInput.value,
     fqtv: fqtvInput.value,
-    numPax: Number(numPaxInput.value)||1,
+    numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
     approved: false
   };
   
@@ -4522,6 +4409,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
   console.log("- FIXED: N1→Silver, N2→Gold, N3→Platinum for QR saves");
+  console.log("- FIXED: Pax = 0 now saves as 0 (not 1)");
+  console.log("- FIXED: No QR/DELAY badges added to flight numbers");
   
   clearOldProcessedCodes();
   
