@@ -842,6 +842,307 @@
     font-weight: bold;
   }
   
+  /* Local Storage Tab Styles */
+  .local-storage-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .local-storage-modal.show {
+    display: flex;
+  }
+  
+  .local-storage-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 95%;
+    max-width: 1200px;
+    max-height: 90vh;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 2px solid var(--gold);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .local-storage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--gold);
+  }
+  
+  .local-storage-header h3 {
+    margin: 0;
+    color: var(--gold-darker);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .close-storage-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--gold);
+    padding: 5px;
+    line-height: 1;
+  }
+  
+  .close-storage-modal:hover {
+    color: var(--gold-dark);
+  }
+  
+  .storage-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid var(--gold);
+    flex-wrap: wrap;
+  }
+  
+  .storage-tab {
+    padding: 10px 20px;
+    background: var(--gray-light);
+    border: 1px solid var(--gold);
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--gold-darker);
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+  
+  .storage-tab:hover {
+    background: var(--gold-light);
+  }
+  
+  .storage-tab.active {
+    background: var(--gold);
+    color: white;
+    font-weight: 600;
+  }
+  
+  .storage-tab-content {
+    flex: 1;
+    overflow: auto;
+    margin-bottom: 20px;
+  }
+  
+  .storage-panel {
+    display: none;
+    padding: 15px;
+    background: var(--gray-light);
+    border-radius: 6px;
+    border: 1px solid var(--gold);
+    max-height: 60vh;
+    overflow: auto;
+  }
+  
+  .storage-panel.active {
+    display: block;
+  }
+  
+  .storage-data-item {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border-left: 4px solid var(--info);
+  }
+  
+  .storage-data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  
+  .storage-key {
+    font-weight: bold;
+    color: var(--gold-darker);
+    font-size: 14px;
+  }
+  
+  .storage-size {
+    background: var(--info);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  
+  .storage-value {
+    font-family: monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background: rgba(0,0,0,0.03);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--gray);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .storage-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gold);
+  }
+  
+  .delete-storage-btn {
+    background: var(--error);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  .delete-storage-btn:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  
+  .storage-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: var(--gold-light);
+    border-radius: 6px;
+    font-size: 13px;
+  }
+  
+  .storage-stat-item {
+    text-align: center;
+    flex: 1;
+  }
+  
+  .storage-stat-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--gold-darker);
+  }
+  
+  .storage-stat-label {
+    font-size: 11px;
+    color: var(--gray-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .empty-storage {
+    text-align: center;
+    padding: 30px;
+    color: var(--gray-dark);
+    font-style: italic;
+  }
+  
+  .view-json-btn {
+    background: var(--info);
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .view-json-btn:hover {
+    background: #1976d2;
+  }
+  
+  .json-viewer-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 4000;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .json-viewer-modal.show {
+    display: flex;
+  }
+  
+  .json-viewer-content {
+    background: #1e1e1e;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  
+  .json-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #444;
+  }
+  
+  .json-viewer-header h4 {
+    margin: 0;
+    color: #fff;
+    font-family: monospace;
+  }
+  
+  .close-json-viewer {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #fff;
+    padding: 5px;
+  }
+  
+  .json-viewer-body {
+    background: #252525;
+    padding: 15px;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    color: #f8f8f2;
+    max-height: 70vh;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  
   @media (max-width: 768px) {
     .user-shift-container {
       flex-direction: column;
@@ -867,6 +1168,32 @@
       width: 95%;
       padding: 20px;
     }
+    
+    .local-storage-content {
+      width: 98%;
+      padding: 15px;
+    }
+    
+    .storage-tabs {
+      overflow-x: auto;
+      flex-wrap: nowrap;
+    }
+    
+    .storage-tab {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    
+    .storage-stats {
+      flex-direction: column;
+      gap: 10px;
+    }
+    
+    .storage-stat-item {
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+    }
   }
 </style>
 </head>
@@ -880,6 +1207,51 @@
 <div class="alert-notification" id="alertNotification">
   <i class="fas fa-check-circle"></i>
   <span id="alertMessage">Operation completed successfully</span>
+</div>
+
+<!-- Local Storage Modal -->
+<div class="local-storage-modal" id="localStorageModal">
+  <div class="local-storage-content">
+    <div class="local-storage-header">
+      <h3><i class="fas fa-database"></i> Local Storage Manager</h3>
+      <button class="close-storage-modal" id="closeStorageModalBtn">&times;</button>
+    </div>
+    
+    <div class="storage-stats" id="storageStats">
+      <!-- Stats will be populated by JavaScript -->
+    </div>
+    
+    <div class="storage-tabs" id="storageTabs">
+      <!-- Tabs will be populated by JavaScript -->
+    </div>
+    
+    <div class="storage-tab-content">
+      <div class="storage-panel active" id="allStoragePanel">
+        <!-- All storage items will be displayed here -->
+      </div>
+      <!-- Other panels will be created dynamically -->
+    </div>
+    
+    <div class="storage-actions">
+      <button id="refreshStorageBtn" class="action-btn">
+        <i class="fas fa-sync-alt"></i> Refresh Storage
+      </button>
+      <button id="clearAllStorageBtn" class="delete-storage-btn">
+        <i class="fas fa-trash"></i> Clear All Local Storage
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON Viewer Modal -->
+<div class="json-viewer-modal" id="jsonViewerModal">
+  <div class="json-viewer-content">
+    <div class="json-viewer-header">
+      <h4 id="jsonViewerTitle">JSON Viewer</h4>
+      <button class="close-json-viewer" id="closeJsonViewerBtn">&times;</button>
+    </div>
+    <div class="json-viewer-body" id="jsonViewerBody"></div>
+  </div>
 </div>
 
 <!-- Delay Charge Modal -->
@@ -951,6 +1323,10 @@
 </div>
 
 <div class="float-nav">
+  <button id="storageManagerBtn" class="float-btn" style="background: var(--info);">
+    <i class="fas fa-database"></i>
+    <span class="float-tooltip">Storage Manager</span>
+  </button>
   <button id="delayChargeBtn" class="float-btn" style="background: var(--delay-orange);">
     <i class="fas fa-clock"></i>
     <span class="float-tooltip">Delay Charge Entry</span>
@@ -1245,6 +1621,17 @@ const saveDelayBtn = document.getElementById('saveDelayBtn');
 const delayCalcResult = document.getElementById('delayCalcResult');
 const delayCalcDetails = document.getElementById('delayCalcDetails');
 
+// ----- Local Storage Elements -----
+const localStorageModal = document.getElementById('localStorageModal');
+const closeStorageModalBtn = document.getElementById('closeStorageModalBtn');
+const storageManagerBtn = document.getElementById('storageManagerBtn');
+const refreshStorageBtn = document.getElementById('refreshStorageBtn');
+const clearAllStorageBtn = document.getElementById('clearAllStorageBtn');
+const jsonViewerModal = document.getElementById('jsonViewerModal');
+const closeJsonViewerBtn = document.getElementById('closeJsonViewerBtn');
+const jsonViewerBody = document.getElementById('jsonViewerBody');
+const jsonViewerTitle = document.getElementById('jsonViewerTitle');
+
 // ----- Global Variables -----
 let isApproving = false;
 let currentShiftType = null;
@@ -1373,24 +1760,21 @@ function showAlert(message, isError = false, isWarning = false, isInfo = false) 
 
 // ----- Generate Unique Key for QR Code -----
 function generateUniqueKeyFromCode(codeValue) {
-  // Create a hash from the code for duplicate checking
   let hash = 0;
   for (let i = 0; i < codeValue.length; i++) {
     const char = codeValue.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = hash & hash;
   }
   return Math.abs(hash).toString(16);
 }
 
 // ----- Check QR Duplicate -----
 function isQRDuplicate(uniqueKey) {
-  // Check local memory
   if (qrEntriesProcessed.includes(uniqueKey)) {
     return true;
   }
   
-  // Check localStorage
   const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
   if (processedCodes.includes(uniqueKey)) {
     return true;
@@ -1401,14 +1785,11 @@ function isQRDuplicate(uniqueKey) {
 
 // ----- Mark QR as Processed -----
 function markQRAsProcessed(uniqueKey) {
-  // Add to local memory
   qrEntriesProcessed.push(uniqueKey);
   
-  // Save to localStorage
   const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
   if (!processedCodes.includes(uniqueKey)) {
     processedCodes.push(uniqueKey);
-    // Keep only last 1000 codes to avoid localStorage overflow
     if (processedCodes.length > 1000) {
       processedCodes.splice(0, processedCodes.length - 1000);
     }
@@ -1419,16 +1800,14 @@ function markQRAsProcessed(uniqueKey) {
 // ----- Clear Old Processed Codes -----
 function clearOldProcessedCodes() {
   const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
-  // Keep only codes from last 7 days
   const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
   const recentCodes = processedCodes.filter(code => {
-    // Extract timestamp if it's a timestamp-based code
     const match = code.match(/_(\d+)$/);
     if (match) {
       const timestamp = parseInt(match[1]);
       return timestamp > oneWeekAgo;
     }
-    return true; // Keep if we can't determine age
+    return true;
   });
   
   localStorage.setItem('qrProcessedCodes', JSON.stringify(recentCodes));
@@ -1438,7 +1817,6 @@ function clearOldProcessedCodes() {
 // ----- Load QR Firebase Config -----
 function loadQRFirebaseConfig() {
   try {
-    // QR Firebase Configuration - from your firebase-config.js
     qrFirebaseConfig = {
       apiKey: "AIzaSyC04iaSqeA76oOk_KlrfbSY6NTTNgy5LOY",
       authDomain: "qrcards-2378e.firebaseapp.com",
@@ -1463,7 +1841,6 @@ function initializeQRFirebase() {
   try {
     console.log("🔄 Initializing QR Firebase...");
     
-    // Load QR config
     if (!qrFirebaseConfig) {
       if (!loadQRFirebaseConfig()) {
         console.warn("⚠️ QR Firebase config not available");
@@ -1477,11 +1854,9 @@ function initializeQRFirebase() {
     
     let qrApp;
     try {
-      // Try to get existing QR app
       qrApp = firebase.app('qrSystem');
       console.log("✅ Using existing QR Firebase app");
     } catch (e) {
-      // Create new app for QR system
       try {
         qrApp = firebase.initializeApp(qrFirebaseConfig, 'qrSystem');
         console.log("✅ Created new QR Firebase app for project:", qrFirebaseConfig.projectId);
@@ -1493,11 +1868,9 @@ function initializeQRFirebase() {
       }
     }
     
-    // Initialize Firestore
     try {
       qrDb = firebase.firestore(qrApp);
       
-      // Configure Firestore settings
       const settings = {
         cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
       };
@@ -1514,7 +1887,6 @@ function initializeQRFirebase() {
     } catch (firestoreError) {
       console.error("❌ Error initializing QR Firestore:", firestoreError);
       
-      // Still try to initialize
       qrDb = firebase.firestore(qrApp);
       qrFirebaseInitialized = true;
       qrSystemAvailable = true;
@@ -1560,7 +1932,6 @@ async function loadQREntries() {
       });
     });
     
-    // Update count display
     qrEntriesCount.textContent = qrEntries.length;
     console.log(`✅ Loaded ${qrEntries.length} QR entries from Firebase`);
     
@@ -1581,10 +1952,8 @@ async function saveToQRSystem(codeValue) {
   try {
     qrProcessingIndicator.classList.add('show');
     
-    // Generate unique key for duplicate checking
     const uniqueKey = generateUniqueKeyFromCode(codeValue);
     
-    // Check for duplicates
     if (isQRDuplicate(uniqueKey)) {
       console.log("⚠️ Duplicate QR code detected, skipping save");
       qrProcessingIndicator.classList.remove('show');
@@ -1592,19 +1961,15 @@ async function saveToQRSystem(codeValue) {
       return false;
     }
     
-    // Extract data for QR system using the QRCard logic
     const qrData = extractQRDataFromCode(codeValue);
     
-    // Mark as processed to prevent duplicates
     markQRAsProcessed(uniqueKey);
     
-    // Add metadata
     qrData.processedAt = getMaldivesDateTimeISO();
     qrData.processedBy = userDisplay.textContent;
     qrData.sourceSystem = 'UnifiedCardEntry';
     qrData.uniqueKey = uniqueKey;
     
-    // Add timestamp
     if (!qrData.timestamp) {
       qrData.timestamp = firebase.firestore.FieldValue.serverTimestamp();
     }
@@ -1617,11 +1982,9 @@ async function saveToQRSystem(codeValue) {
       secNumber: qrData.secNumber
     });
     
-    // Save to Firebase
     const docRef = await qrDb.collection('flightEntries').add(qrData);
     qrData.id = docRef.id;
     
-    // Add to local array
     qrEntries.unshift(qrData);
     qrEntriesLocal.push({
       ...qrData,
@@ -1629,16 +1992,13 @@ async function saveToQRSystem(codeValue) {
       syncedAt: getMaldivesDateTimeISO()
     });
     
-    // Update count
     qrEntriesCount.textContent = qrEntries.length;
     
     console.log('✅ QR entry saved to Firebase with ID:', docRef.id);
     qrProcessingIndicator.classList.remove('show');
     
-    // Show QR success status
     qrStatus.innerHTML = `<span style="color: var(--qr-green);"><i class="fas fa-check-circle"></i> QR entry saved successfully!</span>`;
     
-    // Clear QR status after 3 seconds
     setTimeout(() => {
       qrStatus.innerHTML = '';
     }, 3000);
@@ -1649,7 +2009,6 @@ async function saveToQRSystem(codeValue) {
     console.error('❌ Error saving to QR system:', error);
     qrProcessingIndicator.classList.remove('show');
     
-    // Determine error type
     let errorMessage = error.message;
     if (error.code === 'permission-denied') {
       errorMessage = 'Permission denied - check Firebase Firestore rules';
@@ -1663,7 +2022,6 @@ async function saveToQRSystem(codeValue) {
     
     qrStatus.innerHTML = `<span style="color: var(--error);"><i class="fas fa-exclamation-circle"></i> QR save failed: ${errorMessage}</span>`;
     
-    // Store locally for later sync
     storeQRDataLocally(codeValue);
     
     return false;
@@ -1677,10 +2035,8 @@ function storeQRDataLocally(codeValue) {
     qrData.localSaveTime = getMaldivesDateTimeISO();
     qrData.status = 'pending_sync';
     
-    // Get existing local QR data
     let localQRData = JSON.parse(localStorage.getItem('localQRData') || '[]');
     
-    // Check for duplicates using uniqueKey
     const isDuplicate = localQRData.some(item => 
       item.uniqueKey === qrData.uniqueKey
     );
@@ -1725,7 +2081,6 @@ function extractQRDataFromCode(codeValue) {
   const mlePos = codeValue.indexOf('MLE');
   
   if (mlePos !== -1) {
-    // Extract name fields
     const textBeforeMLE = codeValue.substring(0, mlePos);
     let processedText = '';
     
@@ -1747,7 +2102,6 @@ function extractQRDataFromCode(codeValue) {
       data.lastName = processedText.trim();
     }
     
-    // Extract MLE word
     let wordStart = mlePos;
     let wordEnd = mlePos + 3;
     
@@ -1761,20 +2115,16 @@ function extractQRDataFromCode(codeValue) {
     
     const mleWord = codeValue.substring(wordStart, wordEnd);
     
-    // Extract carrier code
     data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
     
-    // Extract destination
     if (mleWord.length >= 5) {
       data.destination = mleWord.substring(3, mleWord.length - 2);
     }
     
-    // Extract origin
     if (mleWord.length >= 3) {
       data.origin = mleWord.substring(0, 3);
     }
     
-    // Extract flight number
     let nextWordStart = wordEnd;
     
     while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
@@ -1790,7 +2140,6 @@ function extractQRDataFromCode(codeValue) {
       data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
     }
     
-    // Extract seat number, cabin code, and sec number
     let seatWordStart = nextWordEnd;
     
     while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
@@ -1805,29 +2154,23 @@ function extractQRDataFromCode(codeValue) {
     if (seatWordStart < codeValue.length) {
       const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
       
-      console.log("Seat word:", seatWord); // Debug log
+      console.log("Seat word:", seatWord);
       
-      // Extract seat number (remove one letter from right)
       if (seatWord.length >= 9) {
-        // Original: seatWord.substring(5, seatWord.length - 4) + seatWord.substring(seatWord.length - 4, seatWord.length - 3)
-        // Modified: Remove one letter from right
-        const rowPart = seatWord.substring(5, seatWord.length - 5); // Changed from -4 to -5
-        const seatLetter = seatWord.substring(seatWord.length - 5, seatWord.length - 4); // Changed indices
+        const rowPart = seatWord.substring(5, seatWord.length - 5);
+        const seatLetter = seatWord.substring(seatWord.length - 5, seatWord.length - 4);
         data.seatNumber = rowPart + seatLetter;
-        console.log("Seat number extracted:", data.seatNumber); // Debug log
+        console.log("Seat number extracted:", data.seatNumber);
       }
       
-      // Extract cabin code
       if (seatWord.length >= 4) {
         data.cabinCode = seatWord.substring(3, 4);
       }
       
-      // Extract SEC number (remove one letter from left)
       if (seatWord.length >= 4) {
         const last4Chars = seatWord.substring(seatWord.length - 4);
         if (/^\d{4}$/.test(last4Chars)) {
-          // Remove one letter from left: take last 3 digits
-          data.secNumber = last4Chars.substring(1); // Changed: remove first character
+          data.secNumber = last4Chars.substring(1);
         } else {
           let digitsEnd = seatWord.length;
           let digitsStart = seatWord.length - 1;
@@ -1840,19 +2183,17 @@ function extractQRDataFromCode(codeValue) {
           
           if (digitsStart < digitsEnd) {
             const secDigits = seatWord.substring(digitsStart, digitsEnd);
-            // Remove one letter from left if possible
             if (secDigits.length >= 4) {
-              data.secNumber = secDigits.substring(1); // Remove first character
+              data.secNumber = secDigits.substring(1);
             } else {
               data.secNumber = secDigits;
             }
           }
         }
-        console.log("SEC number extracted:", data.secNumber); // Debug log
+        console.log("SEC number extracted:", data.secNumber);
       }
     }
     
-    // Extract FFP fields
     const words = codeValue.split(' ').filter(word => word.trim() !== '');
     let ffpOwner = '';
     let ffpNumber = '';
@@ -1890,7 +2231,6 @@ function extractQRDataFromCode(codeValue) {
     data.ffpTier = ffpTier;
     data.originalTier = originalTier;
     
-    // Determine cabin from cabin code
     switch(data.cabinCode) {
       case 'J':
         data.cabin = 'Business';
@@ -1905,7 +2245,6 @@ function extractQRDataFromCode(codeValue) {
         data.cabin = 'Economy';
     }
     
-    // Determine Guest Category based on cabin and FFP tier
     const cabinCodeUpper = (data.cabinCode || '').toUpperCase();
     const cabinNameLower = (data.cabin || '').toLowerCase();
     const isEconomy = (cabinCodeUpper === 'Y' || cabinNameLower.includes('economy'));
@@ -1923,7 +2262,6 @@ function extractQRDataFromCode(codeValue) {
       data.guestCategory = 'Primary';
     }
     
-    // Special handling for QR with N0/empty tier
     const carrierUpper = (data.carrierCode || '').toUpperCase();
     const tierUpper = (data.ffpTier || '').toUpperCase();
     const originalTierUpper = (data.originalTier || '').toUpperCase();
@@ -2047,7 +2385,6 @@ function initializeShiftFirebase() {
   try {
     console.log("Initializing Shift Firebase...");
     
-    // Check if fireshift.js loaded the config
     if (typeof shiftFirebaseConfig === 'undefined') {
       console.error("❌ Shift Firebase config not found in fireshift.js");
       showAlert("Shift system configuration not found", true);
@@ -2058,16 +2395,13 @@ function initializeShiftFirebase() {
     
     let app;
     try {
-      // Try to get existing app
       app = firebase.app('shiftSystem');
       console.log("✅ Using existing Shift Firebase app");
     } catch (e) {
-      // Create new app for shifts
       app = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
       console.log("✅ Created new Shift Firebase app");
     }
     
-    // Initialize Firestore
     shiftDb = firebase.firestore(app);
     shiftCacheInitialized = true;
     console.log("✅ Shift Firestore initialized successfully");
@@ -2098,7 +2432,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // Check morning shift
   if (shiftData.morning && shiftData.morning.status === 'open') {
     result.success = true;
     result.isActive = true;
@@ -2110,7 +2443,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // Check evening shift
   if (shiftData.evening && shiftData.evening.status === 'open') {
     result.success = true;
     result.isActive = true;
@@ -2122,7 +2454,6 @@ function checkForOpenShift(shiftData) {
     return result;
   }
   
-  // If we have shift data but no open shift
   if (shiftData.morning || shiftData.evening) {
     result.success = true;
     result.shiftName = "Shift Not Open";
@@ -2140,7 +2471,6 @@ async function fetchCurrentOpenShift() {
     refreshShiftBtn.disabled = true;
     refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     
-    // Initialize Firebase if not done yet
     if (!shiftCacheInitialized) {
       if (!initializeShiftFirebase()) {
         showNoShiftMessage();
@@ -2150,7 +2480,6 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    // Check cache first
     const now = Date.now();
     if (shiftCache.data && (now - shiftCache.timestamp < shiftCache.ttl)) {
       console.log("📊 Using cached shift data");
@@ -2163,7 +2492,6 @@ async function fetchCurrentOpenShift() {
       }
     }
     
-    // Get Maldives time
     const maldivesNow = getMaldivesTime();
     const todayDateForYYYYMMDD = formatDateToYYYYMMDD(maldivesNow);
     const todayDateForDocId = formatDateForDocumentId(maldivesNow);
@@ -2172,7 +2500,6 @@ async function fetchCurrentOpenShift() {
     console.log("📅 Today's date:", todayDateForYYYYMMDD);
     console.log("📄 Document ID:", todayDocId);
     
-    // Try today's shift document first
     let shiftData = null;
     let foundDate = todayDateForYYYYMMDD;
     let shiftCheck = null;
@@ -2192,7 +2519,6 @@ async function fetchCurrentOpenShift() {
           console.log("🎉 Active shift found for today");
         } else {
           console.log("⚠️ No active shift today, checking previous day...");
-          // Check previous day
           const previousResult = await checkPreviousDayForOpenShift();
           if (previousResult.success && previousResult.shiftCheck.isActive) {
             shiftData = previousResult.shiftData;
@@ -2204,7 +2530,6 @@ async function fetchCurrentOpenShift() {
         }
       } else {
         console.log("⚠️ No shift document for today, checking previous day...");
-        // Check previous day
         const previousResult = await checkPreviousDayForOpenShift();
         if (previousResult.success && previousResult.shiftCheck.isActive) {
           shiftData = previousResult.shiftData;
@@ -2231,14 +2556,12 @@ async function fetchCurrentOpenShift() {
       return;
     }
     
-    // Update cache
     shiftCache.data = shiftData;
     shiftCache.timestamp = now;
     shiftCache.dateKey = foundDate;
     shiftCache.shiftType = shiftCheck.shiftType;
     shiftCache.openTime = shiftCheck.openTime;
     
-    // Update UI
     updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
     
     console.log("✅ Shift loaded successfully");
@@ -2306,15 +2629,12 @@ async function checkPreviousDayForOpenShift() {
 
 // ----- Update Shift UI -----
 function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
-  // Set global variables
   currentShiftType = shiftCheck.shiftType;
   currentShiftDate = foundDate;
   currentShiftStatus = 'open';
   
-  // Format date for display
   const displayDate = formatDateForDisplay(foundDate);
   
-  // Add indicator if from previous day
   let dateIndicator = "";
   if (isFromPreviousDay) {
     const foundDateObj = new Date(foundDate);
@@ -2329,20 +2649,15 @@ function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
     }
   }
   
-  // Update UI elements
   shiftDisplay.textContent = shiftCheck.shiftName;
   dateDisplay.textContent = displayDate + dateIndicator;
   
-  // Enable passenger entry card
   passengerEntryCard.classList.remove("disabled");
   
-  // Save to localStorage for persistence
   saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
   
-  // Update existing entries with new date if needed
   updateExistingEntriesDate();
   
-  // Show success message
   showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
   
   console.log("✅ Shift UI updated:", {
@@ -2375,7 +2690,6 @@ function loadCurrentShiftFromLocalStorage() {
     if (savedShift) {
       const shiftInfo = JSON.parse(savedShift);
       
-      // Check if cache is fresh (less than 10 minutes old)
       const lastUpdated = new Date(shiftInfo.lastUpdated);
       const now = getMaldivesTime();
       const minutesDiff = (now - lastUpdated) / (1000 * 60);
@@ -2387,7 +2701,6 @@ function loadCurrentShiftFromLocalStorage() {
         currentShiftDate = shiftInfo.shiftDate;
         currentShiftStatus = shiftInfo.shiftStatus;
         
-        // Format date for display
         let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
         if (shiftInfo.isFromPreviousDay) {
           const shiftDateObj = new Date(shiftInfo.shiftDate);
@@ -2402,7 +2715,6 @@ function loadCurrentShiftFromLocalStorage() {
           }
         }
         
-        // Update UI
         shiftDisplay.textContent = shiftInfo.shiftName;
         dateDisplay.textContent = displayDate;
         passengerEntryCard.classList.remove("disabled");
@@ -2464,12 +2776,10 @@ async function refreshShiftData() {
     refreshShiftBtn.disabled = true;
     refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
     
-    // Clear cache
     shiftCache.data = null;
     shiftCache.timestamp = 0;
     localStorage.removeItem('currentShiftInfo');
     
-    // Fetch fresh data
     await fetchCurrentOpenShift();
     
     console.log("✅ Shift data refreshed");
@@ -2694,11 +3004,9 @@ async function saveEntry(entry){
     return;
   }
   
-  // Check if it's a QR flight
   const flightUpper = entry.flight.toUpperCase();
   const isQRFlight = flightUpper.startsWith('QR');
   
-  // Save to QR system if it's a QR flight
   let qrSaved = false;
   if (isQRFlight) {
     try {
@@ -2722,7 +3030,6 @@ async function saveEntry(entry){
     }, 50);
   }
 
-  // Show appropriate message
   if (isQRFlight && qrSaved) {
     showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
   } else if (isQRFlight && !qrSaved) {
@@ -2921,7 +3228,6 @@ async function approveEntry(index) {
     const nameUpper = entry.name.toUpperCase();
     const seatUpper = entry.seat.toUpperCase();
     
-    // 1. Local duplicate check
     const duplicateCheck = checkDuplicateInCache(entry.flight, entry.seat, currentShiftDate, entry.name);
     if (duplicateCheck.isDuplicate) {
       showAlert(duplicateCheck.message, true);
@@ -2933,7 +3239,6 @@ async function approveEntry(index) {
       return;
     }
     
-    // ----- Process FQTV with tier level -----
     let processedFqtv = '';
     if (entry.fqtv && entry.fqtv.trim() !== '') {
       let fqtvValue = entry.fqtv.trim();
@@ -2978,7 +3283,6 @@ async function approveEntry(index) {
       localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     };
 
-    // 3. Create document name
     let docName;
     const timestamp = Date.now();
     const randomSuffix = Math.random().toString(36).substring(2, 8);
@@ -2990,7 +3294,6 @@ async function approveEntry(index) {
       docName = `${approvedEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
     }
     
-    // 4. Update local storage and UI immediately
     saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
     
     let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
@@ -3008,7 +3311,6 @@ async function approveEntry(index) {
     renderEntries();
     showAlert(`Entry approved successfully!`);
     
-    // 5. Save to Firebase in background
     if (window.passengerDb) {
       addToBackgroundSaveQueue(approvedEntry, docName, approvedEntry.localId);
     } else {
@@ -3388,43 +3690,35 @@ function handleFieldExit() {
 
 // ----- Calculate Delay Charge -----
 function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
-  // Parse time strings to hours and minutes
   const [entryHour, entryMin] = entryTime.split(':').map(Number);
   const [exitHour, exitMin] = exitTime.split(':').map(Number);
   const [stdHour, stdMin] = stdTime.split(':').map(Number);
   
-  // Convert to minutes
   const entryTotalMinutes = entryHour * 60 + entryMin;
   const exitTotalMinutes = exitHour * 60 + exitMin;
   const stdTotalMinutes = stdHour * 60 + stdMin;
   
-  // Calculate total stay minutes
   let totalStayMinutes = exitTotalMinutes - entryTotalMinutes;
   
-  // Handle overnight stays
   if (totalStayMinutes < 0) {
-    totalStayMinutes += 24 * 60; // Add 24 hours
+    totalStayMinutes += 24 * 60;
   }
   
-  // Calculate hours and minutes
   const totalStayHours = Math.floor(totalStayMinutes / 60);
   const remainingMinutes = totalStayMinutes % 60;
   
-  // Check if stayed beyond STD
   let lateDepartureMinutes = 0;
   if (exitTotalMinutes > stdTotalMinutes) {
     lateDepartureMinutes = exitTotalMinutes - stdTotalMinutes;
   }
   
-  // Calculate chargeable hours (exceed 3 hours - FLOOR not CEIL)
   let chargeableHours = 0;
   if (totalStayMinutes > FREE_HOURS * 60) {
     const exceedMinutes = totalStayMinutes - (FREE_HOURS * 60);
-    chargeableHours = Math.floor(exceedMinutes / 60); // FLOOR - only complete hours
+    chargeableHours = Math.floor(exceedMinutes / 60);
   }
   
-  // Calculate total charge (0 per hour as requested)
-  const totalCharge = 0; // Always 0 as requested
+  const totalCharge = 0;
   
   return {
     totalStayMinutes,
@@ -3433,7 +3727,7 @@ function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
     lateDepartureMinutes,
     chargeableHours,
     totalCharge,
-    chargePerPax: 0 // Always 0 as requested
+    chargePerPax: 0
   };
 }
 
@@ -3444,7 +3738,6 @@ function showDelayChargeModal() {
     return;
   }
   
-  // Reset form
   delayFlightInput.value = '';
   entryTimeInput.value = '00:00';
   exitTimeInput.value = '00:00';
@@ -3452,15 +3745,12 @@ function showDelayChargeModal() {
   delayPaxInput.value = '1';
   delayCalcResult.style.display = 'none';
   
-  // Set current time for entry and exit
   const currentTime = getCurrentTime();
   entryTimeInput.value = currentTime;
   exitTimeInput.value = currentTime;
   
-  // Show modal
   delayChargeModal.classList.add('show');
   
-  // Focus on flight input
   setTimeout(() => {
     delayFlightInput.focus();
   }, 100);
@@ -3474,7 +3764,6 @@ function handleCalculateDelay() {
   const stdTime = stdTimeInput.value;
   const numPax = parseInt(delayPaxInput.value) || 1;
   
-  // Validate inputs
   if (!flightNo) {
     showAlert('Please enter flight number', true);
     delayFlightInput.focus();
@@ -3491,10 +3780,8 @@ function handleCalculateDelay() {
     return;
   }
   
-  // Calculate delay charge
   const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
   
-  // Show calculation result
   delayCalcResult.style.display = 'block';
   
   if (calculation.chargeableHours > 0) {
@@ -3526,7 +3813,6 @@ async function saveDelayChargeEntry() {
   const stdTime = stdTimeInput.value;
   const numPax = parseInt(delayPaxInput.value) || 1;
   
-  // Validate inputs
   if (!flightNo) {
     showAlert('Please enter flight number', true);
     delayFlightInput.focus();
@@ -3543,13 +3829,10 @@ async function saveDelayChargeEntry() {
     return;
   }
   
-  // Calculate delay charge
   const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
   
-  // Generate remarks as requested: "Delay charges for X pax for Y hour(s)"
   let remarks = `Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)`;
   
-  // Create delay charge entry with Pax set to 0 as requested
   const delayEntry = {
     date: currentShiftDate,
     user: userDisplay.textContent,
@@ -3564,7 +3847,7 @@ async function saveDelayChargeEntry() {
     serial: `DELAY_${Date.now()}`,
     remarks: remarks,
     fqtv: '',
-    numPax: 0, // Set to 0 as requested
+    numPax: 0,
     approved: false,
     isDelayCharge: true,
     delayDetails: {
@@ -3580,27 +3863,235 @@ async function saveDelayChargeEntry() {
     }
   };
   
-  // Save the entry
   let data = JSON.parse(localStorage.getItem('codesData')||'[]');
   data.push(delayEntry);
   localStorage.setItem('codesData', JSON.stringify(data));
   
-  // Close modal
   delayChargeModal.classList.remove('show');
   
-  // Show success message
   showAlert(`Delay charge entry saved for flight ${flightNo}`, false);
   
-  // Render entries
   renderEntries();
   
-  // Reset form
   delayFlightInput.value = '';
   entryTimeInput.value = '00:00';
   exitTimeInput.value = '00:00';
   stdTimeInput.value = '00:00';
   delayPaxInput.value = '1';
   delayCalcResult.style.display = 'none';
+}
+
+// ----- LOCAL STORAGE MANAGEMENT FUNCTIONS -----
+
+// Show Local Storage Modal
+function showLocalStorageModal() {
+  loadStorageData();
+  localStorageModal.classList.add('show');
+}
+
+// Load and display storage data
+function loadStorageData() {
+  const allKeys = Object.keys(localStorage);
+  const storageStats = document.getElementById('storageStats');
+  const storageTabs = document.getElementById('storageTabs');
+  const allStoragePanel = document.getElementById('allStoragePanel');
+  
+  let totalSize = 0;
+  allKeys.forEach(key => {
+    const value = localStorage.getItem(key);
+    totalSize += (key.length + value.length) * 2;
+  });
+  
+  storageStats.innerHTML = `
+    <div class="storage-stat-item">
+      <div class="storage-stat-value">${allKeys.length}</div>
+      <div class="storage-stat-label">Total Items</div>
+    </div>
+    <div class="storage-stat-item">
+      <div class="storage-stat-value">${(totalSize / 1024).toFixed(2)} KB</div>
+      <div class="storage-stat-label">Total Size</div>
+    </div>
+    <div class="storage-stat-item">
+      <div class="storage-stat-value">${(localStorage.length / 5000 * 100).toFixed(1)}%</div>
+      <div class="storage-stat-label">Capacity Used</div>
+    </div>
+  `;
+  
+  storageTabs.innerHTML = '';
+  
+  const allTab = document.createElement('button');
+  allTab.className = 'storage-tab active';
+  allTab.textContent = 'All Items';
+  allTab.onclick = () => showStorageTab('all', allTab);
+  storageTabs.appendChild(allTab);
+  
+  const categories = {
+    'codesData': 'Passenger Entries',
+    'approvedLocalData': 'Approved Entries',
+    'qrProcessedCodes': 'QR Processed Codes',
+    'localQRData': 'Local QR Data',
+    'approvedEntriesCache': 'Approved Cache',
+    'currentShiftInfo': 'Shift Info',
+    'loggedInUser': 'User Data'
+  };
+  
+  Object.keys(categories).forEach(categoryKey => {
+    if (localStorage.getItem(categoryKey)) {
+      const tab = document.createElement('button');
+      tab.className = 'storage-tab';
+      tab.textContent = categories[categoryKey];
+      tab.dataset.key = categoryKey;
+      tab.onclick = () => showStorageTab(categoryKey, tab);
+      storageTabs.appendChild(tab);
+    }
+  });
+  
+  const otherKeys = allKeys.filter(key => !Object.keys(categories).includes(key));
+  if (otherKeys.length > 0) {
+    const otherTab = document.createElement('button');
+    otherTab.className = 'storage-tab';
+    otherTab.textContent = `Other (${otherKeys.length})`;
+    otherTab.dataset.key = 'other';
+    otherTab.onclick = () => showStorageTab('other', otherTab);
+    storageTabs.appendChild(otherTab);
+  }
+  
+  displayStorageItems('all', allKeys, allStoragePanel);
+  
+  showStorageTab('all', allTab);
+}
+
+// Display storage items in a panel
+function displayStorageItems(category, keys, panel) {
+  panel.innerHTML = '';
+  
+  if (keys.length === 0) {
+    panel.innerHTML = '<div class="empty-storage">No data found in this category</div>';
+    return;
+  }
+  
+  keys.forEach(key => {
+    try {
+      const value = localStorage.getItem(key);
+      const itemSize = (key.length + value.length) * 2;
+      let parsedValue;
+      let isJson = false;
+      
+      try {
+        parsedValue = JSON.parse(value);
+        isJson = true;
+      } catch (e) {
+        parsedValue = value;
+      }
+      
+      const valueStr = isJson ? JSON.stringify(parsedValue, null, 2) : value;
+      
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'storage-data-item';
+      itemDiv.innerHTML = `
+        <div class="storage-data-header">
+          <span class="storage-key">${key}</span>
+          <span class="storage-size">${(itemSize / 1024).toFixed(2)} KB</span>
+        </div>
+        <div class="storage-value">${isJson ? 'JSON Data - ' : ''}${valueStr.length > 500 ? valueStr.substring(0, 500) + '...' : valueStr}</div>
+        <div style="margin-top: 8px; display: flex; gap: 5px;">
+          ${isJson ? `<button class="view-json-btn" onclick="viewJson('${key}', ${JSON.stringify(parsedValue)})">View JSON</button>` : ''}
+          <button class="action-btn" onclick="deleteStorageItem('${key}')" style="padding: 3px 8px; font-size: 11px;">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+          <button class="action-btn" onclick="copyStorageItem('${key}')" style="padding: 3px 8px; font-size: 11px;">
+            <i class="fas fa-copy"></i> Copy
+          </button>
+        </div>
+      `;
+      
+      panel.appendChild(itemDiv);
+    } catch (error) {
+      console.error(`Error processing key ${key}:`, error);
+    }
+  });
+}
+
+// Show specific storage tab
+function showStorageTab(category, tabElement) {
+  document.querySelectorAll('.storage-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  
+  tabElement.classList.add('active');
+  
+  let panel = document.getElementById(`${category}Panel`);
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = `${category}Panel`;
+    panel.className = 'storage-panel';
+    document.querySelector('.storage-tab-content').appendChild(panel);
+  }
+  
+  document.querySelectorAll('.storage-panel').forEach(p => {
+    p.classList.remove('active');
+  });
+  
+  panel.classList.add('active');
+  
+  const allKeys = Object.keys(localStorage);
+  let filteredKeys = [];
+  
+  if (category === 'all') {
+    filteredKeys = allKeys;
+  } else if (category === 'other') {
+    const categories = [
+      'codesData', 'approvedLocalData', 'qrProcessedCodes', 
+      'localQRData', 'approvedEntriesCache', 'currentShiftInfo', 
+      'loggedInUser'
+    ];
+    filteredKeys = allKeys.filter(key => !categories.includes(key));
+  } else {
+    filteredKeys = allKeys.filter(key => key === category);
+  }
+  
+  displayStorageItems(category, filteredKeys, panel);
+}
+
+// View JSON in modal
+function viewJson(key, data) {
+  jsonViewerTitle.textContent = `JSON Data: ${key}`;
+  jsonViewerBody.textContent = JSON.stringify(data, null, 2);
+  
+  jsonViewerModal.classList.add('show');
+}
+
+// Copy storage item to clipboard
+function copyStorageItem(key) {
+  try {
+    const value = localStorage.getItem(key);
+    navigator.clipboard.writeText(value).then(() => {
+      showAlert(`Copied "${key}" to clipboard`, false, false, true);
+    }).catch(err => {
+      showAlert(`Failed to copy: ${err}`, true);
+    });
+  } catch (error) {
+    showAlert(`Error copying: ${error.message}`, true);
+  }
+}
+
+// Delete a specific storage item
+function deleteStorageItem(key) {
+  if (confirm(`Are you sure you want to delete "${key}" from local storage?\n\nThis action cannot be undone.`)) {
+    localStorage.removeItem(key);
+    showAlert(`Deleted "${key}" from local storage`, false);
+    loadStorageData();
+  }
+}
+
+// Clear all local storage
+function clearAllLocalStorage() {
+  if (confirm('⚠️ WARNING: Are you absolutely sure you want to clear ALL local storage?\n\nThis will delete:\n• All passenger entries\n• All approved entries\n• QR processed codes\n• Shift information\n• User session\n\nThis action cannot be undone!')) {
+    localStorage.clear();
+    showAlert('All local storage cleared successfully', false);
+    
+    window.location.reload();
+  }
 }
 
 // ----- Event Listeners -----
@@ -3645,10 +4136,35 @@ closeModalBtn.addEventListener('click', () => {
 calculateDelayBtn.addEventListener('click', handleCalculateDelay);
 saveDelayBtn.addEventListener('click', saveDelayChargeEntry);
 
-// Close modal when clicking outside
+// Local storage event listeners
+storageManagerBtn.addEventListener('click', showLocalStorageModal);
+closeStorageModalBtn.addEventListener('click', () => {
+  localStorageModal.classList.remove('show');
+});
+
+refreshStorageBtn.addEventListener('click', loadStorageData);
+clearAllStorageBtn.addEventListener('click', clearAllLocalStorage);
+
+closeJsonViewerBtn.addEventListener('click', () => {
+  jsonViewerModal.classList.remove('show');
+});
+
+// Close modals when clicking outside
 delayChargeModal.addEventListener('click', (e) => {
   if (e.target === delayChargeModal) {
     delayChargeModal.classList.remove('show');
+  }
+});
+
+localStorageModal.addEventListener('click', (e) => {
+  if (e.target === localStorageModal) {
+    localStorageModal.classList.remove('show');
+  }
+});
+
+jsonViewerModal.addEventListener('click', (e) => {
+  if (e.target === jsonViewerModal) {
+    jsonViewerModal.classList.remove('show');
   }
 });
 
@@ -3659,27 +4175,23 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- Card System: cardsystem-21773");
   console.log("- QR System: qrcards-2378e");
   console.log("- Delay Charge System: Enabled");
+  console.log("- Storage Manager: Enabled");
   
-  // Clear old processed codes
   clearOldProcessedCodes();
   
-  // Load approved entries cache
   loadApprovedEntriesCache();
   
-  // Initialize QR Firebase
   setTimeout(() => {
     initializeQRFirebase();
     loadQREntries();
   }, 1000);
   
-  // Try to load shift from localStorage first
   const loadedFromCache = loadCurrentShiftFromLocalStorage();
   
   if (!loadedFromCache) {
     console.log("🔄 No fresh cache, fetching shift data from server");
     showNoShiftMessage();
     
-    // Fetch shift data after a short delay
     setTimeout(() => {
       fetchCurrentOpenShift();
     }, 1000);
@@ -3687,7 +4199,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log("✅ Shift loaded from cache");
   }
   
-  // Set up other event listeners
   codeInput.addEventListener('input', handleScannerInput);
   
   codeInput.addEventListener('keydown', function(e) {
@@ -3704,10 +4215,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   codeInput.addEventListener('blur', handleFieldExit);
   
-  // Render existing entries
   renderEntries();
   
-  // Set up periodic shift check (every 5 minutes)
   setInterval(() => {
     if (currentShiftStatus === 'open') {
       console.log("🔄 Periodic shift check");
@@ -3715,12 +4224,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }, 5 * 60 * 1000);
   
-  // Set up periodic QR entries refresh (every 2 minutes)
   setInterval(() => {
     loadQREntries();
   }, 2 * 60 * 1000);
   
-  // Clean up on page unload
   window.addEventListener('beforeunload', () => {
     console.log("🧹 Cleaning up before unload");
   });
@@ -3776,7 +4283,6 @@ window.testQRConnection = async function() {
     const docRef = await qrDb.collection('testConnections').add(testData);
     alert(`✅ QR System Connection Successful!\n\nProject: ${qrFirebaseConfig.projectId}\nTest Document ID: ${docRef.id}\n\nDocument saved successfully.`);
     
-    // Clean up test document
     await docRef.delete();
     
   } catch (error) {
