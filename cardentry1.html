@@ -3890,6 +3890,7 @@ async function saveDelayChargeEntry() {
   const stdTime = stdTimeInput.value;
   const numPax = parseInt(delayPaxInput.value) || 1;
   
+  // Validate inputs
   if (!flightNo) {
     showAlert('Please enter flight number', true);
     delayFlightInput.focus();
@@ -3906,10 +3907,13 @@ async function saveDelayChargeEntry() {
     return;
   }
   
+  // Calculate delay charge
   const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
   
+  // Generate remarks as requested: "Delay charges for X pax for Y hour(s)"
   let remarks = `Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)`;
   
+  // Create delay charge entry with corrections:
   const delayEntry = {
     date: currentShiftDate,
     user: userDisplay.textContent,
@@ -3917,14 +3921,14 @@ async function saveDelayChargeEntry() {
     code: 'DELAY_CHARGE',
     name: 'DELAY CHARGE',
     pnr: 'DELAY',
-    flight: flightNo,
+    flight: flightNo, // JUST THE FLIGHT NUMBER, NO "DELAY" TEXT
     airline: flightNo.substring(0, 2),
-    seat: 'DELAY',
-    class: 'Y',
-    serial: `DELAY_${Date.now()}`,
+    seat: '', // EMPTY SEAT
+    class: 'J', // CLASS SET TO "J"
+    serial: '', // EMPTY SERIAL
     remarks: remarks,
     fqtv: '',
-    numPax: 0,
+    numPax: 0, // SET TO 0 AS REQUESTED
     approved: false,
     isDelayCharge: true,
     delayDetails: {
@@ -3940,22 +3944,135 @@ async function saveDelayChargeEntry() {
     }
   };
   
+  // Save the entry
   let data = JSON.parse(localStorage.getItem('codesData')||'[]');
   data.push(delayEntry);
   localStorage.setItem('codesData', JSON.stringify(data));
   
+  // Close modal
   delayChargeModal.classList.remove('show');
   
+  // Show success message
   showAlert(`Delay charge entry saved for flight ${flightNo}`, false);
   
+  // Render entries
   renderEntries();
   
+  // Reset form
   delayFlightInput.value = '';
   entryTimeInput.value = '00:00';
   exitTimeInput.value = '00:00';
   stdTimeInput.value = '00:00';
   delayPaxInput.value = '1';
   delayCalcResult.style.display = 'none';
+}
+
+// ----- Optimized Render Function -----
+async function renderEntries() {
+  if (isRendering) {
+    clearTimeout(renderTimeout);
+    renderTimeout = setTimeout(renderEntries, 100);
+    return;
+  }
+  
+  isRendering = true;
+  
+  try {
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]').filter(e => !e.approved);
+    const dataString = JSON.stringify(data);
+    
+    if (dataString === lastRenderData && entriesList.children.length > 0) {
+      isRendering = false;
+      return;
+    }
+    
+    lastRenderData = dataString;
+    entriesCount.textContent = `${data.length} entries`;
+    
+    entriesList.innerHTML = '';
+    
+    const fragment = document.createDocumentFragment();
+    
+    for (const [i, e] of data.entries()) {
+      const tr = document.createElement('tr');
+      
+      const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
+      const isQRFlight = e.flight.toUpperCase().startsWith('QR');
+      const isDelayEntry = e.isDelayCharge || false;
+      
+      if (isFqtvNeeded) {
+        tr.classList.add('fqtv-required');
+      }
+      
+      if (isDelayEntry) {
+        tr.classList.add('delay-entry');
+      }
+      
+      let fqtvDisplay = e.fqtv || '';
+      if (isFqtvNeeded && !fqtvDisplay) {
+        fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED </span>';
+      }
+      
+      const approveBtn = document.createElement('button');
+      approveBtn.className = 'action-btn';
+      approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
+      approveBtn.onclick = (function(index) {
+        return function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          approveEntry(index);
+        };
+      })(i);
+      
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'action-btn';
+      deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+      deleteBtn.onclick = (function(index) {
+        return function(event) {
+          event.stopPropagation();
+          event.preventDefault();
+          deleteEntry(index);
+        };
+      })(i);
+      
+      const actionsCell = document.createElement('td');
+      actionsCell.appendChild(approveBtn);
+      actionsCell.appendChild(deleteBtn);
+      
+      let flightDisplay = escapeHtml(e.flight);
+      if (isQRFlight) {
+        flightDisplay += ' <span class="qr-success-badge">QR</span>';
+      }
+      if (isDelayEntry) {
+        flightDisplay += ' <span class="delay-badge">DELAY</span>';
+      }
+      
+      tr.innerHTML = `
+        <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
+        <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
+        <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
+        <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
+        <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(e.remarks)}</td>
+        <td class="editable-cell" contenteditable="true" data-field="pnr">${escapeHtml(e.pnr)}</td>
+        <td>${formatDateForDisplay(e.date)}</td>
+        <td>${e.shift || currentShiftType || '-'}</td>
+      `;
+      
+      tr.appendChild(actionsCell);
+      fragment.appendChild(tr);
+    }
+    
+    entriesList.appendChild(fragment);
+    addAutoSaveListeners();
+    
+  } catch (error) {
+    console.error('Error rendering entries:', error);
+  } finally {
+    isRendering = false;
+  }
 }
 
 // ----- LOCAL STORAGE MANAGEMENT FUNCTIONS -----
