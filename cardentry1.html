@@ -1172,6 +1172,190 @@
     background: rgba(212, 175, 55, 0.1);
   }
   
+  /* SQ flight highlight */
+  .sq-flight {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+    border-left: 3px solid var(--info) !important;
+  }
+  
+  .sq-flight td:first-child {
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .sq-flight td:first-child:hover::after {
+    content: "🔢 Click to enter number";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: var(--info);
+    background: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--info);
+    white-space: nowrap;
+  }
+  
+  /* Numeric Keyboard Modal Styles */
+  .numeric-keyboard-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 5000;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .numeric-keyboard-modal.show {
+    display: flex;
+  }
+  
+  .numeric-keyboard-content {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 2px solid var(--gold);
+    position: relative;
+  }
+  
+  .numeric-keyboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--gold);
+  }
+  
+  .numeric-keyboard-header h3 {
+    margin: 0;
+    color: var(--gold-darker);
+    font-size: 16px;
+  }
+  
+  .close-numeric-keyboard {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--gold);
+    padding: 5px;
+  }
+  
+  .numeric-display {
+    margin: 15px 0;
+    padding: 15px;
+    background: var(--gold-light);
+    border-radius: 6px;
+    border: 1px solid var(--gold);
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .numeric-keyboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .numeric-key {
+    padding: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    background: var(--gray-light);
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    user-select: none;
+  }
+  
+  .numeric-key:hover {
+    background: var(--gold-light);
+    transform: translateY(-2px);
+  }
+  
+  .numeric-key:active {
+    transform: translateY(0);
+    background: var(--gold);
+    color: white;
+  }
+  
+  .numeric-key-special {
+    background: var(--gold);
+    color: white;
+  }
+  
+  .numeric-key-special:hover {
+    background: var(--gold-dark);
+  }
+  
+  .numeric-keyboard-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  .numeric-keyboard-actions button {
+    flex: 1;
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+  
+  #applyNumericBtn {
+    background: var(--success);
+    color: white;
+  }
+  
+  #applyNumericBtn:hover {
+    background: #388e3c;
+  }
+  
+  #clearNumericBtn {
+    background: var(--error);
+    color: white;
+  }
+  
+  #clearNumericBtn:hover {
+    background: #d32f2f;
+  }
+  
+  #closeNumericBtn {
+    background: var(--gray);
+    color: var(--gray-dark);
+  }
+  
+  #closeNumericBtn:hover {
+    background: #ddd;
+  }
+  
   @media (max-width: 768px) {
     .user-shift-container {
       flex-direction: column;
@@ -1232,6 +1416,21 @@
     .approved-entries-table td {
       padding: 6px;
     }
+    
+    .numeric-keyboard-content {
+      width: 95%;
+      padding: 20px;
+    }
+    
+    .numeric-key {
+      padding: 15px;
+      font-size: 16px;
+    }
+    
+    .numeric-display {
+      font-size: 20px;
+      min-height: 50px;
+    }
   }
 </style>
 </head>
@@ -1245,6 +1444,42 @@
 <div class="alert-notification" id="alertNotification">
   <i class="fas fa-check-circle"></i>
   <span id="alertMessage">Operation completed successfully</span>
+</div>
+
+<!-- Numeric Keyboard Modal -->
+<div class="numeric-keyboard-modal" id="numericKeyboardModal">
+  <div class="numeric-keyboard-content">
+    <div class="numeric-keyboard-header">
+      <h3><i class="fas fa-keyboard"></i> Enter Number for SQ Passenger</h3>
+      <button class="close-numeric-keyboard" id="closeNumericKeyboardBtn">&times;</button>
+    </div>
+    
+    <div class="numeric-display" id="numericDisplay">0</div>
+    
+    <div class="numeric-keyboard-grid">
+      <div class="numeric-key" data-value="1">1</div>
+      <div class="numeric-key" data-value="2">2</div>
+      <div class="numeric-key" data-value="3">3</div>
+      <div class="numeric-key" data-value="4">4</div>
+      <div class="numeric-key" data-value="5">5</div>
+      <div class="numeric-key" data-value="6">6</div>
+      <div class="numeric-key" data-value="7">7</div>
+      <div class="numeric-key" data-value="8">8</div>
+      <div class="numeric-key" data-value="9">9</div>
+      <div class="numeric-key" data-value="0">0</div>
+      <div class="numeric-key" id="backspaceKey" data-action="backspace"><i class="fas fa-backspace"></i></div>
+      <div class="numeric-key" id="clearKey" data-action="clear">C</div>
+    </div>
+    
+    <div class="numeric-keyboard-actions">
+      <button id="applyNumericBtn" class="numeric-keyboard-actions-btn">
+        <i class="fas fa-check"></i> Apply
+      </button>
+      <button id="closeNumericBtn" class="numeric-keyboard-actions-btn">
+        <i class="fas fa-times"></i> Cancel
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Local Storage Modal -->
@@ -1675,6 +1910,15 @@ const closeJsonViewerBtn = document.getElementById('closeJsonViewerBtn');
 const jsonViewerBody = document.getElementById('jsonViewerBody');
 const jsonViewerTitle = document.getElementById('jsonViewerTitle');
 
+// ----- Numeric Keyboard Elements -----
+const numericKeyboardModal = document.getElementById('numericKeyboardModal');
+const closeNumericKeyboardBtn = document.getElementById('closeNumericKeyboardBtn');
+const numericDisplay = document.getElementById('numericDisplay');
+const applyNumericBtn = document.getElementById('applyNumericBtn');
+const closeNumericBtn = document.getElementById('closeNumericBtn');
+const backspaceKey = document.getElementById('backspaceKey');
+const clearKey = document.getElementById('clearKey');
+
 // ----- Global Variables -----
 let isApproving = false;
 let currentShiftType = null;
@@ -1690,6 +1934,11 @@ let scannerTimer;
 let lastValue = '';
 let isScannerActive = false;
 let isProcessing = false;
+
+// ----- Numeric Keyboard Variables -----
+let currentNumericValue = '0';
+let currentEditingRowIndex = -1;
+let currentEditingField = '';
 
 // ----- QR System Variables -----
 let qrDb = null;
@@ -3281,6 +3530,7 @@ async function renderEntries() {
       const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
       const isQRFlight = e.flight.toUpperCase().startsWith('QR');
       const isDelayEntry = e.isDelayCharge || false;
+      const isSQFlight = e.flight.toUpperCase().startsWith('SQ');
       
       if (isFqtvNeeded) {
         tr.classList.add('fqtv-required');
@@ -3288,6 +3538,10 @@ async function renderEntries() {
       
       if (isDelayEntry) {
         tr.classList.add('delay-entry');
+      }
+      
+      if (isSQFlight) {
+        tr.classList.add('sq-flight');
       }
       
       let fqtvDisplay = e.fqtv || '';
@@ -3344,6 +3598,7 @@ async function renderEntries() {
     
     entriesList.appendChild(fragment);
     addAutoSaveListeners();
+    addSQFlightClickListeners();
     
   } catch (error) {
     console.error('Error rendering entries:', error);
@@ -3367,6 +3622,52 @@ function addAutoSaveListeners() {
       saveEditedEntry(rowIndex);
     });
   });
+}
+
+function addSQFlightClickListeners() {
+  const sqFlights = document.querySelectorAll('.sq-flight td:first-child');
+  sqFlights.forEach((cell, index) => {
+    // Remove existing listeners
+    cell.removeEventListener('click', handleSQNameClick);
+    // Add new listener
+    cell.addEventListener('click', handleSQNameClick);
+  });
+}
+
+function handleSQNameClick(event) {
+  const cell = event.target;
+  const row = cell.closest('tr');
+  const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+  
+  if (rowIndex >= 0) {
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+    const entry = data[rowIndex];
+    
+    if (entry && entry.flight.toUpperCase().startsWith('SQ')) {
+      openNumericKeyboard(rowIndex, cell.textContent);
+    }
+  }
+}
+
+function openNumericKeyboard(rowIndex, currentValue) {
+  currentEditingRowIndex = rowIndex;
+  currentEditingField = 'name';
+  
+  // Try to extract numeric value from current name
+  const numericMatch = currentValue.match(/\d+/);
+  if (numericMatch) {
+    currentNumericValue = numericMatch[0];
+  } else {
+    currentNumericValue = '0';
+  }
+  
+  numericDisplay.textContent = currentNumericValue;
+  numericKeyboardModal.classList.add('show');
+  
+  // Focus the modal
+  setTimeout(() => {
+    numericDisplay.focus();
+  }, 100);
 }
 
 function saveEditedEntry(rowIndex) {
@@ -3395,6 +3696,122 @@ function saveEditedEntry(rowIndex) {
   entry.pnr = targetRow.cells[8].textContent.trim();
   
   localStorage.setItem('codesData', JSON.stringify(data));
+}
+
+// ----- Numeric Keyboard Functions -----
+function initializeNumericKeyboard() {
+  // Add event listeners to numeric keys
+  document.querySelectorAll('.numeric-key[data-value]').forEach(key => {
+    key.addEventListener('click', () => {
+      const value = key.getAttribute('data-value');
+      handleNumericInput(value);
+    });
+  });
+  
+  // Backspace key
+  backspaceKey.addEventListener('click', () => {
+    handleBackspace();
+  });
+  
+  // Clear key
+  clearKey.addEventListener('click', () => {
+    handleClear();
+  });
+  
+  // Apply button
+  applyNumericBtn.addEventListener('click', () => {
+    applyNumericValue();
+  });
+  
+  // Close button
+  closeNumericBtn.addEventListener('click', () => {
+    closeNumericKeyboard();
+  });
+  
+  // Close modal button
+  closeNumericKeyboardBtn.addEventListener('click', () => {
+    closeNumericKeyboard();
+  });
+  
+  // Close modal when clicking outside
+  numericKeyboardModal.addEventListener('click', (e) => {
+    if (e.target === numericKeyboardModal) {
+      closeNumericKeyboard();
+    }
+  });
+  
+  // Keyboard support
+  document.addEventListener('keydown', (e) => {
+    if (numericKeyboardModal.classList.contains('show')) {
+      if (e.key >= '0' && e.key <= '9') {
+        handleNumericInput(e.key);
+      } else if (e.key === 'Backspace') {
+        handleBackspace();
+        e.preventDefault();
+      } else if (e.key === 'Enter') {
+        applyNumericValue();
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        closeNumericKeyboard();
+        e.preventDefault();
+      }
+    }
+  });
+}
+
+function handleNumericInput(value) {
+  if (currentNumericValue === '0') {
+    currentNumericValue = value;
+  } else {
+    currentNumericValue += value;
+  }
+  numericDisplay.textContent = currentNumericValue;
+}
+
+function handleBackspace() {
+  if (currentNumericValue.length > 1) {
+    currentNumericValue = currentNumericValue.slice(0, -1);
+  } else {
+    currentNumericValue = '0';
+  }
+  numericDisplay.textContent = currentNumericValue;
+}
+
+function handleClear() {
+  currentNumericValue = '0';
+  numericDisplay.textContent = currentNumericValue;
+}
+
+function applyNumericValue() {
+  if (currentEditingRowIndex >= 0 && currentEditingField) {
+    const data = JSON.parse(localStorage.getItem('codesData')||'[]');
+    const entry = data[currentEditingRowIndex];
+    
+    if (entry) {
+      if (currentEditingField === 'name') {
+        // For SQ flights, we want to replace the name with just the number
+        entry.name = currentNumericValue;
+        
+        // Update the table cell
+        const rows = entriesList.querySelectorAll('tr');
+        if (rows[currentEditingRowIndex]) {
+          rows[currentEditingRowIndex].cells[0].textContent = currentNumericValue;
+        }
+        
+        localStorage.setItem('codesData', JSON.stringify(data));
+        showAlert(`Name updated to number: ${currentNumericValue}`, false);
+      }
+    }
+  }
+  
+  closeNumericKeyboard();
+}
+
+function closeNumericKeyboard() {
+  numericKeyboardModal.classList.remove('show');
+  currentEditingRowIndex = -1;
+  currentEditingField = '';
+  currentNumericValue = '0';
 }
 
 // ----- Delete Entry -----
@@ -4400,6 +4817,12 @@ jsonViewerModal.addEventListener('click', (e) => {
   }
 });
 
+numericKeyboardModal.addEventListener('click', (e) => {
+  if (e.target === numericKeyboardModal) {
+    closeNumericKeyboard();
+  }
+});
+
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
   console.log("🚀 Initializing unified passenger approval system...");
@@ -4408,6 +4831,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- QR System: qrcards-2378e");
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
+  console.log("- Numeric Keyboard for SQ Flights: Enabled");
   console.log("- FIXED: N1→Silver, N2→Gold, N3→Platinum for QR saves");
   console.log("- FIXED: Pax = 0 now saves as 0 (not 1)");
   console.log("- FIXED: No QR/DELAY badges added to flight numbers");
@@ -4416,6 +4840,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   loadApprovedEntriesCache();
   loadApprovedEntriesCount();
+  
+  // Initialize numeric keyboard
+  initializeNumericKeyboard();
   
   setTimeout(() => {
     initializeQRFirebase();
