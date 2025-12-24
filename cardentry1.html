@@ -1768,7 +1768,6 @@
         <label>Shift Date:</label>
         <span id="dateDisplay">-</span>
       </div>
-      
     </div>
     
     <table>
@@ -1799,6 +1798,8 @@
 <script src="./fireC1.js"></script>
 <!-- Shift System Firebase Configuration -->
 <script src="./fireshift.js"></script>
+<!-- QR Firebase Configuration -->
+<script src="./qr-firebase-config.js"></script>
 <script>
 // ----- Airlines dropdown -----
 const airlines = {
@@ -1875,8 +1876,6 @@ const scannerIndicator = document.getElementById('scannerIndicator');
 const refreshShiftBtn = document.getElementById('refreshShiftBtn');
 const qrProcessingIndicator = document.getElementById('qrProcessingIndicator');
 const qrStatus = document.getElementById('qrStatus');
-const qrEntriesCount = document.getElementById('qrEntriesCount');
-const approvedEntriesCount = document.getElementById('approvedEntriesCount');
 
 // ----- Delay Charge Elements -----
 const delayChargeModal = document.getElementById('delayChargeModal');
@@ -1939,7 +1938,6 @@ let qrFirebaseInitialized = false;
 let qrEntries = [];
 let qrEntriesLocal = [];
 let qrSystemAvailable = false;
-let qrFirebaseConfig = null;
 
 // ----- Shift Cache -----
 let shiftCacheInitialized = false;
@@ -2099,40 +2097,16 @@ function clearOldProcessedCodes() {
   qrEntriesProcessed = recentCodes;
 }
 
-// ----- Load QR Firebase Config -----
-function loadQRFirebaseConfig() {
-  try {
-    qrFirebaseConfig = {
-      apiKey: "AIzaSyC04iaSqeA76oOk_KlrfbSY6NTTNgy5LOY",
-      authDomain: "qrcards-2378e.firebaseapp.com",
-      projectId: "qrcards-2378e",
-      storageBucket: "qrcards-2378e.firebasestorage.app",
-      messagingSenderId: "863969491550",
-      appId: "1:863969491550:web:b764e63a2847f2b80cd2cf",
-      measurementId: "G-ZJPY6EZM41"
-    };
-    
-    console.log("✅ QR Firebase config loaded");
-    return true;
-    
-  } catch (error) {
-    console.error("❌ Error loading QR Firebase config:", error);
-    return false;
-  }
-}
-
 // ----- Initialize QR Firebase -----
 function initializeQRFirebase() {
   try {
     console.log("🔄 Initializing QR Firebase...");
     
     if (!qrFirebaseConfig) {
-      if (!loadQRFirebaseConfig()) {
-        console.warn("⚠️ QR Firebase config not available");
-        showAlert("QR system configuration not found", true);
-        qrSystemAvailable = false;
-        return false;
-      }
+      console.warn("⚠️ QR Firebase config not available");
+      showAlert("QR system configuration not found", true);
+      qrSystemAvailable = false;
+      return false;
     }
     
     console.log("✅ Using QR Firebase project:", qrFirebaseConfig.projectId);
@@ -2217,12 +2191,10 @@ async function loadQREntries() {
       });
     });
     
-    qrEntriesCount.textContent = qrEntries.length;
     console.log(`✅ Loaded ${qrEntries.length} QR entries from Firebase`);
     
   } catch (error) {
     console.error('❌ Error loading QR entries:', error);
-    qrEntriesCount.textContent = 'Error';
     qrStatus.innerHTML = `<span style="color: var(--error);"><i class="fas fa-exclamation-circle"></i> QR load failed: ${error.message}</span>`;
   }
 }
@@ -2291,8 +2263,6 @@ async function saveToQRSystem(codeValue) {
       synced: true,
       syncedAt: getMaldivesDateTimeISO()
     });
-    
-    qrEntriesCount.textContent = qrEntries.length;
     
     console.log('✅ QR entry saved to Firebase with ID:', docRef.id);
     qrProcessingIndicator.classList.remove('show');
@@ -3087,18 +3057,6 @@ async function refreshShiftData() {
   }
 }
 
-// ----- Load Approved Entries Count -----
-function loadApprovedEntriesCount() {
-  try {
-    const approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-    approvedEntriesCount.textContent = approvedLocalData.length;
-    console.log(`✅ Loaded ${approvedLocalData.length} approved entries from localStorage`);
-  } catch (error) {
-    console.error('❌ Error loading approved entries count:', error);
-    approvedEntriesCount.textContent = '0';
-  }
-}
-
 // ----- Approve Entry - SAVE TO LOCALSTORAGE FIRST -----
 async function approveEntry(index) {
   if (!currentShiftType || currentShiftStatus !== 'open') {
@@ -3213,7 +3171,6 @@ async function approveEntry(index) {
     localStorage.setItem('codesData', JSON.stringify(data));
     
     renderEntries();
-    loadApprovedEntriesCount();
     
     showAlert(`Entry approved and saved to local storage!`, false);
     
@@ -4011,17 +3968,17 @@ function parseCode(){
       } else if (!fqtv.includes('/S')) {
         fqtv = fqtv.replace(/\/[^\/]+$/, '/S');
       }
-    }
-  } else if (flightNo.startsWith('OS')) {
-    const lastIndex = parts.length - 1;
-    const fourthLast = parts[lastIndex - 3] || '';
-    const thirdLast = parts[lastIndex - 2] || '';
-    const fourthLastToken = fourthLast.trim();
-    const thirdLastToken = thirdLast.trim();
-    
-    if (fourthLastToken.length === 2 && thirdLastToken.length > 4) {
-      if (!fqtv) {
-        fqtv = (fourthLastToken + ' ' + thirdLastToken).trim();
+    } else if (flightNo.startsWith('OS')) {
+      const lastIndex = parts.length - 1;
+      const fourthLast = parts[lastIndex - 3] || '';
+      const thirdLast = parts[lastIndex - 2] || '';
+      const fourthLastToken = fourthLast.trim();
+      const thirdLastToken = thirdLast.trim();
+      
+      if (fourthLastToken.length === 2 && thirdLastToken.length > 4) {
+        if (!fqtv) {
+          fqtv = (fourthLastToken + ' ' + thirdLastToken).trim();
+        }
       }
     }
   }
@@ -4593,7 +4550,6 @@ function deleteApprovedEntry(index) {
       
       showAlert('Approved entry deleted from local storage', false);
       loadStorageData();
-      loadApprovedEntriesCount();
       
     } catch (error) {
       console.error('Error deleting approved entry:', error);
@@ -4722,7 +4678,6 @@ function deleteStorageItem(key) {
     localStorage.removeItem(key);
     showAlert(`Deleted "${key}" from local storage`, false);
     loadStorageData();
-    loadApprovedEntriesCount();
   }
 }
 
@@ -4832,7 +4787,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   clearOldProcessedCodes();
   
   loadApprovedEntriesCache();
-  loadApprovedEntriesCount();
   
   // Initialize numeric keyboard
   initializeNumericKeyboard();
