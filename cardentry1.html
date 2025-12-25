@@ -2977,11 +2977,59 @@ function showFqtvZoomFromField() {
 }
 
 // Update FQTV field after saving from zoom
-fqtvZoomSaveBtn.addEventListener('click', function() {
-  const newFqtv = fqtvZoomInput.value.trim();
-  fqtvInput.value = newFqtv;
+function updateFqtvAndSave(newFqtv) {
+  if (currentEditingRowIndex < 0 || currentEditingField !== 'fqtv') {
+    closeFqtvZoomModal();
+    return;
+  }
+  
+  const newFqtvValue = newFqtv.trim();
+  
+  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
+  const entry = data[currentEditingRowIndex];
+  
+  if (entry) {
+    // Update the entry
+    entry.fqtv = newFqtvValue;
+    localStorage.setItem('codesData', JSON.stringify(data));
+    
+    // Update table display
+    const rows = entriesList.querySelectorAll('tr');
+    if (rows[currentEditingRowIndex]) {
+      const fqtvCell = rows[currentEditingRowIndex].cells[4];
+      if (fqtvCell) {
+        // Clear any existing content
+        fqtvCell.innerHTML = '';
+        
+        // Check if FQTV is required
+        const isFqtvNeeded = isFqtvRequired(entry.class, newFqtvValue);
+        
+        if (isFqtvNeeded && !newFqtvValue) {
+          // Show warning if FQTV is required but empty
+          const warningSpan = document.createElement('span');
+          warningSpan.className = 'fqtv-warning';
+          warningSpan.textContent = 'FQTV REQUIRED ';
+          fqtvCell.appendChild(warningSpan);
+        } else if (newFqtvValue) {
+          // Show the FQTV value
+          fqtvCell.textContent = newFqtvValue;
+        }
+        
+        // Make the cell editable and add zoom class
+        fqtvCell.classList.add('editable-cell', 'fqtv-field-zoom');
+        fqtvCell.setAttribute('contenteditable', 'true');
+        fqtvCell.setAttribute('data-field', 'fqtv');
+        
+        // Re-add event listener for zoom
+        fqtvCell.addEventListener('click', handleFqtvCellClick);
+      }
+    }
+    
+    showAlert('FQTV updated successfully', false);
+  }
+  
   closeFqtvZoomModal();
-});
+}
 
 // Also update the manual entry fields when zoom modal saves
 zoomSaveBtn.addEventListener('click', function() {
@@ -3031,8 +3079,9 @@ zoomCancelBtn.addEventListener('click', function() {
 });
 
 // ----- FQTV Zoom Modal Functions -----
-function showFqtvZoomModal(rowIndex) {
+function showFqtvZoomModal(rowIndex, cellElement = null) {
   currentEditingRowIndex = rowIndex;
+  currentEditingField = 'fqtv';
   
   const data = JSON.parse(localStorage.getItem('codesData') || '[]');
   const entry = data[rowIndex];
@@ -3052,44 +3101,80 @@ function showFqtvZoomModal(rowIndex) {
   setTimeout(() => {
     fqtvZoomInput.focus();
     fqtvZoomInput.select();
+    
+    // Store the cell element for updating after save
+    if (cellElement) {
+      fqtvZoomInput.dataset.targetCell = 'stored';
+    }
   }, 100);
 }
 
 function closeFqtvZoomModal() {
   fqtvZoomModal.classList.remove('show');
   currentEditingRowIndex = -1;
+  currentEditingField = '';
 }
 
-function saveFqtvZoomValue() {
-  if (currentEditingRowIndex < 0) {
-    closeFqtvZoomModal();
-    return;
-  }
-  
+// ----- Modified FQTV Zoom Save Button -----
+fqtvZoomSaveBtn.addEventListener('click', function() {
   const newFqtv = fqtvZoomInput.value.trim();
+  updateFqtvAndSave(newFqtv);
+});
+
+// ----- Auto-save on Enter key in FQTV zoom modal -----
+fqtvZoomInput.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const newFqtv = fqtvZoomInput.value.trim();
+    updateFqtvAndSave(newFqtv);
+  } else if (event.key === 'Tab') {
+    event.preventDefault();
+    const newFqtv = fqtvZoomInput.value.trim();
+    updateFqtvAndSave(newFqtv);
+  } else if (event.key === 'Escape') {
+    event.preventDefault();
+    closeFqtvZoomModal();
+  }
+});
+
+// ----- Modified FQTV cell click handler -----
+function handleFqtvCellClick(event) {
+  const cell = event.target;
+  const row = cell.closest('tr');
+  const rowIndex = Array.from(row.parentNode.children).indexOf(row);
   
-  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
-  const entry = data[currentEditingRowIndex];
-  
-  if (entry) {
-    entry.fqtv = newFqtv;
-    localStorage.setItem('codesData', JSON.stringify(data));
+  if (rowIndex >= 0) {
+    showFqtvZoomModal(rowIndex, cell);
+  }
+}
+
+// ----- Add tab navigation support -----
+document.addEventListener('keydown', function(event) {
+  // Check if we're in a table cell and Tab is pressed
+  if (event.key === 'Tab' && event.target.classList.contains('editable-cell')) {
+    const cell = event.target;
+    const field = cell.getAttribute('data-field');
     
-    // Update table display
-    const rows = entriesList.querySelectorAll('tr');
-    if (rows[currentEditingRowIndex]) {
-      const fqtvCell = rows[currentEditingRowIndex].cells[4];
-      if (fqtvCell) {
-        fqtvCell.textContent = newFqtv || '';
-        fqtvCell.classList.add('fqtv-field-zoom');
+    // If it's the FQTV field and has content, show zoom modal
+    if (field === 'fqtv') {
+      event.preventDefault(); // Prevent default tab behavior
+      const row = cell.closest('tr');
+      const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+      
+      // Get current value
+      const currentValue = cell.textContent.trim().replace('FQTV REQUIRED', '').trim();
+      
+      if (rowIndex >= 0) {
+        showFqtvZoomModal(rowIndex, cell);
+        // Set the current value in the modal
+        setTimeout(() => {
+          fqtvZoomInput.value = currentValue;
+          fqtvZoomInput.select();
+        }, 100);
       }
     }
-    
-    showAlert('FQTV updated successfully', false);
   }
-  
-  closeFqtvZoomModal();
-}
+});
 
 // ----- Seat-Pax Validation -----
 function checkSeatPaxMatch() {
@@ -4663,6 +4748,7 @@ async function renderEntries() {
         fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED </span>';
       }
       
+      // REMOVED: FQTV Zoom button - only approve and delete buttons
       const approveBtn = document.createElement('button');
       approveBtn.className = 'action-btn';
       approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
@@ -4685,22 +4771,9 @@ async function renderEntries() {
         };
       })(i);
       
-      const editFqtvBtn = document.createElement('button');
-      editFqtvBtn.className = 'action-btn';
-      editFqtvBtn.innerHTML = '<i class="fas fa-edit"></i> FQTV';
-      editFqtvBtn.style.background = 'var(--info)';
-      editFqtvBtn.onclick = (function(index) {
-        return function(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          showFqtvZoomModal(index);
-        };
-      })(i);
-      
       const actionsCell = document.createElement('td');
       actionsCell.appendChild(approveBtn);
-      actionsCell.appendChild(editFqtvBtn);
-      actionsCell.appendChild(deleteBtn);
+      actionsCell.appendChild(deleteBtn); // Only approve and delete buttons
       
       // Don't add QR or DELAY to flight number
       let flightDisplay = escapeHtml(e.flight);
@@ -4711,7 +4784,7 @@ async function renderEntries() {
         <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
         <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
         <td class="editable-cell fqtv-field-zoom" contenteditable="true" data-field="fqtv" style="position: relative;">
-          ${fqtvDisplay}
+          ${isFqtvNeeded && !e.fqtv ? '<span class="fqtv-warning">FQTV REQUIRED </span>' : escapeHtml(e.fqtv || '')}
         </td>
         <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
         <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
@@ -4746,42 +4819,54 @@ function escapeHtml(text) {
 function addAutoSaveListeners() {
   const editableCells = document.querySelectorAll('.editable-cell');
   editableCells.forEach(cell => {
-    cell.addEventListener('blur', function() {
-      const row = this.closest('tr');
-      const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-      
-      // Check if this is the seat cell (index 2) or flight cell (index 1)
-      const cellIndex = Array.from(row.cells).indexOf(this);
-      
-      saveEditedEntry(rowIndex);
-      
-      // If seat or flight was changed, show validation message
-      if (cellIndex === 1 || cellIndex === 2 || cellIndex === 5) { // flight, seat, or pax
-        const data = JSON.parse(localStorage.getItem('codesData')||'[]');
-        const entry = data[rowIndex];
-        
-        if (entry) {
-          // Re-check seat-pax match
-          const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-          if (!seatPaxValidation.isValid) {
-            showAlert(seatPaxValidation.message, true);
-            // Update row styling
-            row.classList.add('seat-pax-mismatch');
-          } else {
-            row.classList.remove('seat-pax-mismatch');
-          }
-          
-          // Also check restricted airlines
-          if (isPaxRestrictedAirline(entry.flight) && entry.numPax !== 1) {
-            showAlert(`Flight ${entry.flight} allows only 1 passenger. Pax changed to 1.`, false, true);
-            entry.numPax = 1;
-            row.cells[5].textContent = '1';
-            localStorage.setItem('codesData', JSON.stringify(data));
-          }
-        }
-      }
-    });
+    // Remove existing blur listeners
+    cell.removeEventListener('blur', handleCellBlur);
+    
+    // Add new blur listener
+    cell.addEventListener('blur', handleCellBlur);
   });
+}
+
+function handleCellBlur() {
+  const cell = this;
+  const field = cell.getAttribute('data-field');
+  const row = cell.closest('tr');
+  const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+  
+  // Don't auto-save FQTV field on blur (we use the zoom modal for that)
+  if (field === 'fqtv') {
+    return;
+  }
+  
+  // For other fields, save normally
+  saveEditedEntry(rowIndex);
+  
+  // If seat or flight was changed, show validation message
+  const cellIndex = Array.from(row.cells).indexOf(cell);
+  if (cellIndex === 1 || cellIndex === 2 || cellIndex === 5) { // flight, seat, or pax
+    const data = JSON.parse(localStorage.getItem('codesData')||'[]');
+    const entry = data[rowIndex];
+    
+    if (entry) {
+      // Re-check seat-pax match
+      const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
+      if (!seatPaxValidation.isValid) {
+        showAlert(seatPaxValidation.message, true);
+        // Update row styling
+        row.classList.add('seat-pax-mismatch');
+      } else {
+        row.classList.remove('seat-pax-mismatch');
+      }
+      
+      // Also check restricted airlines
+      if (isPaxRestrictedAirline(entry.flight) && entry.numPax !== 1) {
+        showAlert(`Flight ${entry.flight} allows only 1 passenger. Pax changed to 1.`, false, true);
+        entry.numPax = 1;
+        row.cells[5].textContent = '1';
+        localStorage.setItem('codesData', JSON.stringify(data));
+      }
+    }
+  }
 }
 
 function addFqtvZoomListeners() {
@@ -4792,16 +4877,6 @@ function addFqtvZoomListeners() {
     // Add new listener
     cell.addEventListener('click', handleFqtvCellClick);
   });
-}
-
-function handleFqtvCellClick(event) {
-  const cell = event.target;
-  const row = cell.closest('tr');
-  const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-  
-  if (rowIndex >= 0) {
-    showFqtvZoomModal(rowIndex);
-  }
 }
 
 function addSQFlightClickListeners() {
@@ -5210,9 +5285,9 @@ function parseCode(){
       let tierName;
       if (fqtvAirlineCode && flightAirlineCode && 
           fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-        tierName = fqtvTierMappings.same[fqtvTierCode] || '';
+        tierMapping = fqtvTierMappings.same;
       } else {
-        tierName = fqtvTierMappings.different[fqtvTierCode] || '';
+        tierMapping = fqtvTierMappings.different;
       }
       
       if (tierName) {
