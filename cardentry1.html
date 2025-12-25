@@ -1685,46 +1685,52 @@
   
   /* Manual Entry Button */
   .manual-entry-btn {
-    background: var(--info);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
+    display: none; /* Hide the manual entry button */
+  }
+  
+  /* Auto-zoom indicator for manual fields */
+  .auto-zoom-indicator {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  
+  .input-with-icon:hover .auto-zoom-indicator {
+    opacity: 0.7;
+  }
+  
+  /* FQTV field styling for zoom indication */
+  .fqtv-field-zoom {
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    width: 100%;
-    justify-content: center;
-    margin-top: 10px;
+    position: relative;
   }
   
-  .manual-entry-btn:hover {
-    background: #1976d2;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  .fqtv-field-zoom::after {
+    content: '📱';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
   
-  /* Manual Entry Section */
-  .manual-entry-section {
-    margin-top: 15px;
-    padding: 15px;
-    background: rgba(33, 150, 243, 0.05);
-    border-radius: 8px;
-    border: 1px solid var(--info);
+  .fqtv-field-zoom:hover::after {
+    opacity: 0.7;
   }
   
-  .manual-entry-section h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--info);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
+  .editable-cell.fqtv-field-zoom {
+    cursor: pointer;
+  }
+  
+  .editable-cell.fqtv-field-zoom:hover {
+    background-color: rgba(33, 150, 243, 0.1);
   }
   
   @media (max-width: 768px) {
@@ -2171,6 +2177,9 @@
       <div class="input-with-icon">
         <i class="fas fa-qrcode"></i>
         <input id="codeInput" placeholder="Scan or paste barcode" autocomplete="off" autofocus>
+        <div class="auto-zoom-indicator">
+          <i class="fas fa-expand-alt"></i>
+        </div>
       </div>
       <div class="scanner-indicator" id="scannerIndicator">
         <div class="scanner-dots">
@@ -2186,10 +2195,6 @@
       </div>
     </div>
     
-    <button id="manualEntryBtn" class="manual-entry-btn">
-      <i class="fas fa-keyboard"></i> Manual Entry (Zoom View)
-    </button>
-    
     <div class="gold-line"></div>
     
     <div class="entry-fields-container">
@@ -2198,7 +2203,10 @@
           <label for="nameInput"><i class="fas fa-user"></i> Name</label>
           <div class="input-with-icon">
             <i class="fas fa-signature"></i>
-            <input id="nameInput" placeholder="Passenger name">
+            <input id="nameInput" placeholder="Passenger name" class="auto-zoom-field">
+            <div class="auto-zoom-indicator">
+              <i class="fas fa-expand-alt"></i>
+            </div>
           </div>
         </div>
         
@@ -2206,7 +2214,10 @@
           <label for="flightInput"><i class="fas fa-plane"></i> Flight</label>
           <div class="input-with-icon">
             <i class="fas fa-plane-departure"></i>
-            <input id="flightInput" placeholder="Flight number">
+            <input id="flightInput" placeholder="Flight number" class="auto-zoom-field">
+            <div class="auto-zoom-indicator">
+              <i class="fas fa-expand-alt"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -2216,7 +2227,10 @@
           <label for="pnrInput"><i class="fas fa-ticket-alt"></i> PNR</label>
           <div class="input-with-icon">
             <i class="fas fa-receipt"></i>
-            <input id="pnrInput" placeholder="PNR code">
+            <input id="pnrInput" placeholder="PNR code" class="auto-zoom-field">
+            <div class="auto-zoom-indicator">
+              <i class="fas fa-expand-alt"></i>
+            </div>
           </div>
         </div>
         
@@ -2224,10 +2238,13 @@
           <label for="seatInput"><i class="fas fa-chair"></i> Seat</label>
           <div class="input-with-icon">
             <i class="fas fa-couch"></i>
-            <input id="seatInput" placeholder="Seat number">
+            <input id="seatInput" placeholder="Seat number" class="auto-zoom-field">
             <div class="seat-pax-warning" id="seatWarning" style="display: none;">
               <i class="fas fa-exclamation-triangle"></i>
               <span id="seatWarningText"></span>
+            </div>
+            <div class="auto-zoom-indicator">
+              <i class="fas fa-expand-alt"></i>
             </div>
           </div>
         </div>
@@ -2256,7 +2273,7 @@
           <label for="fqtvInput"><i class="fas fa-id-card"></i> FQTV</label>
           <div class="input-with-icon">
             <i class="fas fa-address-card"></i>
-            <input id="fqtvInput" placeholder="FQTV" readonly>
+            <input id="fqtvInput" placeholder="FQTV" readonly class="fqtv-field-zoom">
           </div>
         </div>
         
@@ -2264,7 +2281,10 @@
           <label for="numPaxInput"><i class="fas fa-users"></i> Pax</label>
           <div class="input-with-icon">
             <i class="fas fa-user-friends"></i>
-            <input id="numPaxInput" placeholder="No of Pax" type="number" value="1" min="1">
+            <input id="numPaxInput" placeholder="No of Pax" type="number" value="1" min="1" class="auto-zoom-field">
+            <div class="auto-zoom-indicator">
+              <i class="fas fa-expand-alt"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -2273,7 +2293,10 @@
         <label for="serialInput"><i class="fas fa-hashtag"></i> Serial No</label>
         <div class="input-with-icon">
           <i class="fas fa-list-ol"></i>
-          <input id="serialInput" placeholder="Serial number">
+          <input id="serialInput" placeholder="Serial number" class="auto-zoom-field">
+          <div class="auto-zoom-indicator">
+            <i class="fas fa-expand-alt"></i>
+          </div>
         </div>
       </div>
       
@@ -2281,7 +2304,10 @@
         <label for="remarksInput"><i class="fas fa-sticky-note"></i> Remarks</label>
         <div class="input-with-icon">
           <i class="fas fa-comment-alt"></i>
-          <textarea id="remarksInput" placeholder="Additional remarks"></textarea>
+          <textarea id="remarksInput" placeholder="Additional remarks" class="auto-zoom-field"></textarea>
+          <div class="auto-zoom-indicator">
+            <i class="fas fa-expand-alt"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -2522,7 +2548,6 @@ const shiftDisplay = document.getElementById('shiftDisplay');
 const dateDisplay = document.getElementById('dateDisplay');
 const entriesList = document.getElementById('entriesList');
 const manualSaveBtn = document.getElementById('manualSaveBtn');
-const manualEntryBtn = document.getElementById('manualEntryBtn');
 const entriesCount = document.getElementById('entriesCount');
 const clearNotification = document.getElementById('clearNotification');
 const alertNotification = document.getElementById('alertNotification');
@@ -2813,6 +2838,198 @@ function saveZoomEntry() {
   closeZoomModal();
 }
 
+// ----- Auto-Zoom for Manual Fields -----
+function setupAutoZoomFields() {
+  const autoZoomFields = document.querySelectorAll('.auto-zoom-field');
+  
+  autoZoomFields.forEach(field => {
+    // Clear any existing listeners
+    field.removeEventListener('focus', handleAutoZoomFocus);
+    field.removeEventListener('click', handleAutoZoomFocus);
+    
+    // Add new listeners
+    field.addEventListener('focus', handleAutoZoomFocus);
+    field.addEventListener('click', handleAutoZoomFocus);
+    
+    // Also add on input for certain fields to show zoom if text exists
+    field.addEventListener('input', function() {
+      if (this.value.trim() && !zoomModal.classList.contains('show')) {
+        // Small delay to allow user to finish typing
+        clearTimeout(this.zoomTimer);
+        this.zoomTimer = setTimeout(() => {
+          if (this.value.trim() && document.activeElement === this) {
+            showZoomModalWithField(this.id, this.value);
+          }
+        }, 800);
+      }
+    });
+  });
+  
+  // Special handling for FQTV field (readonly, needs click)
+  const fqtvInput = document.getElementById('fqtvInput');
+  if (fqtvInput) {
+    fqtvInput.addEventListener('click', function() {
+      showFqtvZoomFromField();
+    });
+  }
+}
+
+// Handle auto-zoom when field is focused/clicked
+function handleAutoZoomFocus(event) {
+  const field = event.target;
+  const fieldId = field.id;
+  const fieldValue = field.value;
+  
+  // Don't trigger if zoom modal is already open
+  if (zoomModal.classList.contains('show')) {
+    return;
+  }
+  
+  // Show zoom modal with pre-filled data
+  showZoomModalWithField(fieldId, fieldValue);
+}
+
+// Show zoom modal with specific field pre-filled
+function showZoomModalWithField(fieldId, fieldValue) {
+  if (!currentShiftType || currentShiftStatus !== 'open') {
+    showAlert('No active shift or shift not open!', true);
+    return;
+  }
+  
+  // Get current values from manual fields
+  const name = nameInput.value.trim();
+  const flight = flightInput.value.trim();
+  const pnr = pnrInput.value.trim();
+  const seat = seatInput.value.trim();
+  const seatClass = classInput.value.trim();
+  const fqtv = fqtvInput.value.trim();
+  const serial = serialInput.value.trim();
+  const remarks = remarksInput.value.trim();
+  const pax = parseInt(numPaxInput.value) || 1;
+  const airline = airlineSelect.value;
+  
+  // Set zoom modal values
+  zoomNameInput.value = name;
+  zoomFlightInput.value = flight;
+  zoomPnrInput.value = pnr;
+  zoomSeatInput.value = seat;
+  zoomClassInput.value = seatClass;
+  zoomFqtvInput.value = fqtv;
+  zoomSerialInput.value = serial;
+  zoomRemarksInput.value = remarks;
+  zoomPaxInput.value = pax;
+  zoomAirlineSelect.value = airline;
+  
+  // Show seat warning if needed
+  checkZoomSeatPaxMatch();
+  
+  // Show modal
+  zoomModal.classList.add('show');
+  
+  // Focus on the field that triggered the zoom
+  setTimeout(() => {
+    switch(fieldId) {
+      case 'nameInput':
+        zoomNameInput.focus();
+        zoomNameInput.select();
+        break;
+      case 'flightInput':
+        zoomFlightInput.focus();
+        zoomFlightInput.select();
+        break;
+      case 'pnrInput':
+        zoomPnrInput.focus();
+        zoomPnrInput.select();
+        break;
+      case 'seatInput':
+        zoomSeatInput.focus();
+        zoomSeatInput.select();
+        break;
+      case 'numPaxInput':
+        zoomPaxInput.focus();
+        zoomPaxInput.select();
+        break;
+      case 'serialInput':
+        zoomSerialInput.focus();
+        zoomSerialInput.select();
+        break;
+      case 'remarksInput':
+        zoomRemarksInput.focus();
+        zoomRemarksInput.select();
+        break;
+      default:
+        zoomNameInput.focus();
+        zoomNameInput.select();
+    }
+  }, 100);
+}
+
+// Show FQTV zoom from readonly field
+function showFqtvZoomFromField() {
+  const fqtvValue = fqtvInput.value.trim();
+  fqtvZoomInput.value = fqtvValue;
+  fqtvZoomModal.classList.add('show');
+  
+  setTimeout(() => {
+    fqtvZoomInput.focus();
+    fqtvZoomInput.select();
+  }, 100);
+}
+
+// Update FQTV field after saving from zoom
+fqtvZoomSaveBtn.addEventListener('click', function() {
+  const newFqtv = fqtvZoomInput.value.trim();
+  fqtvInput.value = newFqtv;
+  closeFqtvZoomModal();
+});
+
+// Also update the manual entry fields when zoom modal saves
+zoomSaveBtn.addEventListener('click', function() {
+  // Update manual entry fields with zoom values
+  nameInput.value = zoomNameInput.value.trim();
+  flightInput.value = zoomFlightInput.value.trim();
+  pnrInput.value = zoomPnrInput.value.trim();
+  seatInput.value = zoomSeatInput.value.trim();
+  classInput.value = zoomClassInput.value.trim();
+  fqtvInput.value = zoomFqtvInput.value.trim();
+  serialInput.value = zoomSerialInput.value.trim();
+  remarksInput.value = zoomRemarksInput.value.trim();
+  numPaxInput.value = zoomPaxInput.value.trim();
+  airlineSelect.value = zoomAirlineSelect.value;
+  
+  // Check seat-pax match
+  checkSeatPaxMatch();
+  
+  // Save the entry
+  const entry = {
+    date: currentShiftDate,
+    user: userDisplay.textContent,
+    shift: currentShiftType,
+    code: 'MANUAL_ENTRY_ZOOM',
+    name: nameInput.value,
+    pnr: pnrInput.value,
+    flight: flightInput.value,
+    airline: airlineSelect.value,
+    seat: seatInput.value,
+    class: classInput.value,
+    serial: serialInput.value,
+    remarks: remarksInput.value,
+    fqtv: fqtvInput.value,
+    numPax: parseInt(numPaxInput.value) || 1,
+    approved: false
+  };
+  
+  saveEntry(entry);
+  
+  // Close zoom modal
+  closeZoomModal();
+});
+
+// Modify the zoom cancel button to not clear manual fields
+zoomCancelBtn.addEventListener('click', function() {
+  closeZoomModal();
+});
+
 // ----- FQTV Zoom Modal Functions -----
 function showFqtvZoomModal(rowIndex) {
   currentEditingRowIndex = rowIndex;
@@ -2864,6 +3081,7 @@ function saveFqtvZoomValue() {
       const fqtvCell = rows[currentEditingRowIndex].cells[4];
       if (fqtvCell) {
         fqtvCell.textContent = newFqtv || '';
+        fqtvCell.classList.add('fqtv-field-zoom');
       }
     }
     
@@ -4492,11 +4710,8 @@ async function renderEntries() {
         <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
         <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
         <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
-        <td class="editable-cell" contenteditable="true" data-field="fqtv" style="position: relative;">
+        <td class="editable-cell fqtv-field-zoom" contenteditable="true" data-field="fqtv" style="position: relative;">
           ${fqtvDisplay}
-          <button class="action-btn" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 2px 5px; font-size: 10px; display: none;">
-            <i class="fas fa-expand"></i>
-          </button>
         </td>
         <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
         <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
@@ -4513,6 +4728,7 @@ async function renderEntries() {
     entriesList.appendChild(fragment);
     addAutoSaveListeners();
     addSQFlightClickListeners();
+    addFqtvZoomListeners();
     
   } catch (error) {
     console.error('Error rendering entries:', error);
@@ -4566,6 +4782,26 @@ function addAutoSaveListeners() {
       }
     });
   });
+}
+
+function addFqtvZoomListeners() {
+  const fqtvCells = document.querySelectorAll('.editable-cell.fqtv-field-zoom');
+  fqtvCells.forEach((cell, index) => {
+    // Remove existing listeners
+    cell.removeEventListener('click', handleFqtvCellClick);
+    // Add new listener
+    cell.addEventListener('click', handleFqtvCellClick);
+  });
+}
+
+function handleFqtvCellClick(event) {
+  const cell = event.target;
+  const row = cell.closest('tr');
+  const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+  
+  if (rowIndex >= 0) {
+    showFqtvZoomModal(rowIndex);
+  }
 }
 
 function addSQFlightClickListeners() {
@@ -5797,17 +6033,12 @@ manualSaveBtn.addEventListener('click', async function() {
   }, 1000);
 });
 
-// Manual entry button
-manualEntryBtn.addEventListener('click', showZoomModal);
-
 // Zoom modal listeners
 closeZoomBtn.addEventListener('click', closeZoomModal);
-zoomSaveBtn.addEventListener('click', saveZoomEntry);
 zoomCancelBtn.addEventListener('click', closeZoomModal);
 
 // FQTV zoom modal listeners
 closeFqtvZoomBtn.addEventListener('click', closeFqtvZoomModal);
-fqtvZoomSaveBtn.addEventListener('click', saveFqtvZoomValue);
 fqtvZoomCancelBtn.addEventListener('click', closeFqtvZoomModal);
 
 // Seat input listeners for real-time validation
@@ -5924,9 +6155,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- QR System: qrcards-2378e");
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
-  console.log("- Zoom Entry Modal: Enabled");
-  console.log("- FQTV Zoom Modal: Enabled");
-  console.log("- Numeric Keyboard for SQ Flights: Enabled");
+  console.log("- Auto-Zoom: Enabled for manual fields");
+  console.log("- Auto-FQTV Zoom: Enabled for saved entries");
   console.log("- FIXED: Seat-Pax tally system (1A=1 pax, 1AB=2 pax, 1A/2B=2 pax)");
   console.log("- FIXED: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
   
@@ -5936,6 +6166,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Initialize numeric keyboard
   initializeNumericKeyboard();
+  
+  // Set up auto-zoom fields
+  setupAutoZoomFields();
   
   setTimeout(() => {
     initializeQRFirebase();
@@ -6128,7 +6361,8 @@ window.testSeatPax = function() {
   });
   
   console.log("\n=== Manual Entry Test ===");
-  showZoomModal();
+  // Focus on name input to trigger auto-zoom
+  nameInput.focus();
 };
 </script>
 </body>
