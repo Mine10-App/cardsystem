@@ -3783,43 +3783,54 @@ function saveEditedEntry(rowIndex) {
   entry.seat = updatedSeat;
   entry.class = updatedClass;
   entry.fqtv = updatedFqtv;
-  entry.numPax = updatedNumPax;
   entry.serial = updatedSerial;
   entry.remarks = updatedRemarks;
   entry.pnr = updatedPnr;
   
-  // If seat was changed, auto-calculate pax
-  if (seatChanged) {
+  // Handle pax auto-calculation
+  let shouldUpdatePax = false;
+  let newPaxValue = updatedNumPax;
+  
+  if (seatChanged || flightChanged) {
     const calculatedPax = calculatePaxFromSeatNumber(updatedSeat);
     
-    // Check if it's a restricted airline
     if (isPaxRestrictedAirline(updatedFlight)) {
-      entry.numPax = 1;
-      // Update the display
-      targetRow.cells[5].textContent = '1';
-    } else if (calculatedPax !== updatedNumPax) {
-      // Auto-correct pax based on seat
-      entry.numPax = calculatedPax;
-      // Update the display
-      targetRow.cells[5].textContent = calculatedPax;
-      showAlert(`Pax auto-corrected to ${calculatedPax} based on seat ${updatedSeat}`, false, true);
+      // Restricted airline - always 1 pax
+      newPaxValue = 1;
+      shouldUpdatePax = true;
+      
+      if (updatedNumPax !== 1) {
+        showAlert(`Flight ${updatedFlight} (${updatedFlight.substring(0, 2)}) allows only 1 passenger. Pax changed to 1.`, false, true);
+      }
+    } else if (seatChanged && calculatedPax !== updatedNumPax) {
+      // Non-restricted airline - auto-calculate from seat
+      newPaxValue = calculatedPax;
+      shouldUpdatePax = true;
+      
+      if (calculatedPax > 1) {
+        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${updatedSeat}`, false, false, true);
+      }
     }
   }
   
-  // If flight was changed to a restricted airline, enforce 1 pax
-  if (flightChanged && isPaxRestrictedAirline(updatedFlight) && updatedNumPax !== 1) {
-    entry.numPax = 1;
-    targetRow.cells[5].textContent = '1';
-    showAlert(`Flight ${updatedFlight} allows only 1 passenger per seat. Pax set to 1.`, false, true);
+  // Update pax if needed
+  if (shouldUpdatePax) {
+    entry.numPax = newPaxValue;
+    // Update the display in table
+    targetRow.cells[5].textContent = newPaxValue;
+  } else {
+    entry.numPax = updatedNumPax;
   }
   
   localStorage.setItem('codesData', JSON.stringify(data));
   
-  // Validate the entry
-  const validation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-  if (!validation.isValid) {
-    showAlert(validation.message, true);
-  }
+  console.log("Entry saved:", {
+    name: entry.name,
+    flight: entry.flight,
+    seat: entry.seat,
+    pax: entry.numPax,
+    restricted: isPaxRestrictedAirline(entry.flight)
+  });
 }
 
 // ----- Numeric Keyboard Functions -----
@@ -4171,7 +4182,25 @@ function parseCode(){
   fqtvInput.value = hasNoFqtv ? '' : (fqtv || '');
   serialInput.value = '';
   remarksInput.value = '';
-  numPaxInput.value = 1;
+  
+  // Auto-calculate pax based on seat
+  if (seatNo) {
+    const calculatedPax = calculatePaxFromSeatNumber(seatNo);
+    
+    if (isPaxRestrictedAirline(flightNo)) {
+      // Restricted airline - always 1 pax
+      numPaxInput.value = '1';
+      showAlert(`Flight ${flightNo} (${flightNo.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
+    } else {
+      // Auto-calculate for non-restricted airlines
+      numPaxInput.value = calculatedPax;
+      if (calculatedPax > 1) {
+        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatNo}`, false, false, true);
+      }
+    }
+  } else {
+    numPaxInput.value = '1';
+  }
 }
 
 // ----- Barcode Scanner Detection -----
@@ -4889,30 +4918,23 @@ manualSaveBtn.addEventListener('click', async function() {
     approved: false
   };
   
-  // Auto-calculate pax if not already set
+  // Auto-calculate pax based on seat
   if (entry.seat) {
     const calculatedPax = calculatePaxFromSeatNumber(entry.seat);
     
-    // Check for restricted airlines
     if (isPaxRestrictedAirline(entry.flight)) {
+      // Restricted airline - always 1 pax
       entry.numPax = 1;
-      // Update the input field
       numPaxInput.value = '1';
+      showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
     } else if (entry.numPax === 0 || entry.numPax === 1) {
-      // Auto-correct pax based on seat
+      // Auto-correct pax based on seat for non-restricted airlines
       entry.numPax = calculatedPax;
-      // Update the input field
       numPaxInput.value = calculatedPax;
-      showAlert(`Pax auto-corrected to ${calculatedPax} based on seat ${entry.seat}`, false, true);
+      if (calculatedPax > 1) {
+        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${entry.seat}`, false, false, true);
+      }
     }
-  }
-  
-  // Validate before saving
-  const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-  if (!paxValidation.isValid) {
-    showAlert(`Cannot save: ${paxValidation.message}`, true);
-    isProcessing = false;
-    return;
   }
   
   await saveEntry(entry);
@@ -4971,26 +4993,81 @@ numericKeyboardModal.addEventListener('click', (e) => {
   }
 });
 
-// Add event listeners for flight and seat inputs
-flightInput.addEventListener('change', function() {
-  if (isPaxRestrictedAirline(this.value) && seatInput.value) {
-    numPaxInput.value = '1';
-    showAlert(`Flight ${this.value} allows only 1 passenger per seat`, false, true);
-  }
-});
-
-seatInput.addEventListener('change', function() {
-  if (!flightInput.value) return;
+// ----- Add event listeners for seat and flight inputs -----
+function initializeInputListeners() {
+  // Get fresh references to elements
+  const seatField = document.getElementById('seatInput');
+  const flightField = document.getElementById('flightInput');
+  const paxField = document.getElementById('numPaxInput');
   
-  const calculatedPax = calculatePaxFromSeatNumber(this.value);
-  
-  if (isPaxRestrictedAirline(flightInput.value)) {
-    numPaxInput.value = '1';
-  } else if (calculatedPax > 1) {
-    numPaxInput.value = calculatedPax;
-    showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${this.value}`, false, true);
+  if (!seatField || !flightField || !paxField) {
+    console.log("⚠️ Elements not found, retrying in 500ms");
+    setTimeout(initializeInputListeners, 500);
+    return;
   }
-});
+  
+  // Remove any existing listeners by cloning elements
+  const newSeatField = seatField.cloneNode(true);
+  const newFlightField = flightField.cloneNode(true);
+  
+  seatField.parentNode.replaceChild(newSeatField, seatField);
+  flightField.parentNode.replaceChild(newFlightField, flightField);
+  
+  // Get fresh references again
+  const updatedSeatField = document.getElementById('seatInput');
+  const updatedFlightField = document.getElementById('flightInput');
+  const updatedPaxField = document.getElementById('numPaxInput');
+  
+  // Seat field listener
+  updatedSeatField.addEventListener('input', function() {
+    const flightValue = updatedFlightField.value;
+    const seatValue = this.value;
+    
+    if (!seatValue) {
+      updatedPaxField.value = '1';
+      return;
+    }
+    
+    const calculatedPax = calculatePaxFromSeatNumber(seatValue);
+    
+    if (flightValue && isPaxRestrictedAirline(flightValue)) {
+      // Restricted airline - always 1 pax
+      updatedPaxField.value = '1';
+      showAlert(`Flight ${flightValue} (${flightValue.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
+    } else {
+      // Non-restricted airline - auto-calculate
+      updatedPaxField.value = calculatedPax;
+      if (calculatedPax > 1) {
+        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatValue}`, false, false, true);
+      }
+    }
+  });
+  
+  // Flight field listener
+  updatedFlightField.addEventListener('input', function() {
+    const flightValue = this.value;
+    const seatValue = updatedSeatField.value;
+    
+    if (!flightValue || !seatValue) return;
+    
+    if (isPaxRestrictedAirline(flightValue)) {
+      // Restricted airline - always 1 pax
+      updatedPaxField.value = '1';
+      showAlert(`Flight ${flightValue} (${flightValue.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
+    } else {
+      // Non-restricted airline - auto-calculate from seat
+      const calculatedPax = calculatePaxFromSeatNumber(seatValue);
+      if (updatedPaxField.value !== calculatedPax.toString()) {
+        updatedPaxField.value = calculatedPax;
+        if (calculatedPax > 1) {
+          showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatValue}`, false, false, true);
+        }
+      }
+    }
+  });
+  
+  console.log("✅ Seat and Flight field listeners initialized");
+}
 
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
@@ -5001,11 +5078,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
   console.log("- Numeric Keyboard for SQ Flights: Enabled");
-  console.log("- FIXED: N1→Silver, N2→Gold, N3→Platinum for QR saves");
-  console.log("- FIXED: Pax = 0 now saves as 0 (not 1)");
-  console.log("- FIXED: No QR/DELAY badges added to flight numbers");
-  console.log("- NEW: Auto pax calculation from seat numbers");
-  console.log("- NEW: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
+  console.log("- FIXED: Auto pax calculation from seat numbers");
+  console.log("- FIXED: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
   
   clearOldProcessedCodes();
   
@@ -5013,6 +5087,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Initialize numeric keyboard
   initializeNumericKeyboard();
+  
+  // Initialize input listeners
+  setTimeout(initializeInputListeners, 100);
   
   setTimeout(() => {
     initializeQRFirebase();
@@ -5183,6 +5260,28 @@ window.testPaxCalculation = function() {
   });
   
   alert("Pax calculation tests completed. Check console for results.");
+};
+
+// ----- Quick test function -----
+window.testSeatPax = function() {
+  const testData = [
+    { flight: 'FZ123', seat: '12ABC', expectedPax: 1 },
+    { flight: 'SQ456', seat: '1A/3B', expectedPax: 1 },
+    { flight: 'AA123', seat: '12ABC', expectedPax: 3 },
+    { flight: 'EK789', seat: '12ABC', expectedPax: 1 },
+    { flight: 'QR012', seat: '15DEF/GHI', expectedPax: 1 },
+  ];
+  
+  console.log("=== Quick Seat-Pax Test ===");
+  testData.forEach(test => {
+    const calculated = calculatePaxFromSeatNumber(test.seat);
+    const restricted = isPaxRestrictedAirline(test.flight);
+    const finalPax = restricted ? 1 : calculated;
+    const passed = finalPax === test.expectedPax;
+    
+    console.log(`${passed ? '✅' : '❌'} Flight: ${test.flight}, Seat: ${test.seat}`);
+    console.log(`   Calculated: ${calculated}, Restricted: ${restricted}, Final: ${finalPax}, Expected: ${test.expectedPax}`);
+  });
 };
 </script>
 </body>
