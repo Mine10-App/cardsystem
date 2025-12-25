@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unified Code Parser & Passenger Approval</title>
+<title>Koveli Passenger Entry</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   :root {
@@ -1355,210 +1355,8 @@
   #closeNumericBtn:hover {
     background: #ddd;
   }
-  
-  /* Zoom Modal Styles */
-  .zoom-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.85);
-    z-index: 6000;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .zoom-modal.show {
-    display: flex;
-  }
-  
-  .zoom-content {
-    background: white;
-    padding: 40px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 85vh;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-    border: 3px solid var(--gold);
-    position: relative;
-    overflow-y: auto;
-    transform: scale(0.95);
-    animation: zoomIn 0.3s ease forwards;
-  }
-  
-  @keyframes zoomIn {
-    to {
-      transform: scale(1);
-    }
-  }
-  
-  .zoom-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid var(--gold);
-  }
-  
-  .zoom-header h3 {
-    margin: 0;
-    color: var(--gold-darker);
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-  
-  .close-zoom {
-    background: none;
-    border: none;
-    font-size: 32px;
-    cursor: pointer;
-    color: var(--gold);
-    padding: 5px;
-    line-height: 1;
-    transition: all 0.3s ease;
-  }
-  
-  .close-zoom:hover {
-    color: var(--gold-dark);
-    transform: rotate(90deg);
-  }
-  
-  .zoom-form-group {
-    margin-bottom: 25px;
-  }
-  
-  .zoom-form-group label {
-    display: block;
-    margin-bottom: 10px;
-    font-weight: 700;
-    font-size: 16px;
-    color: var(--gold-darker);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .zoom-input {
-    width: 100%;
-    padding: 18px 20px 18px 50px;
-    border: 2px solid var(--gold);
-    border-radius: 10px;
-    font-size: 18px;
-    background: var(--white);
-    transition: all 0.3s ease;
-    font-weight: 500;
-  }
-  
-  .zoom-input:focus {
-    outline: none;
-    border-color: var(--gold-dark);
-    box-shadow: 0 0 0 4px var(--gold-light);
-  }
-  
-  .zoom-input-with-icon {
-    position: relative;
-  }
-  
-  .zoom-input-with-icon i {
-    position: absolute;
-    left: 18px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--gold);
-    font-size: 20px;
-    z-index: 1;
-  }
-  
-  .zoom-textarea {
-    resize: vertical;
-    min-height: 120px;
-    padding-left: 50px;
-    line-height: 1.6;
-  }
-  
-  .zoom-select {
-    padding: 18px 20px 18px 50px;
-    font-size: 18px;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23D4AF37' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 20px center;
-    background-size: 16px;
-  }
-  
-  .zoom-button-group {
-    display: flex;
-    gap: 20px;
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 1px solid var(--gold);
-  }
-  
-  .zoom-button-group button {
-    flex: 1;
-    padding: 20px;
-    font-size: 18px;
-    font-weight: 700;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    transition: all 0.3s ease;
-  }
-  
-  #zoomSaveBtn {
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    color: white;
-  }
-  
-  #zoomSaveBtn:hover {
-    background: linear-gradient(135deg, var(--gold-dark), var(--gold-darker));
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
-  }
-  
-  #zoomCancelBtn {
-    background: var(--gray);
-    color: var(--gray-dark);
-  }
-  
-  #zoomCancelBtn:hover {
-    background: #ddd;
-    transform: translateY(-2px);
-  }
-  
-  /* Seat-Pax Mismatch Warning */
-  .seat-pax-mismatch {
-    background-color: rgba(255, 152, 0, 0.15) !important;
-    border-left: 4px solid var(--warning) !important;
-    animation: pulseWarning 2s infinite;
-  }
-  
-  @keyframes pulseWarning {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.8; }
-  }
-  
-  .seat-pax-warning {
-    color: var(--warning);
-    font-weight: bold;
-    font-size: 0.9em;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-  
-  /* FQTV Zoom Modal */
+
+  /* FQTV Zoom Modal Styles */
   .fqtv-zoom-modal {
     display: none;
     position: fixed;
@@ -1566,8 +1364,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.85);
-    z-index: 7000;
+    background-color: rgba(0,0,0,0.7);
+    z-index: 2500;
     justify-content: center;
     align-items: center;
   }
@@ -1578,153 +1376,140 @@
   
   .fqtv-zoom-content {
     background: white;
-    padding: 40px;
-    border-radius: 15px;
+    padding: 25px;
+    border-radius: 10px;
     width: 90%;
-    max-width: 500px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-    border: 3px solid var(--info);
+    max-width: 600px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border: 2px solid var(--gold);
     position: relative;
-    transform: scale(0.95);
-    animation: zoomIn 0.3s ease forwards;
   }
   
   .fqtv-zoom-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 2px solid var(--info);
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--gold);
   }
   
   .fqtv-zoom-header h3 {
     margin: 0;
-    color: var(--info);
-    font-size: 22px;
+    color: var(--gold-darker);
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
   }
   
   .close-fqtv-zoom {
     background: none;
     border: none;
-    font-size: 28px;
+    font-size: 24px;
     cursor: pointer;
-    color: var(--info);
+    color: var(--gold);
     padding: 5px;
     line-height: 1;
-    transition: all 0.3s ease;
   }
   
   .close-fqtv-zoom:hover {
-    color: #1976d2;
-    transform: rotate(90deg);
+    color: var(--gold-dark);
   }
   
-  .fqtv-zoom-input {
-    width: 100%;
+  .fqtv-zoom-display {
+    margin: 20px 0;
     padding: 20px;
-    border: 2px solid var(--info);
-    border-radius: 10px;
-    font-size: 20px;
-    font-weight: 500;
+    background: var(--gold-light);
+    border-radius: 8px;
+    border: 2px solid var(--gold);
+    font-size: 18px;
+    font-family: monospace;
     text-align: center;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-  }
-  
-  .fqtv-zoom-input:focus {
-    outline: none;
-    border-color: #1976d2;
-    box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.2);
-  }
-  
-  .fqtv-zoom-button-group {
+    min-height: 100px;
     display: flex;
-    gap: 15px;
-    margin-top: 30px;
+    align-items: center;
+    justify-content: center;
+    overflow-wrap: break-word;
+    word-break: break-all;
+    white-space: pre-wrap;
   }
   
-  .fqtv-zoom-button-group button {
-    flex: 1;
-    padding: 18px;
-    font-size: 16px;
+  .fqtv-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .fqtv-actions button {
+    padding: 12px 24px;
+    font-size: 14px;
     font-weight: 600;
-    border-radius: 10px;
+    border-radius: 6px;
     border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     transition: all 0.3s ease;
   }
   
-  #fqtvZoomSaveBtn {
+  #copyFqtvBtn {
     background: var(--info);
     color: white;
   }
   
-  #fqtvZoomSaveBtn:hover {
+  #copyFqtvBtn:hover {
     background: #1976d2;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
   }
   
-  #fqtvZoomCancelBtn {
+  #closeFqtvBtn {
     background: var(--gray);
     color: var(--gray-dark);
   }
   
-  #fqtvZoomCancelBtn:hover {
+  #closeFqtvBtn:hover {
     background: #ddd;
-    transform: translateY(-2px);
   }
   
-  /* Manual Entry Button */
-  .manual-entry-btn {
-    background: var(--info);
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
+  /* FQTV field clickable styles */
+  .fqtv-cell {
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    width: 100%;
-    justify-content: center;
-    margin-top: 10px;
+    position: relative;
+    transition: all 0.2s ease;
   }
   
-  .manual-entry-btn:hover {
-    background: #1976d2;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  .fqtv-cell:hover {
+    background-color: rgba(212, 175, 55, 0.15) !important;
+    box-shadow: inset 0 0 0 1px var(--gold);
   }
   
-  /* Manual Entry Section */
-  .manual-entry-section {
-    margin-top: 15px;
-    padding: 15px;
-    background: rgba(33, 150, 243, 0.05);
-    border-radius: 8px;
-    border: 1px solid var(--info);
+  .fqtv-cell::after {
+    content: "🔍 Click to view";
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    color: var(--gold);
+    background: white;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--gold);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s ease;
   }
   
-  .manual-entry-section h4 {
-    margin-top: 0;
-    margin-bottom: 15px;
-    color: var(--info);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 16px;
+  .fqtv-cell:hover::after {
+    opacity: 1;
+  }
+  
+  .fqtv-warning.fqtv-cell::after {
+    content: "⚠️ Click to view";
+    color: var(--warning);
+    border-color: var(--warning);
   }
   
   @media (max-width: 768px) {
@@ -1803,34 +1588,20 @@
       min-height: 50px;
     }
     
-    .zoom-content {
-      width: 95%;
-      padding: 25px;
-    }
-    
-    .zoom-input {
-      padding: 15px 15px 15px 45px;
-      font-size: 16px;
-    }
-    
-    .zoom-button-group button {
-      padding: 15px;
-      font-size: 16px;
-    }
-    
     .fqtv-zoom-content {
       width: 95%;
-      padding: 25px;
+      padding: 20px;
     }
     
-    .fqtv-zoom-input {
-      font-size: 18px;
+    .fqtv-zoom-display {
+      font-size: 16px;
       padding: 15px;
+      min-height: 80px;
     }
     
-    .fqtv-zoom-button-group button {
-      padding: 15px;
-      font-size: 15px;
+    .fqtv-cell::after {
+      font-size: 8px;
+      padding: 1px 3px;
     }
   }
 </style>
@@ -1847,138 +1618,24 @@
   <span id="alertMessage">Operation completed successfully</span>
 </div>
 
-<!-- Zoom Modal for Manual Entry -->
-<div class="zoom-modal" id="zoomModal">
-  <div class="zoom-content">
-    <div class="zoom-header">
-      <h3><i class="fas fa-edit"></i> Manual Passenger Entry</h3>
-      <button class="close-zoom" id="closeZoomBtn">&times;</button>
-    </div>
-    
-    <div class="zoom-form-group">
-      <label for="zoomNameInput"><i class="fas fa-user"></i> Name</label>
-      <div class="zoom-input-with-icon">
-        <i class="fas fa-signature"></i>
-        <input type="text" id="zoomNameInput" class="zoom-input" placeholder="Enter passenger name" autofocus>
-      </div>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 25px;">
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomFlightInput"><i class="fas fa-plane"></i> Flight</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-plane-departure"></i>
-          <input type="text" id="zoomFlightInput" class="zoom-input" placeholder="e.g., EK654">
-        </div>
-      </div>
-      
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomAirlineSelect"><i class="fas fa-building"></i> Airline</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-warehouse"></i>
-          <select id="zoomAirlineSelect" class="zoom-input zoom-select">
-            <option value="">Select Airline</option>
-          </select>
-        </div>
-      </div>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 25px;">
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomSeatInput"><i class="fas fa-chair"></i> Seat</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-couch"></i>
-          <input type="text" id="zoomSeatInput" class="zoom-input" placeholder="e.g., 12A or 12ABC">
-          <div class="seat-pax-warning" id="zoomSeatWarning" style="display: none;">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span id="zoomSeatWarningText"></span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomPaxInput"><i class="fas fa-users"></i> Number of Pax</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-user-friends"></i>
-          <input type="number" id="zoomPaxInput" class="zoom-input" value="1" min="1">
-        </div>
-      </div>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 25px;">
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomPnrInput"><i class="fas fa-ticket-alt"></i> PNR</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-receipt"></i>
-          <input type="text" id="zoomPnrInput" class="zoom-input" placeholder="PNR code">
-        </div>
-      </div>
-      
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomClassInput"><i class="fas fa-star"></i> Class</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-star-half-alt"></i>
-          <input type="text" id="zoomClassInput" class="zoom-input" placeholder="e.g., Y, J, F">
-        </div>
-      </div>
-    </div>
-    
-    <div style="display: flex; gap: 20px; margin-bottom: 25px;">
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomFqtvInput"><i class="fas fa-id-card"></i> FQTV</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-address-card"></i>
-          <input type="text" id="zoomFqtvInput" class="zoom-input" placeholder="Frequent Flyer Number">
-        </div>
-      </div>
-      
-      <div class="zoom-form-group" style="flex: 1;">
-        <label for="zoomSerialInput"><i class="fas fa-hashtag"></i> Serial No</label>
-        <div class="zoom-input-with-icon">
-          <i class="fas fa-list-ol"></i>
-          <input type="text" id="zoomSerialInput" class="zoom-input" placeholder="Serial number">
-        </div>
-      </div>
-    </div>
-    
-    <div class="zoom-form-group">
-      <label for="zoomRemarksInput"><i class="fas fa-sticky-note"></i> Remarks</label>
-      <div class="zoom-input-with-icon">
-        <i class="fas fa-comment-alt"></i>
-        <textarea id="zoomRemarksInput" class="zoom-input zoom-textarea" placeholder="Additional remarks"></textarea>
-      </div>
-    </div>
-    
-    <div class="zoom-button-group">
-      <button id="zoomSaveBtn" class="zoom-button">
-        <i class="fas fa-save"></i> Save Entry
-      </button>
-      <button id="zoomCancelBtn" class="zoom-button">
-        <i class="fas fa-times"></i> Cancel
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- FQTV Zoom Modal -->
 <div class="fqtv-zoom-modal" id="fqtvZoomModal">
   <div class="fqtv-zoom-content">
     <div class="fqtv-zoom-header">
-      <h3><i class="fas fa-id-card"></i> Edit FQTV</h3>
+      <h3><i class="fas fa-search-plus"></i> FQTV Details</h3>
       <button class="close-fqtv-zoom" id="closeFqtvZoomBtn">&times;</button>
     </div>
     
-    <div class="zoom-form-group">
-      <label for="fqtvZoomInput"><i class="fas fa-address-card"></i> Frequent Flyer Number</label>
-      <input type="text" id="fqtvZoomInput" class="fqtv-zoom-input" placeholder="Enter FQTV number (e.g., EK123456/Gold)" autofocus>
+    <div class="fqtv-zoom-display" id="fqtvZoomDisplay">
+      <!-- FQTV content will be displayed here -->
     </div>
     
-    <div class="fqtv-zoom-button-group">
-      <button id="fqtvZoomSaveBtn" class="fqtv-zoom-button">
-        <i class="fas fa-save"></i> Save
+    <div class="fqtv-actions">
+      <button id="copyFqtvBtn" class="fqtv-actions-btn">
+        <i class="fas fa-copy"></i> Copy to Clipboard
       </button>
-      <button id="fqtvZoomCancelBtn" class="fqtv-zoom-button">
-        <i class="fas fa-times"></i> Cancel
+      <button id="closeFqtvBtn" class="fqtv-actions-btn">
+        <i class="fas fa-times"></i> Close
       </button>
     </div>
   </div>
@@ -2186,10 +1843,6 @@
       </div>
     </div>
     
-    <button id="manualEntryBtn" class="manual-entry-btn">
-      <i class="fas fa-keyboard"></i> Manual Entry (Zoom View)
-    </button>
-    
     <div class="gold-line"></div>
     
     <div class="entry-fields-container">
@@ -2225,10 +1878,6 @@
           <div class="input-with-icon">
             <i class="fas fa-couch"></i>
             <input id="seatInput" placeholder="Seat number">
-            <div class="seat-pax-warning" id="seatWarning" style="display: none;">
-              <i class="fas fa-exclamation-triangle"></i>
-              <span id="seatWarningText"></span>
-            </div>
           </div>
         </div>
       </div>
@@ -2388,106 +2037,6 @@ const fqtvTierMappings = {
 // ----- QR System Storage -----
 let qrEntriesProcessed = [];
 
-// ----- Calculate Pax from Seat Number (IMPROVED) -----
-function calculatePaxFromSeatNumber(seatNumber) {
-  if (!seatNumber || seatNumber.trim() === '') return 1;
-  
-  const seat = seatNumber.toUpperCase().trim();
-  
-  // Check for multiple seats separated by common delimiters
-  if (seat.includes('/') || seat.includes(',') || seat.includes(' ') || seat.includes(';')) {
-    // Split by any delimiter and count
-    const seats = seat.split(/[\/,\s;]+/);
-    let totalPax = 0;
-    
-    seats.forEach(seatItem => {
-      if (seatItem.trim() === '') return;
-      
-      // For each seat, count individual letters after numbers
-      const match = seatItem.match(/^(\d+)([A-Z]*)$/);
-      if (match) {
-        const seatLetters = match[2];
-        if (seatLetters.length > 0) {
-          totalPax += seatLetters.length; // Each letter is a seat
-        } else {
-          totalPax += 1; // Just a number counts as 1 seat
-        }
-      } else {
-        totalPax += 1; // Default to 1 if pattern doesn't match
-      }
-    });
-    
-    return totalPax > 0 ? totalPax : 1;
-  }
-  
-  // Single seat format (e.g., "12A", "1ABC", "25")
-  const match = seat.match(/^(\d+)([A-Z]*)$/);
-  if (match) {
-    const seatLetters = match[2];
-    if (seatLetters.length > 0) {
-      return seatLetters.length; // Each letter is a separate seat
-    } else {
-      return 1; // Just a number, single seat
-    }
-  }
-  
-  return 1; // Default
-}
-
-// ----- Validate Seat-Pax Match -----
-function validateSeatPaxMatch(seatNumber, paxCount) {
-  const calculatedPax = calculatePaxFromSeatNumber(seatNumber);
-  
-  if (calculatedPax !== paxCount) {
-    return {
-      isValid: false,
-      message: `Seat ${seatNumber} indicates ${calculatedPax} passenger(s), but ${paxCount} was entered. Please adjust.`,
-      calculatedPax: calculatedPax
-    };
-  }
-  
-  return {
-    isValid: true,
-    message: '',
-    calculatedPax: calculatedPax
-  };
-}
-
-// ----- Validate Pax for Special Airlines -----
-function isPaxRestrictedAirline(flightNumber) {
-  if (!flightNumber) return false;
-  
-  const restrictedAirlines = ['FZ', 'SQ', 'EY', 'QR', 'BA', 'MH', 'DE', 'GF', 'EK', 'VS', 'MU', 'HK'];
-  const airlineCode = flightNumber.substring(0, 2).toUpperCase();
-  
-  return restrictedAirlines.includes(airlineCode);
-}
-
-// ----- Validate Pax Count -----
-function validatePaxCount(flightNumber, seatNumber, enteredPax) {
-  if (!flightNumber || !seatNumber) return { isValid: true };
-  
-  // First check restricted airlines
-  const isRestricted = isPaxRestrictedAirline(flightNumber);
-  
-  if (isRestricted && enteredPax !== 1) {
-    return {
-      isValid: false,
-      message: `Flight ${flightNumber} (${flightNumber.substring(0, 2)}) allows only 1 passenger per seat`
-    };
-  }
-  
-  // Then check seat-pax match for non-restricted airlines
-  if (!isRestricted) {
-    const seatPaxValidation = validateSeatPaxMatch(seatNumber, enteredPax);
-    if (!seatPaxValidation.isValid) {
-      return seatPaxValidation;
-    }
-  }
-  
-  return { isValid: true };
-}
-
 // ----- Initialize Airline Dropdown -----
 const airlineSelect = document.getElementById('airlineSelect');
 for(let iata in airlines){
@@ -2495,15 +2044,6 @@ for(let iata in airlines){
   opt.value = iata;
   opt.textContent = airlines[iata];
   airlineSelect.appendChild(opt);
-}
-
-// ----- Initialize Zoom Airline Dropdown -----
-const zoomAirlineSelect = document.getElementById('zoomAirlineSelect');
-for(let iata in airlines){
-  const opt = document.createElement('option');
-  opt.value = iata;
-  opt.textContent = airlines[iata];
-  zoomAirlineSelect.appendChild(opt);
 }
 
 // ----- Elements -----
@@ -2522,7 +2062,6 @@ const shiftDisplay = document.getElementById('shiftDisplay');
 const dateDisplay = document.getElementById('dateDisplay');
 const entriesList = document.getElementById('entriesList');
 const manualSaveBtn = document.getElementById('manualSaveBtn');
-const manualEntryBtn = document.getElementById('manualEntryBtn');
 const entriesCount = document.getElementById('entriesCount');
 const clearNotification = document.getElementById('clearNotification');
 const alertNotification = document.getElementById('alertNotification');
@@ -2532,32 +2071,13 @@ const scannerIndicator = document.getElementById('scannerIndicator');
 const refreshShiftBtn = document.getElementById('refreshShiftBtn');
 const qrProcessingIndicator = document.getElementById('qrProcessingIndicator');
 const qrStatus = document.getElementById('qrStatus');
-const seatWarning = document.getElementById('seatWarning');
-const seatWarningText = document.getElementById('seatWarningText');
 
-// ----- Zoom Modal Elements -----
-const zoomModal = document.getElementById('zoomModal');
-const closeZoomBtn = document.getElementById('closeZoomBtn');
-const zoomNameInput = document.getElementById('zoomNameInput');
-const zoomFlightInput = document.getElementById('zoomFlightInput');
-const zoomPnrInput = document.getElementById('zoomPnrInput');
-const zoomSeatInput = document.getElementById('zoomSeatInput');
-const zoomClassInput = document.getElementById('zoomClassInput');
-const zoomFqtvInput = document.getElementById('zoomFqtvInput');
-const zoomSerialInput = document.getElementById('zoomSerialInput');
-const zoomRemarksInput = document.getElementById('zoomRemarksInput');
-const zoomPaxInput = document.getElementById('zoomPaxInput');
-const zoomSaveBtn = document.getElementById('zoomSaveBtn');
-const zoomCancelBtn = document.getElementById('zoomCancelBtn');
-const zoomSeatWarning = document.getElementById('zoomSeatWarning');
-const zoomSeatWarningText = document.getElementById('zoomSeatWarningText');
-
-// ----- FQTV Zoom Modal Elements -----
+// ----- FQTV Zoom Elements -----
 const fqtvZoomModal = document.getElementById('fqtvZoomModal');
 const closeFqtvZoomBtn = document.getElementById('closeFqtvZoomBtn');
-const fqtvZoomInput = document.getElementById('fqtvZoomInput');
-const fqtvZoomSaveBtn = document.getElementById('fqtvZoomSaveBtn');
-const fqtvZoomCancelBtn = document.getElementById('fqtvZoomCancelBtn');
+const fqtvZoomDisplay = document.getElementById('fqtvZoomDisplay');
+const copyFqtvBtn = document.getElementById('copyFqtvBtn');
+const closeFqtvBtn = document.getElementById('closeFqtvBtn');
 
 // ----- Delay Charge Elements -----
 const delayChargeModal = document.getElementById('delayChargeModal');
@@ -2608,11 +2128,15 @@ let scannerTimer;
 let lastValue = '';
 let isScannerActive = false;
 let isProcessing = false;
-let currentEditingRowIndex = -1;
-let currentEditingField = '';
 
 // ----- Numeric Keyboard Variables -----
 let currentNumericValue = '0';
+let currentEditingRowIndex = -1;
+let currentEditingField = '';
+
+// ----- FQTV Zoom Variables -----
+let currentFqtvContent = '';
+let currentFqtvRowIndex = -1;
 
 // ----- QR System Variables -----
 let qrDb = null;
@@ -2721,221 +2245,6 @@ function showAlert(message, isError = false, isWarning = false, isInfo = false) 
   setTimeout(() => {
     alertNotification.classList.remove('show');
   }, 3000);
-}
-
-// ----- Zoom Modal Functions -----
-function showZoomModal() {
-  if (!currentShiftType || currentShiftStatus !== 'open') {
-    showAlert('No active shift or shift not open!', true);
-    return;
-  }
-  
-  // Clear all zoom inputs
-  zoomNameInput.value = '';
-  zoomFlightInput.value = '';
-  zoomPnrInput.value = '';
-  zoomSeatInput.value = '';
-  zoomClassInput.value = '';
-  zoomFqtvInput.value = '';
-  zoomSerialInput.value = '';
-  zoomRemarksInput.value = '';
-  zoomPaxInput.value = '1';
-  zoomAirlineSelect.value = '';
-  zoomSeatWarning.style.display = 'none';
-  
-  // Show modal
-  zoomModal.classList.add('show');
-  
-  // Focus on name input
-  setTimeout(() => {
-    zoomNameInput.focus();
-  }, 100);
-}
-
-function closeZoomModal() {
-  zoomModal.classList.remove('show');
-}
-
-function saveZoomEntry() {
-  const name = zoomNameInput.value.trim();
-  const flight = zoomFlightInput.value.trim();
-  const seat = zoomSeatInput.value.trim();
-  const pax = parseInt(zoomPaxInput.value) || 1;
-  
-  if (!name) {
-    showAlert('Please enter passenger name', true);
-    zoomNameInput.focus();
-    return;
-  }
-  
-  if (!flight) {
-    showAlert('Please enter flight number', true);
-    zoomFlightInput.focus();
-    return;
-  }
-  
-  // Validate seat-pax match
-  const seatPaxValidation = validateSeatPaxMatch(seat, pax);
-  if (!seatPaxValidation.isValid) {
-    showAlert(seatPaxValidation.message, true);
-    zoomPaxInput.value = seatPaxValidation.calculatedPax;
-    zoomPaxInput.focus();
-    return;
-  }
-  
-  // Validate restricted airlines
-  if (isPaxRestrictedAirline(flight) && pax !== 1) {
-    showAlert(`Flight ${flight} (${flight.substring(0, 2)}) allows only 1 passenger per seat`, true);
-    zoomPaxInput.value = '1';
-    zoomPaxInput.focus();
-    return;
-  }
-  
-  const entry = {
-    date: currentShiftDate,
-    user: userDisplay.textContent,
-    shift: currentShiftType,
-    code: 'MANUAL_ENTRY',
-    name: name,
-    pnr: zoomPnrInput.value.trim(),
-    flight: flight,
-    airline: zoomAirlineSelect.value,
-    seat: seat,
-    class: zoomClassInput.value.trim(),
-    serial: zoomSerialInput.value.trim(),
-    remarks: zoomRemarksInput.value.trim(),
-    fqtv: zoomFqtvInput.value.trim(),
-    numPax: pax,
-    approved: false
-  };
-  
-  saveEntry(entry);
-  closeZoomModal();
-}
-
-// ----- FQTV Zoom Modal Functions -----
-function showFqtvZoomModal(rowIndex) {
-  currentEditingRowIndex = rowIndex;
-  
-  const data = JSON.parse(localStorage.getItem('codesData') || '[]');
-  const entry = data[rowIndex];
-  
-  if (!entry) {
-    showAlert('Entry not found', true);
-    return;
-  }
-  
-  // Set current FQTV value
-  fqtvZoomInput.value = entry.fqtv || '';
-  
-  // Show modal
-  fqtvZoomModal.classList.add('show');
-  
-  // Focus on input
-  setTimeout(() => {
-    fqtvZoomInput.focus();
-    fqtvZoomInput.select();
-  }, 100);
-}
-
-function closeFqtvZoomModal() {
-  fqtvZoomModal.classList.remove('show');
-  currentEditingRowIndex = -1;
-}
-
-function saveFqtvZoomValue() {
-  if (currentEditingRowIndex < 0) {
-    closeFqtvZoomModal();
-    return;
-  }
-  
-  const newFqtv = fqtvZoomInput.value.trim();
-  
-  let data = JSON.parse(localStorage.getItem('codesData') || '[]');
-  const entry = data[currentEditingRowIndex];
-  
-  if (entry) {
-    entry.fqtv = newFqtv;
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    // Update table display
-    const rows = entriesList.querySelectorAll('tr');
-    if (rows[currentEditingRowIndex]) {
-      const fqtvCell = rows[currentEditingRowIndex].cells[4];
-      if (fqtvCell) {
-        fqtvCell.textContent = newFqtv || '';
-      }
-    }
-    
-    showAlert('FQTV updated successfully', false);
-  }
-  
-  closeFqtvZoomModal();
-}
-
-// ----- Seat-Pax Validation -----
-function checkSeatPaxMatch() {
-  const seat = seatInput.value.trim();
-  const pax = parseInt(numPaxInput.value) || 1;
-  
-  if (!seat) {
-    seatWarning.style.display = 'none';
-    return;
-  }
-  
-  const validation = validateSeatPaxMatch(seat, pax);
-  if (!validation.isValid) {
-    seatWarningText.textContent = validation.message;
-    seatWarning.style.display = 'flex';
-    
-    // Add warning class to seat input
-    seatInput.parentElement.classList.add('seat-pax-mismatch');
-    
-    // Highlight pax input too
-    numPaxInput.parentElement.style.borderColor = 'var(--warning)';
-  } else {
-    seatWarning.style.display = 'none';
-    seatInput.parentElement.classList.remove('seat-pax-mismatch');
-    numPaxInput.parentElement.style.borderColor = '';
-  }
-}
-
-function checkZoomSeatPaxMatch() {
-  const seat = zoomSeatInput.value.trim();
-  const pax = parseInt(zoomPaxInput.value) || 1;
-  
-  if (!seat) {
-    zoomSeatWarning.style.display = 'none';
-    return;
-  }
-  
-  const validation = validateSeatPaxMatch(seat, pax);
-  if (!validation.isValid) {
-    zoomSeatWarningText.textContent = validation.message;
-    zoomSeatWarning.style.display = 'flex';
-    
-    // Highlight inputs
-    zoomSeatInput.style.borderColor = 'var(--warning)';
-    zoomPaxInput.style.borderColor = 'var(--warning)';
-  } else {
-    zoomSeatWarning.style.display = 'none';
-    zoomSeatInput.style.borderColor = '';
-    zoomPaxInput.style.borderColor = '';
-  }
-}
-
-// ----- Auto-correct Pax based on Seat -----
-function autoCorrectPaxFromSeat(inputElement, paxElement) {
-  const seat = inputElement.value.trim();
-  if (!seat) return;
-  
-  const calculatedPax = calculatePaxFromSeatNumber(seat);
-  paxElement.value = calculatedPax;
-  
-  // Show notification if multiple seats detected
-  if (calculatedPax > 1) {
-    showAlert(`Pax auto-corrected to ${calculatedPax} based on seat ${seat}`, false, false, true);
-  }
 }
 
 // ----- Generate Unique Key for QR Code -----
@@ -3117,18 +2426,30 @@ async function saveToQRSystem(codeValue) {
     
     const qrData = extractQRDataFromCode(codeValue);
     
-    // FIXED: Correct FFP tier mapping for QR system
+    // KEEP ORIGINAL TIER MAPPING: Apply the same tier mapping as the main system
     if (qrData.originalTier) {
       const tierUpper = qrData.originalTier.toUpperCase();
+      const flightAirlineCode = (qrData.carrierCode || '').toUpperCase();
+      const fqtvAirlineCode = (qrData.ffpOwner || '').toUpperCase();
+      
+      let tierMapping;
+      if (fqtvAirlineCode && flightAirlineCode && 
+          fqtvAirlineCode === flightAirlineCode) {
+        tierMapping = fqtvTierMappings.same;
+      } else {
+        tierMapping = fqtvTierMappings.different;
+      }
+      
       if (tierUpper === 'N1') {
-        qrData.ffpTier = 'Silver';
+        qrData.ffpTier = tierMapping.n1 || qrData.originalTier;
       } else if (tierUpper === 'N2') {
-        qrData.ffpTier = 'Gold';
+        qrData.ffpTier = tierMapping.n2 || qrData.originalTier;
       } else if (tierUpper === 'N3') {
-        qrData.ffpTier = 'Platinum';
+        qrData.ffpTier = tierMapping.n3 || qrData.originalTier;
       } else {
         qrData.ffpTier = qrData.originalTier;
       }
+      console.log(`QR Tier Mapping: ${qrData.originalTier} → ${qrData.ffpTier} (same airline: ${fqtvAirlineCode === flightAirlineCode})`);
     }
     
     markQRAsProcessed(uniqueKey);
@@ -3148,7 +2469,8 @@ async function saveToQRSystem(codeValue) {
       carrier: qrData.carrierCode,
       seat: qrData.seatNumber,
       secNumber: qrData.secNumber,
-      ffpTier: qrData.ffpTier // Debug log
+      ffpTier: qrData.ffpTier,
+      originalTier: qrData.originalTier
     });
     
     const docRef = await qrDb.collection('flightEntries').add(qrData);
@@ -3200,18 +2522,30 @@ function storeQRDataLocally(codeValue) {
   try {
     const qrData = extractQRDataFromCode(codeValue);
     
-    // FIXED: Apply correct tier mapping for local storage too
+    // KEEP ORIGINAL TIER MAPPING: Apply the same tier mapping as the main system
     if (qrData.originalTier) {
       const tierUpper = qrData.originalTier.toUpperCase();
+      const flightAirlineCode = (qrData.carrierCode || '').toUpperCase();
+      const fqtvAirlineCode = (qrData.ffpOwner || '').toUpperCase();
+      
+      let tierMapping;
+      if (fqtvAirlineCode && flightAirlineCode && 
+          fqtvAirlineCode === flightAirlineCode) {
+        tierMapping = fqtvTierMappings.same;
+      } else {
+        tierMapping = fqtvTierMappings.different;
+      }
+      
       if (tierUpper === 'N1') {
-        qrData.ffpTier = 'Silver';
+        qrData.ffpTier = tierMapping.n1 || qrData.originalTier;
       } else if (tierUpper === 'N2') {
-        qrData.ffpTier = 'Gold';
+        qrData.ffpTier = tierMapping.n2 || qrData.originalTier;
       } else if (tierUpper === 'N3') {
-        qrData.ffpTier = 'Platinum';
+        qrData.ffpTier = tierMapping.n3 || qrData.originalTier;
       } else {
         qrData.ffpTier = qrData.originalTier;
       }
+      console.log(`Local QR Tier Mapping: ${qrData.originalTier} → ${qrData.ffpTier} (same airline: ${fqtvAirlineCode === flightAirlineCode})`);
     }
     
     qrData.localSaveTime = getMaldivesDateTimeISO();
@@ -3403,7 +2737,6 @@ function extractQRDataFromCode(codeValue) {
         
         if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
           originalTier = lastWord.toUpperCase();
-          // Note: We'll fix the tier mapping later in saveToQRSystem
           ffpTier = originalTier;
         }
       }
@@ -3472,14 +2805,23 @@ function convertFFPTier(carrierCode, ffpOwner, originalTier) {
   }
   
   const tier = originalTier.toUpperCase();
+  const flightAirlineCode = (carrierCode || '').toUpperCase();
+  const fqtvAirlineCode = (ffpOwner || '').toUpperCase();
   
-  // FIXED: Correct tier mapping
+  let tierMapping;
+  if (fqtvAirlineCode && flightAirlineCode && 
+      fqtvAirlineCode === flightAirlineCode) {
+    tierMapping = fqtvTierMappings.same;
+  } else {
+    tierMapping = fqtvTierMappings.different;
+  }
+  
   if (tier === 'N1') {
-    return 'Silver';
+    return tierMapping.n1 || originalTier;
   } else if (tier === 'N2') {
-    return 'Gold';
+    return tierMapping.n2 || originalTier;
   } else if (tier === 'N3') {
-    return 'Platinum';
+    return tierMapping.n3 || originalTier;
   } else if (tier === 'N0') {
     return 'N0';
   }
@@ -3976,22 +3318,6 @@ async function approveEntry(index) {
       return;
     }
 
-    // Validate seat-pax match before approval
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-    if (!seatPaxValidation.isValid) {
-      showAlert(`Cannot approve: ${seatPaxValidation.message}`, true);
-      isApproving = false;
-      return;
-    }
-
-    // Validate pax count before approval
-    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-    if (!paxValidation.isValid) {
-      showAlert(`Cannot approve: ${paxValidation.message}`, true);
-      isApproving = false;
-      return;
-    }
-
     if (isFqtvRequired(entry.class, entry.fqtv)) {
       showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
       isApproving = false;
@@ -4073,7 +3399,7 @@ async function approveEntry(index) {
     
     approvedEntry.docName = docName;
     
-    // Save to localStorage first
+    // FIXED: SAVE TO LOCALSTORAGE FIRST
     saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
     
     let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
@@ -4264,7 +3590,6 @@ function clearInputFields() {
   serialInput.value = '';
   remarksInput.value = '';
   qrStatus.innerHTML = '';
-  seatWarning.style.display = 'none';
   
   clearNotification.classList.add('show');
   setTimeout(() => {
@@ -4312,32 +3637,6 @@ async function saveEntry(entry){
   
   entry.date = currentShiftDate;
   entry.shift = currentShiftType;
-  
-  // Validate seat-pax match
-  const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-  if (!seatPaxValidation.isValid) {
-    showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
-    // Auto-correct pax
-    entry.numPax = seatPaxValidation.calculatedPax;
-    numPaxInput.value = seatPaxValidation.calculatedPax;
-    showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-  }
-  
-  // Check for restricted airlines
-  if (isPaxRestrictedAirline(entry.flight)) {
-    if (entry.numPax !== 1) {
-      showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
-      entry.numPax = 1;
-      numPaxInput.value = '1';
-    }
-  }
-  
-  // Validate pax count
-  const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-  if (!paxValidation.isValid) {
-    showAlert(`Cannot save: ${paxValidation.message}`, true);
-    return;
-  }
   
   if (isDuplicateEntry(entry)) {
     console.log('Duplicate passenger detected, skipping save');
@@ -4388,6 +3687,73 @@ async function saveEntry(entry){
   setTimeout(clearInputFields, 2000);
 }
 
+// ----- FQTV Zoom Functions -----
+function initializeFQTVZoom() {
+  // Close button
+  closeFqtvZoomBtn.addEventListener('click', closeFqtvZoom);
+  closeFqtvBtn.addEventListener('click', closeFqtvZoom);
+  
+  // Copy button
+  copyFqtvBtn.addEventListener('click', copyFqtvToClipboard);
+  
+  // Close modal when clicking outside
+  fqtvZoomModal.addEventListener('click', (e) => {
+    if (e.target === fqtvZoomModal) {
+      closeFqtvZoom();
+    }
+  });
+  
+  // Keyboard support
+  document.addEventListener('keydown', (e) => {
+    if (fqtvZoomModal.classList.contains('show')) {
+      if (e.key === 'Escape') {
+        closeFqtvZoom();
+        e.preventDefault();
+      } else if (e.key === 'c' && (e.ctrlKey || e.metaKey)) {
+        copyFqtvToClipboard();
+        e.preventDefault();
+      }
+    }
+  });
+}
+
+function openFqtvZoom(fqtvContent, rowIndex) {
+  currentFqtvContent = fqtvContent;
+  currentFqtvRowIndex = rowIndex;
+  
+  // Clean up the content for display (remove HTML tags)
+  const cleanContent = fqtvContent.replace(/<[^>]*>/g, '');
+  
+  fqtvZoomDisplay.textContent = cleanContent || '(Empty FQTV)';
+  fqtvZoomModal.classList.add('show');
+  
+  setTimeout(() => {
+    fqtvZoomDisplay.focus();
+  }, 100);
+}
+
+function closeFqtvZoom() {
+  fqtvZoomModal.classList.remove('show');
+  currentFqtvContent = '';
+  currentFqtvRowIndex = -1;
+}
+
+function copyFqtvToClipboard() {
+  const cleanContent = currentFqtvContent.replace(/<[^>]*>/g, '');
+  
+  if (!cleanContent || cleanContent === '(Empty FQTV)') {
+    showAlert('Nothing to copy - FQTV is empty', true);
+    return;
+  }
+  
+  navigator.clipboard.writeText(cleanContent).then(() => {
+    showAlert('FQTV copied to clipboard', false);
+  }).catch(err => {
+    console.error('Failed to copy FQTV:', err);
+    showAlert('Failed to copy to clipboard', true);
+  });
+}
+
 // ----- Optimized Render Function -----
 async function renderEntries() {
   if (isRendering) {
@@ -4421,12 +3787,6 @@ async function renderEntries() {
       const isQRFlight = e.flight.toUpperCase().startsWith('QR');
       const isDelayEntry = e.isDelayCharge || false;
       const isSQFlight = e.flight.toUpperCase().startsWith('SQ');
-      
-      // Check for seat-pax mismatch
-      const seatPaxValidation = validateSeatPaxMatch(e.seat, e.numPax);
-      if (!seatPaxValidation.isValid) {
-        tr.classList.add('seat-pax-mismatch');
-      }
       
       if (isFqtvNeeded) {
         tr.classList.add('fqtv-required');
@@ -4467,37 +3827,41 @@ async function renderEntries() {
         };
       })(i);
       
-      const editFqtvBtn = document.createElement('button');
-      editFqtvBtn.className = 'action-btn';
-      editFqtvBtn.innerHTML = '<i class="fas fa-edit"></i> FQTV';
-      editFqtvBtn.style.background = 'var(--info)';
-      editFqtvBtn.onclick = (function(index) {
-        return function(event) {
-          event.stopPropagation();
-          event.preventDefault();
-          showFqtvZoomModal(index);
-        };
-      })(i);
-      
       const actionsCell = document.createElement('td');
       actionsCell.appendChild(approveBtn);
-      actionsCell.appendChild(editFqtvBtn);
       actionsCell.appendChild(deleteBtn);
       
-      // Don't add QR or DELAY to flight number
+      // FIXED: Don't add QR or DELAY to flight number
       let flightDisplay = escapeHtml(e.flight);
+      
+      // Create FQTV cell with click functionality
+      const fqtvCell = document.createElement('td');
+      fqtvCell.className = 'editable-cell fqtv-cell';
+      fqtvCell.contentEditable = 'true';
+      fqtvCell.setAttribute('data-field', 'fqtv');
+      fqtvCell.innerHTML = fqtvDisplay;
+      
+      // Add click event to open zoom modal
+      fqtvCell.addEventListener('click', (function(index, content) {
+        return function(event) {
+          // Don't trigger if we're editing the cell
+          if (event.target.isContentEditable) return;
+          
+          // If shift-click, open zoom modal
+          if (event.shiftKey) {
+            event.preventDefault();
+            event.stopPropagation();
+            openFqtvZoom(content, index);
+          }
+        };
+      })(i, fqtvDisplay));
       
       tr.innerHTML = `
         <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
         <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
         <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
         <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
-        <td class="editable-cell" contenteditable="true" data-field="fqtv" style="position: relative;">
-          ${fqtvDisplay}
-          <button class="action-btn" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 2px 5px; font-size: 10px; display: none;">
-            <i class="fas fa-expand"></i>
-          </button>
-        </td>
+        <td class="editable-cell" contenteditable="true" data-field="fqtv">${fqtvDisplay}</td>
         <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
         <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
         <td class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(e.remarks)}</td>
@@ -4505,6 +3869,9 @@ async function renderEntries() {
         <td>${formatDateForDisplay(e.date)}</td>
         <td>${e.shift || currentShiftType || '-'}</td>
       `;
+      
+      // Replace the FQTV cell with our clickable version
+      tr.cells[4].replaceWith(fqtvCell);
       
       tr.appendChild(actionsCell);
       fragment.appendChild(tr);
@@ -4533,38 +3900,21 @@ function addAutoSaveListeners() {
     cell.addEventListener('blur', function() {
       const row = this.closest('tr');
       const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-      
-      // Check if this is the seat cell (index 2) or flight cell (index 1)
-      const cellIndex = Array.from(row.cells).indexOf(this);
-      
       saveEditedEntry(rowIndex);
-      
-      // If seat or flight was changed, show validation message
-      if (cellIndex === 1 || cellIndex === 2 || cellIndex === 5) { // flight, seat, or pax
-        const data = JSON.parse(localStorage.getItem('codesData')||'[]');
-        const entry = data[rowIndex];
-        
-        if (entry) {
-          // Re-check seat-pax match
-          const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-          if (!seatPaxValidation.isValid) {
-            showAlert(seatPaxValidation.message, true);
-            // Update row styling
-            row.classList.add('seat-pax-mismatch');
-          } else {
-            row.classList.remove('seat-pax-mismatch');
-          }
-          
-          // Also check restricted airlines
-          if (isPaxRestrictedAirline(entry.flight) && entry.numPax !== 1) {
-            showAlert(`Flight ${entry.flight} allows only 1 passenger. Pax changed to 1.`, false, true);
-            entry.numPax = 1;
-            row.cells[5].textContent = '1';
-            localStorage.setItem('codesData', JSON.stringify(data));
-          }
-        }
-      }
     });
+    
+    // For FQTV cells, also add click handler for zoom
+    if (cell.getAttribute('data-field') === 'fqtv') {
+      cell.addEventListener('click', function(event) {
+        if (event.shiftKey) {
+          event.preventDefault();
+          const row = this.closest('tr');
+          const rowIndex = Array.from(row.parentNode.children).indexOf(row);
+          const content = this.innerHTML;
+          openFqtvZoom(content, rowIndex);
+        }
+      });
+    }
   });
 }
 
@@ -4625,63 +3975,21 @@ function saveEditedEntry(rowIndex) {
   
   if (!targetRow) return;
   
-  // Get updated values
-  const updatedName = targetRow.cells[0].textContent.trim();
-  const updatedFlight = targetRow.cells[1].textContent.trim();
-  const updatedSeat = targetRow.cells[2].textContent.trim();
-  const updatedClass = targetRow.cells[3].textContent.trim();
+  entry.name = targetRow.cells[0].textContent.trim();
+  entry.flight = targetRow.cells[1].textContent.trim();
+  entry.seat = targetRow.cells[2].textContent.trim();
+  entry.class = targetRow.cells[3].textContent.trim();
   
   let fqtvValue = targetRow.cells[4].textContent.trim();
   fqtvValue = fqtvValue.replace('FQTV REQUIRED', '').trim();
-  const updatedFqtv = fqtvValue;
+  entry.fqtv = fqtvValue;
   
-  const updatedNumPax = Number(targetRow.cells[5].textContent.trim()) || 0;
-  const updatedSerial = targetRow.cells[6].textContent.trim();
-  const updatedRemarks = targetRow.cells[7].textContent.trim();
-  const updatedPnr = targetRow.cells[8].textContent.trim();
-  
-  // Check if seat or flight was changed
-  const seatChanged = entry.seat !== updatedSeat;
-  const flightChanged = entry.flight !== updatedFlight;
-  
-  // Update entry
-  entry.name = updatedName;
-  entry.flight = updatedFlight;
-  entry.seat = updatedSeat;
-  entry.class = updatedClass;
-  entry.fqtv = updatedFqtv;
-  entry.serial = updatedSerial;
-  entry.remarks = updatedRemarks;
-  entry.pnr = updatedPnr;
-  
-  // Handle seat-pax validation
-  const seatPaxValidation = validateSeatPaxMatch(updatedSeat, updatedNumPax);
-  if (!seatPaxValidation.isValid) {
-    // Auto-correct pax based on seat
-    entry.numPax = seatPaxValidation.calculatedPax;
-    targetRow.cells[5].textContent = seatPaxValidation.calculatedPax;
-    showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${updatedSeat}`, false, false, true);
-  } else {
-    entry.numPax = updatedNumPax;
-  }
-  
-  // Handle restricted airlines
-  if (isPaxRestrictedAirline(updatedFlight) && entry.numPax !== 1) {
-    entry.numPax = 1;
-    targetRow.cells[5].textContent = '1';
-    showAlert(`Flight ${updatedFlight} (${updatedFlight.substring(0, 2)}) allows only 1 passenger. Pax changed to 1.`, false, true);
-  }
+  entry.numPax = Number(targetRow.cells[5].textContent.trim()) || 0;
+  entry.serial = targetRow.cells[6].textContent.trim();
+  entry.remarks = targetRow.cells[7].textContent.trim();
+  entry.pnr = targetRow.cells[8].textContent.trim();
   
   localStorage.setItem('codesData', JSON.stringify(data));
-  
-  console.log("Entry saved:", {
-    name: entry.name,
-    flight: entry.flight,
-    seat: entry.seat,
-    pax: entry.numPax,
-    restricted: isPaxRestrictedAirline(entry.flight),
-    seatPaxMatch: seatPaxValidation.isValid
-  });
 }
 
 // ----- Numeric Keyboard Functions -----
@@ -5033,28 +4341,7 @@ function parseCode(){
   fqtvInput.value = hasNoFqtv ? '' : (fqtv || '');
   serialInput.value = '';
   remarksInput.value = '';
-  
-  // Auto-calculate pax based on seat
-  if (seatNo) {
-    const calculatedPax = calculatePaxFromSeatNumber(seatNo);
-    
-    if (isPaxRestrictedAirline(flightNo)) {
-      // Restricted airline - always 1 pax
-      numPaxInput.value = '1';
-      showAlert(`Flight ${flightNo} (${flightNo.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
-    } else {
-      // Auto-calculate for non-restricted airlines
-      numPaxInput.value = calculatedPax;
-      if (calculatedPax > 1) {
-        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatNo}`, false, false, true);
-      }
-    }
-  } else {
-    numPaxInput.value = '1';
-  }
-  
-  // Check seat-pax match
-  checkSeatPaxMatch();
+  numPaxInput.value = 1;
 }
 
 // ----- Barcode Scanner Detection -----
@@ -5772,87 +5059,11 @@ manualSaveBtn.addEventListener('click', async function() {
     approved: false
   };
   
-  // Validate seat-pax match
-  const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-  if (!seatPaxValidation.isValid) {
-    showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
-    entry.numPax = seatPaxValidation.calculatedPax;
-    numPaxInput.value = seatPaxValidation.calculatedPax;
-    showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-  }
-  
-  // Check for restricted airlines
-  if (isPaxRestrictedAirline(entry.flight)) {
-    if (entry.numPax !== 1) {
-      showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
-      entry.numPax = 1;
-      numPaxInput.value = '1';
-    }
-  }
-  
   await saveEntry(entry);
   
   setTimeout(() => {
     isProcessing = false;
   }, 1000);
-});
-
-// Manual entry button
-manualEntryBtn.addEventListener('click', showZoomModal);
-
-// Zoom modal listeners
-closeZoomBtn.addEventListener('click', closeZoomModal);
-zoomSaveBtn.addEventListener('click', saveZoomEntry);
-zoomCancelBtn.addEventListener('click', closeZoomModal);
-
-// FQTV zoom modal listeners
-closeFqtvZoomBtn.addEventListener('click', closeFqtvZoomModal);
-fqtvZoomSaveBtn.addEventListener('click', saveFqtvZoomValue);
-fqtvZoomCancelBtn.addEventListener('click', closeFqtvZoomModal);
-
-// Seat input listeners for real-time validation
-seatInput.addEventListener('input', function() {
-  checkSeatPaxMatch();
-  // Auto-correct pax based on seat
-  if (this.value.trim()) {
-    const flightValue = flightInput.value.trim();
-    if (!isPaxRestrictedAirline(flightValue)) {
-      autoCorrectPaxFromSeat(this, numPaxInput);
-    }
-  }
-});
-
-zoomSeatInput.addEventListener('input', function() {
-  checkZoomSeatPaxMatch();
-  // Auto-correct pax based on seat
-  if (this.value.trim()) {
-    const flightValue = zoomFlightInput.value.trim();
-    if (!isPaxRestrictedAirline(flightValue)) {
-      autoCorrectPaxFromSeat(this, zoomPaxInput);
-    }
-  }
-});
-
-zoomFlightInput.addEventListener('input', function() {
-  checkZoomSeatPaxMatch();
-  // Auto-select airline based on flight code
-  if (this.value.length >= 2) {
-    const iata = this.value.substring(0, 2).toUpperCase();
-    if (airlines[iata]) {
-      zoomAirlineSelect.value = iata;
-    }
-  }
-});
-
-flightInput.addEventListener('input', function() {
-  checkSeatPaxMatch();
-  // Auto-select airline based on flight code
-  if (this.value.length >= 2) {
-    const iata = this.value.substring(0, 2).toUpperCase();
-    if (airlines[iata]) {
-      airlineSelect.value = iata;
-    }
-  }
 });
 
 refreshShiftBtn.addEventListener('click', refreshShiftData);
@@ -5904,18 +5115,6 @@ numericKeyboardModal.addEventListener('click', (e) => {
   }
 });
 
-zoomModal.addEventListener('click', (e) => {
-  if (e.target === zoomModal) {
-    closeZoomModal();
-  }
-});
-
-fqtvZoomModal.addEventListener('click', (e) => {
-  if (e.target === fqtvZoomModal) {
-    closeFqtvZoomModal();
-  }
-});
-
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
   console.log("🚀 Initializing unified passenger approval system...");
@@ -5924,15 +5123,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- QR System: qrcards-2378e");
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
-  console.log("- Zoom Entry Modal: Enabled");
-  console.log("- FQTV Zoom Modal: Enabled");
+  console.log("- FQTV Zoom: Enabled (Shift+Click on FQTV field)");
   console.log("- Numeric Keyboard for SQ Flights: Enabled");
-  console.log("- FIXED: Seat-Pax tally system (1A=1 pax, 1AB=2 pax, 1A/2B=2 pax)");
-  console.log("- FIXED: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
+  console.log("- UPDATED: N1→Silver, N2→Gold, N3→Platinum for QR saves");
+  console.log("- FIXED: Pax = 0 now saves as 0 (not 1)");
+  console.log("- FIXED: No QR/DELAY badges added to flight numbers");
   
   clearOldProcessedCodes();
   
   loadApprovedEntriesCache();
+  
+  // Initialize FQTV zoom
+  initializeFQTVZoom();
   
   // Initialize numeric keyboard
   initializeNumericKeyboard();
@@ -6059,76 +5261,6 @@ window.testQRConnection = async function() {
     alert(`❌ QR System Connection Failed!\n\nError: ${error.message}\n\nProject: ${qrFirebaseConfig.projectId}\n\nCheck:\n1. Firebase Firestore Rules\n2. Internet Connection\n3. Project Configuration`);
     console.error("Connection test error:", error);
   }
-};
-
-// ----- Test the pax calculation function -----
-window.testPaxCalculation = function() {
-  const testCases = [
-    { seat: '1A', expected: 1 },
-    { seat: '12ABC', expected: 3 },
-    { seat: '1A/3B', expected: 2 },
-    { seat: '15DEF/GHI', expected: 6 },
-    { seat: '1', expected: 1 },
-    { seat: '', expected: 1 },
-    { seat: '12A,13B,14C', expected: 3 },
-    { seat: '12A 13B 14C', expected: 3 },
-    { seat: '1A/2B/3C', expected: 3 },
-    { seat: '12A;13B', expected: 2 },
-  ];
-  
-  console.log("=== Testing Seat-Pax Calculation ===");
-  testCases.forEach(test => {
-    const result = calculatePaxFromSeatNumber(test.seat);
-    const passed = result === test.expected;
-    console.log(`${passed ? '✅' : '❌'} Seat: "${test.seat}" => ${result} pax (expected: ${test.expected})`);
-  });
-  
-  console.log("\n=== Testing Seat-Pax Validation ===");
-  const validationTests = [
-    { seat: '1A', pax: 1, expected: true },
-    { seat: '1A', pax: 2, expected: false },
-    { seat: '12ABC', pax: 3, expected: true },
-    { seat: '12ABC', pax: 1, expected: false },
-    { seat: '1A/2B', pax: 2, expected: true },
-    { seat: '1A/2B', pax: 1, expected: false },
-    { seat: '12A,13B,14C', pax: 3, expected: true },
-    { seat: '12A,13B,14C', pax: 2, expected: false },
-  ];
-  
-  validationTests.forEach(test => {
-    const validation = validateSeatPaxMatch(test.seat, test.pax);
-    const passed = validation.isValid === test.expected;
-    console.log(`${passed ? '✅' : '❌'} Seat: "${test.seat}", Pax: ${test.pax} => ${validation.isValid ? 'VALID' : 'INVALID'} (expected: ${test.expected ? 'VALID' : 'INVALID'})`);
-  });
-  
-  alert("Seat-Pax calculation tests completed. Check console for results.");
-};
-
-// ----- Quick test function -----
-window.testSeatPax = function() {
-  const testData = [
-    { flight: 'FZ123', seat: '12ABC', expectedPax: 1 },
-    { flight: 'SQ456', seat: '1A/3B', expectedPax: 1 },
-    { flight: 'AA123', seat: '12ABC', expectedPax: 3 },
-    { flight: 'EK789', seat: '12ABC', expectedPax: 1 },
-    { flight: 'QR012', seat: '15DEF/GHI', expectedPax: 1 },
-    { flight: 'DL123', seat: '1A/2B', expectedPax: 2 },
-    { flight: 'UA456', seat: '12A,13B', expectedPax: 2 },
-  ];
-  
-  console.log("=== Quick Seat-Pax Test ===");
-  testData.forEach(test => {
-    const calculated = calculatePaxFromSeatNumber(test.seat);
-    const restricted = isPaxRestrictedAirline(test.flight);
-    const finalPax = restricted ? 1 : calculated;
-    const passed = finalPax === test.expectedPax;
-    
-    console.log(`${passed ? '✅' : '❌'} Flight: ${test.flight}, Seat: ${test.seat}`);
-    console.log(`   Calculated: ${calculated}, Restricted: ${restricted}, Final: ${finalPax}, Expected: ${test.expectedPax}`);
-  });
-  
-  console.log("\n=== Manual Entry Test ===");
-  showZoomModal();
 };
 </script>
 </body>
