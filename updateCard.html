@@ -630,82 +630,7 @@ let loggedInUserName = "Loading...";
 let autoSaveTimeout = null;
 let currentFlightNo = "";
 let currentDate = "";
-let flightsCollectionListener = null;
-let flightInfoListener = null;
-
-// ----- MAJOR OPTIMIZATION: Batch Updates -----
-class BatchUpdateManager {
-    constructor() {
-        this.pendingUpdates = new Map();
-        this.isProcessing = false;
-        this.batchInterval = 2000; // Process batch every 2 seconds
-        this.maxBatchSize = 500; // Firebase limit
-    }
-
-    addUpdate(passengerId, updateData) {
-        if (this.pendingUpdates.has(passengerId)) {
-            const existing = this.pendingUpdates.get(passengerId);
-            this.pendingUpdates.set(passengerId, { ...existing, ...updateData });
-        } else {
-            this.pendingUpdates.set(passengerId, updateData);
-        }
-
-        if (!this.isProcessing) {
-            this.isProcessing = true;
-            setTimeout(() => this.processBatch(), this.batchInterval);
-        }
-
-        if (this.pendingUpdates.size >= this.maxBatchSize) {
-            this.processBatch();
-        }
-    }
-
-    async processBatch() {
-        if (this.pendingUpdates.size === 0) {
-            this.isProcessing = false;
-            return;
-        }
-
-        try {
-            const batch = db.batch();
-            const updatesToProcess = new Map(this.pendingUpdates);
-            this.pendingUpdates.clear();
-
-            for (const [passengerId, updateData] of updatesToProcess) {
-                const docRef = db.collection("passengers").doc(passengerId);
-                batch.update(docRef, updateData);
-            }
-
-            await batch.commit();
-            console.log(`✓ Processed batch of ${updatesToProcess.size} updates`);
-            
-            // Update cache for processed updates
-            for (const [passengerId, updateData] of updatesToProcess) {
-                const key = `${currentDate}_${currentFlightNo}`;
-                if (flightCache.passengers[key]) {
-                    const index = flightCache.passengers[key].findIndex(p => p.id === passengerId);
-                    if (index !== -1) {
-                        Object.assign(flightCache.passengers[key][index], updateData);
-                        flightCache.timestamps[key] = Date.now();
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Error processing batch update:", error);
-            // Put failed updates back
-            for (const [passengerId, updateData] of this.pendingUpdates) {
-                this.pendingUpdates.set(passengerId, updateData);
-            }
-        }
-
-        this.isProcessing = false;
-        if (this.pendingUpdates.size > 0) {
-            setTimeout(() => this.processBatch(), this.batchInterval);
-        }
-    }
-}
-
-const batchManager = new BatchUpdateManager();
+let recentFlightsCache = {}; // Cache for recent flights per date
 
 // ----- CACHE HELPER FUNCTIONS -----
 function getCachedPassengers(date, flightNo) {
@@ -724,22 +649,26 @@ function cachePassengers(date, flightNo, data) {
     const key = `${date}_${flightNo}`;
     flightCache.passengers[key] = data;
     flightCache.timestamps[key] = Date.now();
+    console.log(`💾 Cached passengers for ${key}`);
 }
 
-function getCachedFlights(date) {
-    const cached = flightCache.flights[date];
-    const timestamp = flightCache.timestamps[`flights_${date}`];
+function getCachedFlights(date, type = "recent") {
+    const key = type === "recent" ? `recent_${date}` : `all_${date}`;
+    const cached = flightCache.flights[key];
+    const timestamp = flightCache.timestamps[`flights_${key}`];
     
     if (cached && timestamp && (Date.now() - timestamp < flightCache.ttl)) {
-        console.log(`📦 Using cached flights for ${date}`);
+        console.log(`📦 Using cached ${type} flights for ${date}`);
         return cached;
     }
     return null;
 }
 
-function cacheFlights(date, data) {
-    flightCache.flights[date] = data;
-    flightCache.timestamps[`flights_${date}`] = Date.now();
+function cacheFlights(date, data, type = "recent") {
+    const key = type === "recent" ? `recent_${date}` : `all_${date}`;
+    flightCache.flights[key] = data;
+    flightCache.timestamps[`flights_${key}`] = Date.now();
+    console.log(`💾 Cached ${type} flights for ${date}`);
 }
 
 function getCachedFlightInfo(date, flightNo) {
@@ -758,6 +687,7 @@ function cacheFlightInfo(date, flightNo, data) {
     const key = `${date}_${flightNo}`;
     flightCache.flightInfo[key] = data;
     flightCache.timestamps[`info_${key}`] = Date.now();
+    console.log(`💾 Cached flight info for ${key}`);
 }
 
 // Clear old cache entries periodically
@@ -785,7 +715,7 @@ setInterval(() => {
     if (clearedCount > 0) {
         console.log(`🧹 Cleared ${clearedCount} expired cache entries`);
     }
-}, 60000);
+}, 60000); // Check every minute
 
 // ----- OPTIMIZED FUNCTIONS -----
 function calculatePaxFromSeatNo(seatNo) {
@@ -861,7 +791,7 @@ function checkAuthState() {
         filterDate.value = `${yyyy}-${mm}-${dd}`;
         currentDate = filterDate.value;
         
-        loadFlightsForDate();
+        loadRecentFlights();
     } else {
         window.location.href = "login.html";
     }
@@ -879,106 +809,13 @@ function initializeCompanyInfo() {
     }
 }
 
-// ----- OPTIMIZATION: Use snapshot listener for real-time updates -----
-async function setupFlightListener(date, flightNo) {
-    // Remove existing listeners
-    if (flightsCollectionListener) {
-        flightsCollectionListener();
-        flightsCollectionListener = null;
-    }
-    
-    if (flightInfoListener) {
-        flightInfoListener();
-        flightInfoListener = null;
-    }
-    
-    if (!date || !flightNo) return;
-    
-    try {
-        // Set up listener for passengers
-        flightsCollectionListener = db.collection("passengers")
-            .where("date", "==", date)
-            .where("flightNo", "==", flightNo)
-            .where("approved", "==", true)
-            .onSnapshot(snapshot => {
-                console.log(`📡 Real-time update for ${date}_${flightNo}`);
-                
-                const changes = snapshot.docChanges();
-                if (changes.length === 0 && passengers.length > 0) {
-                    return; // No changes, skip re-render
-                }
-                
-                passengers = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
-                
-                // Update cache
-                cachePassengers(date, flightNo, passengers);
-                
-                updateTableHeaders();
-                renderTable();
-            }, error => {
-                console.error("Listener error:", error);
-            });
-            
-        // Set up listener for flight info
-        flightInfoListener = db.collection("flightInfo")
-            .where("date", "==", date)
-            .where("flightNo", "==", flightNo)
-            .limit(1)
-            .onSnapshot(snapshot => {
-                if (!snapshot.empty) {
-                    const doc = snapshot.docs[0];
-                    const data = doc.data();
-                    flightDocId = doc.id;
-                    flightStatus = data.status || "Open";
-                    
-                    cacheFlightInfo(date, flightNo, {
-                        data: data,
-                        docId: flightDocId,
-                        flightStatus: flightStatus
-                    });
-                    
-                    stdTimeInput.value = data.std || "";
-                    lastPaxTimeInput.value = data.lastPaxLeft || "";
-                    
-                    if (data.firstPax) {
-                        firstPaxTimeInput.value = data.firstPax;
-                    } else {
-                        const earliestTime = findEarliestCheckinTime();
-                        if (earliestTime) {
-                            firstPaxTimeInput.value = earliestTime;
-                        } else {
-                            firstPaxTimeInput.value = "";
-                        }
-                    }
-                    
-                    updateFlightButtonLabel();
-                } else {
-                    flightDocId = null;
-                    flightStatus = "Open";
-                    stdTimeInput.value = "";
-                    lastPaxTimeInput.value = "";
-                    
-                    const earliestTime = findEarliestCheckinTime();
-                    firstPaxTimeInput.value = earliestTime || "";
-                    
-                    updateFlightButtonLabel();
-                }
-            });
-            
-    } catch (error) {
-        console.error("Error setting up listeners:", error);
-    }
-}
-
-// ----- OPTIMIZED: Load flights for date -----
-async function loadFlightsForDate() {
+// ----- OPTIMIZED: Load recent flights with minimal reads -----
+async function loadRecentFlights() {
     const dateVal = filterDate.value;
     if (!dateVal) {
         filterFlight.innerHTML = '<option value="">Select Flight</option>';
         return;
     }
-    
-    currentDate = dateVal;
     
     // Clear UI
     filterFlight.innerHTML = '<option value="">Select Flight</option>';
@@ -993,32 +830,92 @@ async function loadFlightsForDate() {
     firstPaxTimeInput.value = "";
     updateFlightButtonLabel();
     
-    // Remove existing listeners
-    if (flightsCollectionListener) {
-        flightsCollectionListener();
-        flightsCollectionListener = null;
-    }
-    
-    if (flightInfoListener) {
-        flightInfoListener();
-        flightInfoListener = null;
-    }
-    
-    // Check cache first
-    const cachedFlights = getCachedFlights(dateVal);
+    // Check cache first for recent flights
+    const cachedFlights = getCachedFlights(dateVal, "recent");
     if (cachedFlights) {
-        populateFlightDropdown(cachedFlights);
+        populateFlightDropdown(cachedFlights, false);
         return;
     }
     
     try {
-        console.log(`🔍 Fetching flights for date: ${dateVal}`);
+        console.log(`🔍 Fetching RECENT flights for date: ${dateVal}`);
         
-        // Use aggregation query - only get distinct flight numbers
+        // OPTIMIZATION: Only fetch recent flights (last 20)
+        // We assume flights with checkinTime are the recent ones
+        // If checkinTime doesn't exist, we'll get flights with recent timestamps
         const snapshot = await db.collection("passengers")
             .where("date", "==", dateVal)
             .where("approved", "==", true)
-            .select("flightNo") // Only fetch flightNo field
+            .orderBy("checkinTime", "desc") // Most recent checkins first
+            .limit(20) // Only get 20 most recent
+            .get();
+        
+        // Extract unique flight numbers from recent documents
+        const flightSet = new Set();
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const flightNo = data.flightNo;
+            if (flightNo && flightNo.trim() !== "") {
+                flightSet.add(flightNo);
+            }
+        });
+        
+        const flights = Array.from(flightSet);
+        
+        // Cache and populate
+        cacheFlights(dateVal, flights, "recent");
+        populateFlightDropdown(flights, false);
+        
+        currentDate = dateVal;
+        
+    } catch (error) {
+        console.error("Error fetching recent flights:", error);
+        // Fallback: try without ordering
+        try {
+            const snapshot = await db.collection("passengers")
+                .where("date", "==", dateVal)
+                .where("approved", "==", true)
+                .limit(20)
+                .get();
+            
+            const flightSet = new Set();
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const flightNo = data.flightNo;
+                if (flightNo && flightNo.trim() !== "") {
+                    flightSet.add(flightNo);
+                }
+            });
+            
+            const flights = Array.from(flightSet);
+            cacheFlights(dateVal, flights, "recent");
+            populateFlightDropdown(flights, false);
+        } catch (fallbackError) {
+            console.error("Fallback error:", fallbackError);
+            filterFlight.innerHTML = '<option value="">Error loading flights</option>';
+        }
+    }
+}
+
+// ----- Load ALL flights (when user clicks "See More") -----
+async function loadAllFlights() {
+    const dateVal = filterDate.value;
+    if (!dateVal) return;
+    
+    // Check cache first for all flights
+    const cachedFlights = getCachedFlights(dateVal, "all");
+    if (cachedFlights) {
+        populateFlightDropdown(cachedFlights, true);
+        return;
+    }
+    
+    try {
+        console.log(`🔍 Fetching ALL flights for date: ${dateVal}`);
+        
+        // Fetch all flights for this date
+        const snapshot = await db.collection("passengers")
+            .where("date", "==", dateVal)
+            .where("approved", "==", true)
             .get();
         
         // Extract unique flight numbers
@@ -1034,16 +931,16 @@ async function loadFlightsForDate() {
         const flights = Array.from(flightSet).sort();
         
         // Cache and populate
-        cacheFlights(dateVal, flights);
-        populateFlightDropdown(flights);
+        cacheFlights(dateVal, flights, "all");
+        populateFlightDropdown(flights, true);
         
     } catch (error) {
-        console.error("Error fetching flights:", error);
-        filterFlight.innerHTML = '<option value="">Error loading flights</option>';
+        console.error("Error fetching all flights:", error);
+        alert("Error loading all flights. Please try again.");
     }
 }
 
-function populateFlightDropdown(flights) {
+function populateFlightDropdown(flights, isAllFlights = false) {
     if (flights.length === 0) {
         filterFlight.innerHTML = '<option value="">No flights found for this date</option>';
     } else {
@@ -1056,7 +953,92 @@ function populateFlightDropdown(flights) {
             option.textContent = f;
             filterFlight.appendChild(option);
         });
+        
+        // If showing recent flights, add "See More" option
+        if (!isAllFlights) {
+            const seeMoreOption = document.createElement("option");
+            seeMoreOption.value = "see_more";
+            seeMoreOption.textContent = "─── See More Flights ───";
+            seeMoreOption.style.fontStyle = "italic";
+            seeMoreOption.style.color = "#d4af37";
+            seeMoreOption.style.fontWeight = "bold";
+            filterFlight.appendChild(seeMoreOption);
+        }
     }
+}
+
+// ----- OPTIMIZED: Load flight info with caching -----
+async function loadFlightInfo() {
+    const dateVal = filterDate.value;
+    const flightVal = filterFlight.value;
+    
+    if (!dateVal || !flightVal) return;
+    
+    // Check cache first
+    const cachedInfo = getCachedFlightInfo(dateVal, flightVal);
+    if (cachedInfo) {
+        updateFlightInfoUI(cachedInfo);
+        return;
+    }
+    
+    try {
+        // Fetch flight info
+        const snapshot = await db.collection("flightInfo")
+            .where("date", "==", dateVal)
+            .where("flightNo", "==", flightVal)
+            .limit(1)
+            .get();
+        
+        if (!snapshot.empty) {
+            const data = snapshot.docs[0].data();
+            flightDocId = snapshot.docs[0].id;
+            
+            // Cache the result
+            cacheFlightInfo(dateVal, flightVal, {
+                data: data,
+                docId: flightDocId,
+                flightStatus: data.status || "Open"
+            });
+            
+            updateFlightInfoUI({ data, docId: flightDocId, flightStatus: data.status || "Open" });
+        } else {
+            flightDocId = null;
+            flightStatus = "Open";
+            stdTimeInput.value = "";
+            lastPaxTimeInput.value = "";
+            
+            const earliestTime = findEarliestCheckinTime();
+            firstPaxTimeInput.value = earliestTime || "";
+            
+            updateFlightButtonLabel();
+        }
+        
+    } catch (error) {
+        console.error("Error fetching flight info:", error);
+        flightStatus = "Open";
+        updateFlightButtonLabel();
+    }
+}
+
+function updateFlightInfoUI(info) {
+    const { data, docId, flightStatus: status } = info;
+    flightDocId = docId;
+    flightStatus = status || "Open";
+    stdTimeInput.value = data.std || "";
+    lastPaxTimeInput.value = data.lastPaxLeft || "";
+    
+    if (data.firstPax) {
+        firstPaxTimeInput.value = data.firstPax;
+    } else {
+        const earliestTime = findEarliestCheckinTime();
+        if (earliestTime) {
+            firstPaxTimeInput.value = earliestTime;
+        } else {
+            firstPaxTimeInput.value = "";
+        }
+    }
+    
+    updateFlightButtonLabel();
 }
 
 function findEarliestCheckinTime() {
@@ -1076,13 +1058,18 @@ function findEarliestCheckinTime() {
     return earliestTime;
 }
 
-// ----- OPTIMIZED: Load passengers with real-time listener -----
+// ----- OPTIMIZED: Load passengers with caching -----
 async function loadPassengersForFlight() {
     const dateVal = filterDate.value;
     const flightVal = filterFlight.value;
     
+    // Handle "See More" selection
+    if (flightVal === "see_more") {
+        loadAllFlights();
+        return;
+    }
+    
     currentFlightNo = flightVal;
-    currentDate = dateVal;
     
     if (!dateVal || !flightVal) {
         tableBody.innerHTML = "";
@@ -1097,7 +1084,7 @@ async function loadPassengersForFlight() {
         passengers = cachedPassengers;
         updateTableHeaders();
         renderTable();
-        setupFlightListener(dateVal, flightVal); // Setup real-time listener
+        loadFlightInfo(); // Load flight info separately (may use cache)
         return;
     }
     
@@ -1105,13 +1092,38 @@ async function loadPassengersForFlight() {
     tableBody.innerHTML = "";
     emptyState.style.display = "none";
     
-    // Setup real-time listener (will populate data)
-    setupFlightListener(dateVal, flightVal);
+    try {
+        console.log(`🔍 Fetching passengers for ${dateVal}_${flightVal}`);
+        
+        const snapshot = await db.collection("passengers")
+            .where("date", "==", dateVal)
+            .where("flightNo", "==", flightVal)
+            .where("approved", "==", true)
+            .limit(200)
+            .get();
+            
+        passengers = snapshot.docs.map(doc => ({...doc.data(), id: doc.id}));
+        
+        // Cache the results
+        cachePassengers(dateVal, flightVal, passengers);
+        
+        updateTableHeaders();
+        renderTable();
+        loadFlightInfo(); // Load flight info (may use cache)
+        
+    } catch (error) {
+        console.error("Error fetching passengers:", error);
+        passengers = [];
+        updateTableHeaders();
+        renderTable();
+        loadFlightInfo();
+    }
 }
 
 function updateTableHeaders() {
     const isFZFlight = currentFlightNo.toUpperCase().startsWith('FZ');
     
+    // REMOVED: airline and flightNo from table (redundant information)
     tableHeader.innerHTML = `
         <th>Name</th>
         <th>Seat No</th>
@@ -1125,7 +1137,7 @@ function updateTableHeaders() {
     `;
 }
 
-// ----- OPTIMIZED: Save passenger with batch update -----
+// ----- OPTIMIZED: Save passenger with cache update -----
 function savePassengerChanges(passenger, row, fields) {
     const updatedFields = {};
     fields.forEach((field, idx) => {
@@ -1136,21 +1148,26 @@ function savePassengerChanges(passenger, row, fields) {
         updatedFields.numPax = parseInt(updatedFields.numPax) || 1;
     }
     
-    // Add to batch manager instead of immediate update
-    batchManager.addUpdate(passenger.id, updatedFields);
-    
-    // Update local passenger immediately
-    Object.assign(passenger, updatedFields);
-    
-    // Update cache
-    const key = `${currentDate}_${currentFlightNo}`;
-    if (flightCache.passengers[key]) {
-        const cachedPassengers = flightCache.passengers[key];
-        const index = cachedPassengers.findIndex(p => p.id === passenger.id);
-        if (index !== -1) {
-            cachedPassengers[index] = { ...cachedPassengers[index], ...updatedFields };
-            flightCache.timestamps[key] = Date.now();
+    try {
+        // Update Firebase
+        db.collection("passengers").doc(passenger.id).update(updatedFields);
+        
+        // Update local passenger
+        Object.assign(passenger, updatedFields);
+        
+        // Update cache
+        const key = `${filterDate.value}_${currentFlightNo}`;
+        if (flightCache.passengers[key]) {
+            const cachedPassengers = flightCache.passengers[key];
+            const index = cachedPassengers.findIndex(p => p.id === passenger.id);
+            if (index !== -1) {
+                cachedPassengers[index] = { ...cachedPassengers[index], ...updatedFields };
+                flightCache.timestamps[key] = Date.now(); // Refresh cache timestamp
+            }
         }
+    } catch (error) {
+        console.error("Error updating passenger:", error);
+        alert("Error updating passenger. Please try again.");
     }
 }
 
@@ -1169,6 +1186,7 @@ function renderTable() {
     
     const isFZFlight = currentFlightNo.toUpperCase().startsWith('FZ');
     
+    // UPDATED FIELDS: Removed airline and flightNo (redundant)
     const fields = ["name", "seatNo", "numPax"];
     if (isFZFlight) fields.push("pnr");
     fields.push("fqtv", "serial", "checkinTime", "remarks");
@@ -1221,16 +1239,6 @@ function renderTable() {
                     
                     savePassengerChanges(p, row, fields);
                 });
-            } else {
-                content.addEventListener('blur', function() {
-                    if (flightStatus === "Closed") {
-                        alert("Flight is closed. Editing not allowed.");
-                        content.textContent = p[field] || "";
-                        return;
-                    }
-                    
-                    savePassengerChanges(p, row, fields);
-                });
             }
             
             td.appendChild(content);
@@ -1275,16 +1283,16 @@ function renderTable() {
             if (confirm("Are you sure you want to delete this passenger?")) {
                 try {
                     db.collection("passengers").doc(p.id).delete();
+                    passengers = passengers.filter(pass => pass.id !== p.id);
                     
-                    // Update cache immediately
-                    const key = `${currentDate}_${currentFlightNo}`;
+                    // Update cache
+                    const key = `${filterDate.value}_${currentFlightNo}`;
                     if (flightCache.passengers[key]) {
-                        flightCache.passengers[key] = flightCache.passengers[key].filter(pass => pass.id !== p.id);
+                        const updatedCache = flightCache.passengers[key].filter(pass => pass.id !== p.id);
+                        flightCache.passengers[key] = updatedCache;
                         flightCache.timestamps[key] = Date.now();
                     }
                     
-                    // Remove from local array
-                    passengers = passengers.filter(pass => pass.id !== p.id);
                     renderTable();
                 } catch (error) {
                     console.error("Error deleting passenger:", error);
@@ -1314,9 +1322,9 @@ function updateFlightButtonLabel() {
     closedWarning.style.display = flightStatus === "Closed" ? "flex" : "none";
 }
 
-// ----- OPTIMIZED: Save flight times -----
+// ----- OPTIMIZED: Save flight times with cache update -----
 async function saveFlightTimes() {
-    if (!currentFlightNo) return;
+    if (!filterFlight.value) return;
     
     // Validate times
     const times = [firstPaxTimeInput.value, lastPaxTimeInput.value, stdTimeInput.value];
@@ -1335,8 +1343,8 @@ async function saveFlightTimes() {
             await db.collection("flightInfo").doc(flightDocId).update(updateData);
         } else {
             const docRef = await db.collection("flightInfo").add({
-                date: currentDate,
-                flightNo: currentFlightNo,
+                date: filterDate.value,
+                flightNo: filterFlight.value,
                 status: "Open",
                 ...updateData
             });
@@ -1344,8 +1352,9 @@ async function saveFlightTimes() {
         }
         
         // Update cache
-        cacheFlightInfo(currentDate, currentFlightNo, {
-            data: { ...flightCache.flightInfo[`${currentDate}_${currentFlightNo}`]?.data, ...updateData },
+        const key = `${filterDate.value}_${filterFlight.value}`;
+        cacheFlightInfo(filterDate.value, filterFlight.value, {
+            data: { ...flightCache.flightInfo[key]?.data, ...updateData },
             docId: flightDocId,
             flightStatus: flightStatus
         });
@@ -1358,7 +1367,7 @@ async function saveFlightTimes() {
 
 // Toggle flight status
 toggleFlightBtn.onclick = async () => {
-    if (!currentFlightNo) {
+    if (!filterFlight.value) {
         alert("No flight selected");
         return;
     }
@@ -1392,8 +1401,8 @@ toggleFlightBtn.onclick = async () => {
             await db.collection("flightInfo").doc(flightDocId).update(updateData);
         } else {
             const docRef = await db.collection("flightInfo").add({
-                date: currentDate,
-                flightNo: currentFlightNo,
+                date: filterDate.value,
+                flightNo: filterFlight.value,
                 ...updateData
             });
             flightDocId = docRef.id;
@@ -1402,8 +1411,9 @@ toggleFlightBtn.onclick = async () => {
         flightStatus = newStatus;
         
         // Update cache
-        cacheFlightInfo(currentDate, currentFlightNo, {
-            data: { ...flightCache.flightInfo[`${currentDate}_${currentFlightNo}`]?.data, ...updateData },
+        const key = `${filterDate.value}_${filterFlight.value}`;
+        cacheFlightInfo(filterDate.value, filterFlight.value, {
+            data: { ...flightCache.flightInfo[key]?.data, ...updateData },
             docId: flightDocId,
             flightStatus: newStatus
         });
@@ -1415,7 +1425,7 @@ toggleFlightBtn.onclick = async () => {
     }
 };
 
-// Print function
+// Print function - UPDATED: removed airline and flightNo columns
 printBtn.addEventListener("click", () => {
     if (flightStatus !== "Closed") {
         alert("You must close the flight before printing the report.");
@@ -1429,8 +1439,8 @@ printBtn.addEventListener("click", () => {
         return;
     }
 
-    const flightNo = currentFlightNo;
-    const dateVal = currentDate;
+    const flightNo = filterFlight.value;
+    const dateVal = filterDate.value;
     const std = stdTimeInput.value || "--:--";
     const firstPax = firstPaxTimeInput.value || "--:--";
     const lastPax = lastPaxTimeInput.value || "--:--";
@@ -1625,14 +1635,8 @@ printBtn.addEventListener("click", () => {
 });
 
 // ----- EVENT LISTENERS -----
-filterDate.addEventListener("change", loadFlightsForDate);
+filterDate.addEventListener("change", loadRecentFlights);
 filterFlight.addEventListener("change", loadPassengersForFlight);
-
-// Clean up listeners when page unloads
-window.addEventListener('beforeunload', () => {
-    if (flightsCollectionListener) flightsCollectionListener();
-    if (flightInfoListener) flightInfoListener();
-});
 
 // ----- INITIALIZE -----
 checkAuthState();
