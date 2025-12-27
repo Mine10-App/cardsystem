@@ -1940,7 +1940,7 @@
       
       <div class="zoom-form-group" style="flex: 1;">
         <label for="zoomSerialInput"><i class="fas fa-hashtag"></i> Serial No</label>
-        <div class="zoom-input-with-icon">
+        <div class="input-with-icon">
           <i class="fas fa-list-ol"></i>
           <input type="text" id="zoomSerialInput" class="zoom-input" placeholder="Serial number">
         </div>
@@ -2397,22 +2397,26 @@ const airlines = {
   'PR':'Philippine Airlines', 'TG':'Thai Airways'
 };
 
-// ----- FQTV Tier Level Mappings -----
+// ----- FIXED: Correct FQTV Tier Level Mappings -----
 const fqtvTierMappings = {
   'same': {
-    'n1': 'Silver',
-    'n2': 'Gold',
-    'n3': 'Platinum'
+    'n1': 'Platinum',    // Same airline: n1 = Platinum
+    'n2': 'Gold',        // Same airline: n2 = Gold
+    'n3': 'Silver'       // Same airline: n3 = Silver
   },
   'different': {
-    'n1': 'Ruby',
-    'n2': 'Sapphire',
-    'n3': 'Emerald'
+    'n1': 'Emerald',     // Different airline: n1 = Emerald
+    'n2': 'Sapphire',    // Different airline: n2 = Sapphire
+    'n3': 'Ruby'         // Different airline: n3 = Ruby
   }
 };
 
 // ----- QR System Storage -----
 let qrEntriesProcessed = [];
+
+// ----- Track last values for seat/pax alerts -----
+let lastSeatValue = '';
+let lastPaxValue = '1';
 
 // ----- Calculate Pax from Seat Number (IMPROVED) -----
 function calculatePaxFromSeatNumber(seatNumber) {
@@ -2651,7 +2655,7 @@ let shiftCacheInitialized = false;
 let shiftCache = {
   data: null,
   timestamp: 0,
-  ttl: 10 * 60 * 1000, // 10 minutes
+  ttl: 30 * 60 * 1000, // 30 minutes (increased from 10 minutes)
   dateKey: '',
   shiftType: '',
   openTime: ''
@@ -2838,43 +2842,56 @@ function saveZoomEntry() {
   closeZoomModal();
 }
 
-// ----- Auto-Zoom for Manual Fields -----
+// ----- FIXED: Auto-Zoom for Manual Fields (Click only, no tab) -----
 function setupAutoZoomFields() {
   const autoZoomFields = document.querySelectorAll('.auto-zoom-field');
   
   autoZoomFields.forEach(field => {
-    // Clear any existing listeners
+    // Remove all existing listeners to prevent duplicates
     field.removeEventListener('focus', handleAutoZoomFocus);
     field.removeEventListener('click', handleAutoZoomFocus);
     
-    // Add new listeners
-    field.addEventListener('focus', handleAutoZoomFocus);
+    // ONLY add click listener (not focus/tab)
     field.addEventListener('click', handleAutoZoomFocus);
     
-    // Also add on input for certain fields to show zoom if text exists
-    field.addEventListener('input', function() {
-      if (this.value.trim() && !zoomModal.classList.contains('show')) {
-        // Small delay to allow user to finish typing
-        clearTimeout(this.zoomTimer);
-        this.zoomTimer = setTimeout(() => {
-          if (this.value.trim() && document.activeElement === this) {
-            showZoomModalWithField(this.id, this.value);
-          }
-        }, 800);
-      }
-    });
+    // Remove tabindex to prevent tab navigation to these fields
+    field.setAttribute('tabindex', '-1');
   });
   
-  // Special handling for FQTV field (readonly, needs click)
+  // Setup FQTV field separately (with both click and tab support)
+  setupFqtvField();
+}
+
+// Setup FQTV field with both click and tab support
+function setupFqtvField() {
   const fqtvInput = document.getElementById('fqtvInput');
   if (fqtvInput) {
-    fqtvInput.addEventListener('click', function() {
-      showFqtvZoomFromField();
-    });
+    // Remove existing listeners
+    fqtvInput.removeEventListener('click', showFqtvZoomFromField);
+    fqtvInput.removeEventListener('focus', handleFqtvFocus);
+    
+    // Add click listener
+    fqtvInput.addEventListener('click', showFqtvZoomFromField);
+    
+    // Add focus listener for tab navigation
+    fqtvInput.addEventListener('focus', handleFqtvFocus);
+    
+    // Keep tabindex for FQTV field
+    fqtvInput.setAttribute('tabindex', '0');
   }
 }
 
-// Handle auto-zoom when field is focused/clicked
+// Handle FQTV field focus (for tab navigation)
+function handleFqtvFocus() {
+  const fqtvInput = document.getElementById('fqtvInput');
+  if (fqtvInput && !fqtvZoomModal.classList.contains('show')) {
+    setTimeout(() => {
+      showFqtvZoomFromField();
+    }, 100);
+  }
+}
+
+// Handle auto-zoom when field is clicked (not focused via tab)
 function handleAutoZoomFocus(event) {
   const field = event.target;
   const fieldId = field.id;
@@ -3148,14 +3165,14 @@ function handleFqtvCellClick(event) {
   }
 }
 
-// ----- Add tab navigation support -----
+// ----- Add tab navigation support for FQTV field only -----
 document.addEventListener('keydown', function(event) {
   // Check if we're in a table cell and Tab is pressed
   if (event.key === 'Tab' && event.target.classList.contains('editable-cell')) {
     const cell = event.target;
     const field = cell.getAttribute('data-field');
     
-    // If it's the FQTV field and has content, show zoom modal
+    // If it's the FQTV field, show zoom modal
     if (field === 'fqtv') {
       event.preventDefault(); // Prevent default tab behavior
       const row = cell.closest('tr');
@@ -3176,15 +3193,21 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
-// ----- Seat-Pax Validation -----
+// ----- FIXED: Seat-Pax Validation (Only show alerts on actual changes) -----
 function checkSeatPaxMatch() {
   const seat = seatInput.value.trim();
   const pax = parseInt(numPaxInput.value) || 1;
   
-  if (!seat) {
+  // Only check if seat has value AND it's different from last value
+  if (!seat || seat === lastSeatValue) {
     seatWarning.style.display = 'none';
+    seatInput.parentElement.classList.remove('seat-pax-mismatch');
+    numPaxInput.parentElement.style.borderColor = '';
     return;
   }
+  
+  // Update last value
+  lastSeatValue = seat;
   
   const validation = validateSeatPaxMatch(seat, pax);
   if (!validation.isValid) {
@@ -3380,7 +3403,7 @@ async function loadQREntries() {
     
     const snapshot = await qrDb.collection('flightEntries')
       .orderBy('timestamp', 'desc')
-      .limit(200)
+      .limit(100) // Reduced from 200 to save reads
       .get();
     
     qrEntries = [];
@@ -3790,7 +3813,7 @@ function convertFFPTier(carrierCode, ffpOwner, originalTier) {
   return originalTier;
 }
 
-// ----- Process FQTV Tier Level -----
+// ----- FIXED: Process FQTV Tier Level with corrected mappings -----
 function processFqtvTier(fqtvNumber, flightCode) {
   if (!fqtvNumber || fqtvNumber.trim() === '') return '';
   
@@ -4158,7 +4181,7 @@ function loadCurrentShiftFromLocalStorage() {
       const now = getMaldivesTime();
       const minutesDiff = (now - lastUpdated) / (1000 * 60);
       
-      if (minutesDiff < 10 && shiftInfo.shiftStatus === 'open') {
+      if (minutesDiff < 30 && shiftInfo.shiftStatus === 'open') { // Increased from 10 to 30 minutes
         console.log("📂 Loading shift from localStorage (fresh cache)");
         
         currentShiftType = shiftInfo.shiftType;
@@ -4329,6 +4352,7 @@ async function approveEntry(index) {
         fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
         fqtvValue = fqtvValue.replace(/\/[Nn][123]\s*$/, '').trim();
         
+        // FIXED: Use the corrected tier mapping function
         const tierLevel = processFqtvTier(fqtvValue, entry.flight);
         
         if (tierLevel) {
@@ -4568,6 +4592,10 @@ function clearInputFields() {
   remarksInput.value = '';
   qrStatus.innerHTML = '';
   seatWarning.style.display = 'none';
+  
+  // Reset last values
+  lastSeatValue = '';
+  lastPaxValue = '1';
   
   clearNotification.classList.add('show');
   setTimeout(() => {
@@ -6116,15 +6144,29 @@ zoomCancelBtn.addEventListener('click', closeZoomModal);
 closeFqtvZoomBtn.addEventListener('click', closeFqtvZoomModal);
 fqtvZoomCancelBtn.addEventListener('click', closeFqtvZoomModal);
 
-// Seat input listeners for real-time validation
+// Seat input listeners for real-time validation (FIXED: Only alert on changes)
 seatInput.addEventListener('input', function() {
-  checkSeatPaxMatch();
-  // Auto-correct pax based on seat
-  if (this.value.trim()) {
-    const flightValue = flightInput.value.trim();
-    if (!isPaxRestrictedAirline(flightValue)) {
-      autoCorrectPaxFromSeat(this, numPaxInput);
+  const currentSeat = this.value.trim();
+  if (currentSeat !== lastSeatValue) {
+    checkSeatPaxMatch();
+    lastSeatValue = currentSeat;
+    
+    // Auto-correct pax based on seat (only for non-restricted airlines)
+    if (currentSeat) {
+      const flightValue = flightInput.value.trim();
+      if (!isPaxRestrictedAirline(flightValue)) {
+        autoCorrectPaxFromSeat(this, numPaxInput);
+      }
     }
+  }
+});
+
+// Pax input listener (FIXED: Only alert on changes)
+numPaxInput.addEventListener('input', function() {
+  const currentPax = this.value;
+  if (currentPax !== lastPaxValue) {
+    checkSeatPaxMatch();
+    lastPaxValue = currentPax;
   }
 });
 
@@ -6230,8 +6272,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- QR System: qrcards-2378e");
   console.log("- Delay Charge System: Enabled");
   console.log("- Storage Manager: Enabled");
-  console.log("- Auto-Zoom: Enabled for manual fields");
-  console.log("- Auto-FQTV Zoom: Enabled for saved entries");
+  console.log("- FIXED: Manual Entry Zoom - Click only (no tab)");
+  console.log("- FIXED: FQTV Zoom - Click AND Tab navigation");
+  console.log("- FIXED: Seat-Pax alerts only on actual field changes");
+  console.log("- FIXED: FQTV Tier mapping: Same airline: n1=Platinum, n2=Gold, n3=Silver");
+  console.log("- FIXED: FQTV Tier mapping: Different airline: n1=Emerald, n2=Sapphire, n3=Ruby");
+  console.log("- OPTIMIZED: Reduced Firebase reads (30min cache, 15min refresh)");
   console.log("- FIXED: Seat-Pax tally system (1A=1 pax, 1AB=2 pax, 1A/2B=2 pax)");
   console.log("- FIXED: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
   
@@ -6242,8 +6288,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Initialize numeric keyboard
   initializeNumericKeyboard();
   
-  // Set up auto-zoom fields
+  // Set up auto-zoom fields (FIXED: Click only, no tab)
   setupAutoZoomFields();
+  
+  // Setup FQTV field (FIXED: Both click and tab)
+  setupFqtvField();
   
   setTimeout(() => {
     initializeQRFirebase();
@@ -6281,16 +6330,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   renderEntries();
   
+  // OPTIMIZED: Reduced periodic shift checks from 5 to 15 minutes
   setInterval(() => {
     if (currentShiftStatus === 'open') {
-      console.log("🔄 Periodic shift check");
+      console.log("🔄 Periodic shift check (15 min interval)");
       fetchCurrentOpenShift();
     }
-  }, 5 * 60 * 1000);
+  }, 15 * 60 * 1000); // 15 minutes
   
+  // OPTIMIZED: Reduced QR entry loading from 2 to 10 minutes
   setInterval(() => {
     loadQREntries();
-  }, 2 * 60 * 1000);
+  }, 10 * 60 * 1000); // 10 minutes
   
   // Background sync of approved entries
   setInterval(() => {
