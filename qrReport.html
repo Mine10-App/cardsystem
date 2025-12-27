@@ -1607,7 +1607,7 @@
                 });
         };
 
-        // Download filtered data - FIXED FORMAT
+        // Download filtered data - FIXED CSV FORMAT (each field separate)
         async function downloadFilteredData() {
             if (filteredEntries.length === 0) {
                 showToast('No Data', 'No data available to download', 'warning');
@@ -1617,6 +1617,7 @@
             showLoading('Preparing download...');
             
             // Create CSV content with EXACT column order as requested
+            // Using comma-separated values (CSV)
             const headers = [
                 'Flight_Date',
                 'Carrier_Code',
@@ -1635,9 +1636,11 @@
                 'PAX_Type'
             ];
             
-            let csvContent = headers.join('\t') + '\n';  // Using tabs as requested
+            // Create CSV content - each field in separate column
+            let csvContent = headers.join(',') + '\n';
             
             filteredEntries.forEach(entry => {
+                // Create row with data in the exact order specified
                 const row = [
                     entry.flightDate || '',
                     entry.carrierCode || '',
@@ -1656,20 +1659,21 @@
                     entry.paxType || 'Adult'
                 ];
                 
-                // Escape tabs and quotes
+                // Proper CSV formatting - escape commas and quotes
                 const escapedRow = row.map(value => {
                     const stringValue = String(value);
-                    if (stringValue.includes('\t') || stringValue.includes('"') || stringValue.includes('\n')) {
-                        return `"${stringValue.replace(/"/g, '""')}"`;
+                    // If value contains comma, quote, or newline, wrap in quotes and escape quotes
+                    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                        return '"' + stringValue.replace(/"/g, '""') + '"';
                     }
                     return stringValue;
                 });
                 
-                csvContent += escapedRow.join('\t') + '\n';
+                csvContent += escapedRow.join(',') + '\n';
             });
             
             // Create and trigger download
-            const blob = new Blob([csvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             
@@ -1687,7 +1691,7 @@
             document.body.removeChild(link);
             
             hideLoading();
-            showToast('Download Complete', `${filteredEntries.length} records exported in requested format`, 'success');
+            showToast('Download Complete', `${filteredEntries.length} records exported as CSV (each field in separate column)`, 'success');
         }
 
         // Event Listeners
