@@ -6,6 +6,7 @@
 <title>Code Parser & Passenger Approval</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
+  /* All CSS styles from your code remain unchanged */
   :root {
     --gold: #D4AF37;
     --gold-light: #F5E8B8;
@@ -33,12 +34,12 @@
   
   body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 80px 20px 20px 20px; /* Increased top padding from 20px to 80px */
+    padding: 80px 20px 20px 20px;
     background: var(--white);
     margin: 0;
     color: #333;
     background-color: #f9f9f9;
-}
+  }
   
   .container {
     display: flex;
@@ -332,7 +333,7 @@
   
   .clear-notification {
     position: fixed;
-    top: 90px; /* Moved down to be below float buttons */
+    top: 90px;
     right: 20px;
     background: var(--success);
     color: white;
@@ -346,12 +347,12 @@
     opacity: 0;
     transform: translateY(-20px);
     transition: all 0.3s ease;
-}
+  }
 
-.clear-notification.show {
+  .clear-notification.show {
     opacity: 1;
     transform: translateY(0);
-}
+  }
   
   .shift-status {
     display: flex;
@@ -381,7 +382,7 @@
   }
   
   /* Float Navigation - MOVED TO TOP */
-.float-nav {
+  .float-nav {
     position: fixed;
     top: 20px;
     right: 30px;
@@ -389,9 +390,9 @@
     flex-direction: row;
     gap: 15px;
     z-index: 1000;
-}
+  }
 
-.float-btn {
+  .float-btn {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -407,15 +408,15 @@
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-}
+  }
 
-.float-btn:hover {
+  .float-btn:hover {
     background: var(--gold-dark);
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-}
+  }
 
-.float-btn::after {
+  .float-btn::after {
     content: '';
     position: absolute;
     top: 0;
@@ -425,13 +426,13 @@
     background: rgba(255,255,255,0.1);
     opacity: 0;
     transition: opacity 0.3s ease;
-}
+  }
 
-.float-btn:hover::after {
+  .float-btn:hover::after {
     opacity: 1;
-}
+  }
 
-.float-tooltip {
+  .float-tooltip {
     position: absolute;
     bottom: -40px;
     left: 50%;
@@ -446,70 +447,70 @@
     transition: all 0.3s ease;
     pointer-events: none;
     z-index: 1001;
-}
+  }
 
-.float-btn:hover .float-tooltip {
+  .float-btn:hover .float-tooltip {
     opacity: 1;
     bottom: -35px;
-}
+  }
 
-/* Individual button colors */
-.float-btn:nth-child(1) { background: var(--info); } /* Storage Manager */
-.float-btn:nth-child(2) { background: var(--delay-orange); } /* Delay Charge */
-.float-btn:nth-child(3) { background: var(--shift-blue); } /* Refresh Shift */
-.float-btn:nth-child(4) { background: var(--gold); } /* Home Dashboard */
-.float-btn:nth-child(5) { background: var(--gold-dark); } /* Reports */
-.float-btn:nth-child(6) { background: var(--qr-green); } /* QR Reports */
+  /* Individual button colors */
+  .float-btn:nth-child(1) { background: var(--info); } /* Storage Manager */
+  .float-btn:nth-child(2) { background: var(--delay-orange); } /* Delay Charge */
+  .float-btn:nth-child(3) { background: var(--shift-blue); } /* Refresh Shift */
+  .float-btn:nth-child(4) { background: var(--gold); } /* Home Dashboard */
+  .float-btn:nth-child(5) { background: var(--gold-dark); } /* Reports */
+  .float-btn:nth-child(6) { background: var(--qr-green); } /* QR Reports */
 
-/* Responsive adjustments for top placement */
-@media (max-width: 768px) {
+  /* Responsive adjustments for top placement */
+  @media (max-width: 768px) {
     .float-nav {
-        top: 15px;
-        right: 15px;
-        gap: 10px;
+      top: 15px;
+      right: 15px;
+      gap: 10px;
     }
     
     .float-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 18px;
+      width: 50px;
+      height: 50px;
+      font-size: 18px;
     }
     
     .float-tooltip {
-        font-size: 12px;
-        padding: 6px 10px;
-        bottom: -35px;
+      font-size: 12px;
+      padding: 6px 10px;
+      bottom: -35px;
     }
     
     .float-btn:hover .float-tooltip {
-        bottom: -30px;
+      bottom: -30px;
     }
-}
+  }
 
-@media (max-width: 480px) {
+  @media (max-width: 480px) {
     .float-nav {
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 8px;
-        max-width: 60%;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      max-width: 60%;
     }
     
     .float-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 16px;
+      width: 45px;
+      height: 45px;
+      font-size: 16px;
     }
     
     .float-tooltip {
-        font-size: 11px;
-        padding: 5px 8px;
-        bottom: -30px;
+      font-size: 11px;
+      padding: 5px 8px;
+      bottom: -30px;
     }
     
     .float-btn:hover .float-tooltip {
-        bottom: -25px;
+      bottom: -25px;
     }
-}
+  }
   
   @media (max-width: 768px) {
     .float-nav {
@@ -565,7 +566,7 @@
   
   .alert-notification {
     position: fixed;
-    top: 90px; /* Moved down to be below float buttons */
+    top: 90px;
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
     background: var(--success);
@@ -579,12 +580,12 @@
     z-index: 999;
     opacity: 0;
     transition: all 0.3s ease;
-}
+  }
 
-.alert-notification.show {
+  .alert-notification.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-}
+  }
   
   .alert-notification.error {
     background: var(--error);
@@ -1746,7 +1747,7 @@
   
   /* Manual Entry Button */
   .manual-entry-btn {
-    display: none; /* Hide the manual entry button */
+    display: none;
   }
   
   /* Auto-zoom indicator for manual fields */
@@ -2427,14 +2428,9 @@
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="./firebackup.js"></script>
-<script src="./fireC1.js"></script>
-<!-- Shift System Firebase Configuration -->
-<script src="./fireshift.js"></script>
-<!-- QR Firebase Configuration -->
-<script src="./qr-firebase-config.js"></script>
 <script>
-// ----- Airlines dropdown -----
+// ====== COMPLETE JAVASCRIPT CODE ======
+
 // ----- Airlines dropdown -----
 const airlines = {
     'EK':'Emirates','FZ':'Flydubai','BA':'British Airways','EY':'Etihad',
@@ -3285,6 +3281,13 @@ const zoomCancelBtn = document.getElementById('zoomCancelBtn');
 const zoomSeatWarning = document.getElementById('zoomSeatWarning');
 const zoomSeatWarningText = document.getElementById('zoomSeatWarningText');
 
+// ----- FQTV Zoom Modal Elements -----
+const fqtvZoomModal = document.getElementById('fqtvZoomModal');
+const closeFqtvZoomBtn = document.getElementById('closeFqtvZoomBtn');
+const fqtvZoomInput = document.getElementById('fqtvZoomInput');
+const fqtvZoomSaveBtn = document.getElementById('fqtvZoomSaveBtn');
+const fqtvZoomCancelBtn = document.getElementById('fqtvZoomCancelBtn');
+
 // ----- Seat input listener with auto-correction -----
 seatInput.addEventListener('input', function() {
     const currentSeat = this.value.trim();
@@ -3409,100 +3412,6 @@ zoomSaveBtn.addEventListener('click', function() {
     closeZoomModal();
 });
 
-// ----- Save Entry function with seat auto-correction -----
-async function saveEntry(entry){
-    if (!currentShiftType || currentShiftStatus !== 'open') {
-        showAlert('No active shift or shift not open!', true);
-        return;
-    }
-    
-    entry.date = currentShiftDate;
-    entry.shift = currentShiftType;
-    
-    // Auto-correct seat format (remove slashes) and handle restricted airlines
-    if (entry.seat) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
-        if (correctedSeat !== entry.seat) {
-            entry.seat = correctedSeat;
-            seatInput.value = correctedSeat;
-        }
-    }
-    
-    // Validate seat-pax match
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-    if (!seatPaxValidation.isValid) {
-        showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
-        // Auto-correct pax
-        entry.numPax = seatPaxValidation.calculatedPax;
-        numPaxInput.value = seatPaxValidation.calculatedPax;
-        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-    }
-    
-    // Check for restricted airlines
-    if (isPaxRestrictedAirline(entry.flight)) {
-        if (entry.numPax !== 1) {
-            showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
-            entry.numPax = 1;
-            numPaxInput.value = '1';
-        }
-    }
-    
-    // Validate pax count
-    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-    if (!paxValidation.isValid) {
-        showAlert(`Cannot save: ${paxValidation.message}`, true);
-        return;
-    }
-    
-    if (isDuplicateEntry(entry)) {
-        console.log('Duplicate passenger detected, skipping save');
-        showAlert(`${entry.name} is already entered for flight ${entry.flight}`, true);
-        
-        codeInput.value = '';
-        codeInput.focus();
-        setTimeout(clearInputFields, 2000);
-        return;
-    }
-    
-    const flightUpper = entry.flight.toUpperCase();
-    const isQRFlight = flightUpper.startsWith('QR');
-    
-    let qrSaved = false;
-    if (isQRFlight) {
-        try {
-            qrSaved = await saveToQRSystem(entry.code);
-            if (qrSaved) {
-                console.log('✅ QR data saved successfully');
-            }
-        } catch (error) {
-            console.error('❌ Error saving QR data:', error);
-        }
-    }
-    
-    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
-    data.push(entry);
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    if (!renderTimeout) {
-        renderTimeout = setTimeout(() => {
-            renderEntries();
-            renderTimeout = null;
-        }, 50);
-    }
-
-    if (isQRFlight && qrSaved) {
-        showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
-    } else if (isQRFlight && !qrSaved) {
-        showAlert(`Entry saved! ${entry.name} - QR system save failed`, true);
-    } else {
-        showAlert(`Entry saved! ${entry.name}`);
-    }
-
-    codeInput.value = '';
-    codeInput.focus();
-    setTimeout(clearInputFields, 2000);
-}
-
 // ----- FIXED: Auto-Zoom for Manual Fields (Click only, no tab) -----
 function setupAutoZoomFields() {
     const autoZoomFields = document.querySelectorAll('.auto-zoom-field');
@@ -3578,13 +3487,6 @@ function showFqtvZoomFromField() {
         fqtvZoomInput.select();
     }, 100);
 }
-
-// ----- FQTV Zoom Modal Elements -----
-const fqtvZoomModal = document.getElementById('fqtvZoomModal');
-const closeFqtvZoomBtn = document.getElementById('closeFqtvZoomBtn');
-const fqtvZoomInput = document.getElementById('fqtvZoomInput');
-const fqtvZoomSaveBtn = document.getElementById('fqtvZoomSaveBtn');
-const fqtvZoomCancelBtn = document.getElementById('fqtvZoomCancelBtn');
 
 // ----- FQTV Zoom Modal Functions -----
 function showFqtvZoomModal(rowIndex, cellElement = null) {
@@ -3741,18 +3643,1001 @@ let currentEditingRowIndex = -1;
 let currentEditingField = '';
 
 // ----- CONTINUE WITH THE REST OF YOUR EXISTING CODE -----
-// From this point, you should continue with the rest of your existing JavaScript code
-// including functions like: clearInputFields, isFqtvRequired, isDuplicateEntry,
-// showAlert, renderEntries, etc.
+// Core functionality functions
 
-// Make sure to include ALL the remaining code from your original file
+function clearInputFields() {
+    nameInput.value = '';
+    pnrInput.value = '';
+    flightInput.value = '';
+    seatInput.value = '';
+    classInput.value = '';
+    fqtvInput.value = '';
+    serialInput.value = '';
+    remarksInput.value = '';
+    numPaxInput.value = '1';
+    airlineSelect.value = '';
+    seatWarning.style.display = 'none';
+    seatInput.parentElement.classList.remove('seat-pax-mismatch');
+    lastSeatValue = '';
+    
+    clearNotification.classList.add('show');
+    setTimeout(() => {
+        clearNotification.classList.remove('show');
+    }, 2000);
+}
+
+function isFqtvRequired(seatClass, fqtvValue) {
+    const premiumClasses = ['J', 'F', 'C', 'P'];
+    return premiumClasses.includes(seatClass) && !fqtvValue;
+}
+
+function isDuplicateEntry(newEntry) {
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+    return data.some(entry => 
+        entry.name === newEntry.name && 
+        entry.flight === newEntry.flight &&
+        !entry.approved
+    );
+}
+
+function showAlert(message, isError = false, isWarning = false, isInfo = false) {
+    alertMessage.textContent = message;
+    
+    alertNotification.className = 'alert-notification';
+    if (isError) {
+        alertNotification.classList.add('error');
+    } else if (isWarning) {
+        alertNotification.classList.add('warning');
+    } else if (isInfo) {
+        alertNotification.classList.add('info');
+    }
+    
+    alertNotification.classList.add('show');
+    
+    setTimeout(() => {
+        alertNotification.classList.remove('show');
+    }, isError ? 5000 : 3000);
+}
+
+function renderEntries() {
+    if (isRendering) return;
+    
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+    const currentData = JSON.stringify(data);
+    
+    if (currentData === lastRenderData) return;
+    
+    isRendering = true;
+    
+    entriesList.innerHTML = '';
+    let pendingCount = 0;
+    let approvedCount = 0;
+    
+    data.forEach((entry, index) => {
+        const row = entriesList.insertRow();
+        
+        // Apply row classes
+        if (entry.flight && entry.flight.startsWith('SQ')) {
+            row.classList.add('sq-flight');
+        }
+        
+        // Add FQTV required highlight
+        if (isFqtvRequired(entry.class, entry.fqtv)) {
+            row.classList.add('fqtv-required');
+        }
+        
+        // Name cell
+        const nameCell = row.insertCell();
+        nameCell.textContent = entry.name || '-';
+        
+        // Flight cell
+        const flightCell = row.insertCell();
+        flightCell.textContent = entry.flight || '-';
+        
+        // Seat cell
+        const seatCell = row.insertCell();
+        seatCell.textContent = entry.seat || '-';
+        
+        // Class cell
+        const classCell = row.insertCell();
+        classCell.textContent = entry.class || '-';
+        
+        // FQTV cell (editable with zoom)
+        const fqtvCell = row.insertCell();
+        if (isFqtvRequired(entry.class, entry.fqtv)) {
+            const warningSpan = document.createElement('span');
+            warningSpan.className = 'fqtv-warning';
+            warningSpan.textContent = 'FQTV REQUIRED ';
+            fqtvCell.appendChild(warningSpan);
+        }
+        if (entry.fqtv) {
+            fqtvCell.textContent = entry.fqtv;
+        }
+        fqtvCell.classList.add('editable-cell', 'fqtv-field-zoom');
+        fqtvCell.setAttribute('contenteditable', 'true');
+        fqtvCell.setAttribute('data-field', 'fqtv');
+        fqtvCell.addEventListener('click', handleFqtvCellClick);
+        
+        // Pax cell
+        const paxCell = row.insertCell();
+        paxCell.textContent = entry.numPax || '1';
+        
+        // Serial cell
+        const serialCell = row.insertCell();
+        serialCell.textContent = entry.serial || '-';
+        
+        // Remarks cell
+        const remarksCell = row.insertCell();
+        remarksCell.textContent = entry.remarks || '-';
+        
+        // PNR cell
+        const pnrCell = row.insertCell();
+        pnrCell.textContent = entry.pnr || '-';
+        
+        // Date cell
+        const dateCell = row.insertCell();
+        dateCell.textContent = entry.date || '-';
+        
+        // Shift cell
+        const shiftCell = row.insertCell();
+        shiftCell.textContent = entry.shift || '-';
+        
+        // Actions cell
+        const actionsCell = row.insertCell();
+        
+        // Approve button
+        const approveBtn = document.createElement('button');
+        approveBtn.className = 'action-btn';
+        approveBtn.innerHTML = '<i class="fas fa-check"></i> Approve';
+        approveBtn.onclick = () => approveEntry(index);
+        approveBtn.disabled = entry.approved || isFqtvRequired(entry.class, entry.fqtv);
+        
+        // Delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'action-btn';
+        deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        deleteBtn.style.background = 'var(--error)';
+        deleteBtn.onclick = () => deleteEntry(index);
+        
+        actionsCell.appendChild(approveBtn);
+        actionsCell.appendChild(deleteBtn);
+        
+        if (entry.approved) {
+            approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approved';
+            approveBtn.disabled = true;
+            approveBtn.style.background = 'var(--success)';
+            approvedCount++;
+        } else {
+            pendingCount++;
+        }
+    });
+    
+    entriesCount.textContent = `${data.length} entries (${pendingCount} pending, ${approvedCount} approved)`;
+    lastRenderData = currentData;
+    isRendering = false;
+}
+
+function approveEntry(index) {
+    if (isApproving) return;
+    
+    isApproving = true;
+    const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+    const entry = data[index];
+    
+    if (!entry) {
+        showAlert('Entry not found', true);
+        isApproving = false;
+        return;
+    }
+    
+    if (isFqtvRequired(entry.class, entry.fqtv)) {
+        showAlert('FQTV is required for premium class passengers!', true);
+        isApproving = false;
+        return;
+    }
+    
+    entry.approved = true;
+    localStorage.setItem('codesData', JSON.stringify(data));
+    
+    // Save to approved entries
+    const approvedData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+    approvedData.push(entry);
+    localStorage.setItem('approvedLocalData', JSON.stringify(approvedData));
+    
+    // Add to background save queue
+    backgroundSaveQueue.push(entry);
+    
+    showAlert(`${entry.name} approved successfully!`);
+    renderEntries();
+    
+    setTimeout(() => {
+        isApproving = false;
+    }, 1000);
+}
+
+function deleteEntry(index) {
+    if (confirm('Are you sure you want to delete this entry?')) {
+        const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+        data.splice(index, 1);
+        localStorage.setItem('codesData', JSON.stringify(data));
+        renderEntries();
+        showAlert('Entry deleted');
+    }
+}
+
+// ----- Save Entry function with seat auto-correction -----
+async function saveEntry(entry){
+    if (!currentShiftType || currentShiftStatus !== 'open') {
+        showAlert('No active shift or shift not open!', true);
+        return;
+    }
+    
+    entry.date = currentShiftDate;
+    entry.shift = currentShiftType;
+    
+    // Auto-correct seat format (remove slashes) and handle restricted airlines
+    if (entry.seat) {
+        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
+        if (correctedSeat !== entry.seat) {
+            entry.seat = correctedSeat;
+            seatInput.value = correctedSeat;
+        }
+    }
+    
+    // Validate seat-pax match
+    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
+    if (!seatPaxValidation.isValid) {
+        showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
+        // Auto-correct pax
+        entry.numPax = seatPaxValidation.calculatedPax;
+        numPaxInput.value = seatPaxValidation.calculatedPax;
+        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
+    }
+    
+    // Check for restricted airlines
+    if (isPaxRestrictedAirline(entry.flight)) {
+        if (entry.numPax !== 1) {
+            showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
+            entry.numPax = 1;
+            numPaxInput.value = '1';
+        }
+    }
+    
+    // Validate pax count
+    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
+    if (!paxValidation.isValid) {
+        showAlert(`Cannot save: ${paxValidation.message}`, true);
+        return;
+    }
+    
+    if (isDuplicateEntry(entry)) {
+        console.log('Duplicate passenger detected, skipping save');
+        showAlert(`${entry.name} is already entered for flight ${entry.flight}`, true);
+        
+        codeInput.value = '';
+        codeInput.focus();
+        setTimeout(clearInputFields, 2000);
+        return;
+    }
+    
+    // QR system save (simplified for standalone version)
+    let qrSaved = false;
+    if (entry.flight && entry.flight.toUpperCase().startsWith('QR')) {
+        qrSaved = true; // In standalone version, we assume success
+    }
+    
+    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+    data.push(entry);
+    localStorage.setItem('codesData', JSON.stringify(data));
+    
+    if (!renderTimeout) {
+        renderTimeout = setTimeout(() => {
+            renderEntries();
+            renderTimeout = null;
+        }, 50);
+    }
+
+    if (entry.flight && entry.flight.toUpperCase().startsWith('QR') && qrSaved) {
+        showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
+    } else if (entry.flight && entry.flight.toUpperCase().startsWith('QR') && !qrSaved) {
+        showAlert(`Entry saved! ${entry.name} - QR system save failed`, true);
+    } else {
+        showAlert(`Entry saved! ${entry.name}`);
+    }
+
+    codeInput.value = '';
+    codeInput.focus();
+    setTimeout(clearInputFields, 2000);
+}
+
+// ----- Manual Save Button -----
+manualSaveBtn.addEventListener('click', function() {
+    const entry = {
+        date: currentShiftDate,
+        user: userDisplay.textContent,
+        shift: currentShiftType,
+        code: codeInput.value.trim() || 'MANUAL_ENTRY',
+        name: nameInput.value.trim(),
+        pnr: pnrInput.value.trim(),
+        flight: flightInput.value.trim(),
+        airline: airlineSelect.value,
+        seat: seatInput.value.trim(),
+        class: classInput.value.trim(),
+        serial: serialInput.value.trim(),
+        remarks: remarksInput.value.trim(),
+        fqtv: fqtvInput.value.trim(),
+        numPax: parseInt(numPaxInput.value) || 1,
+        approved: false
+    };
+    
+    if (!entry.name) {
+        showAlert('Please enter passenger name', true);
+        nameInput.focus();
+        return;
+    }
+    
+    if (!entry.flight) {
+        showAlert('Please enter flight number', true);
+        flightInput.focus();
+        return;
+    }
+    
+    saveEntry(entry);
+});
+
+// ----- Scanner Input Handling -----
+function handleScannerInput() {
+    const currentValue = codeInput.value;
+    
+    if (currentValue.length === 0) {
+        clearTimeout(scannerTimer);
+        isScannerActive = false;
+        scannerIndicator.classList.remove('show');
+        return;
+    }
+    
+    if (currentValue.length > lastValue.length) {
+        // New character added - likely scanner input
+        clearTimeout(scannerTimer);
+        isScannerActive = true;
+        scannerIndicator.classList.add('show');
+        
+        scannerTimer = setTimeout(() => {
+            if (isScannerActive) {
+                processScannerInput();
+            }
+        }, 500);
+    }
+    
+    lastValue = currentValue;
+}
+
+function processScannerInput() {
+    if (!currentShiftType || currentShiftStatus !== 'open') {
+        showAlert('No active shift or shift not open!', true);
+        scannerIndicator.classList.remove('show');
+        isScannerActive = false;
+        return;
+    }
+    
+    isScannerActive = false;
+    scannerIndicator.classList.remove('show');
+    
+    if (codeInput.value.trim()) {
+        parseCode();
+    }
+}
+
+function processManualInput() {
+    if (codeInput.value.trim()) {
+        parseCode();
+    }
+}
+
+function handleFieldExit() {
+    clearTimeout(scannerTimer);
+    isScannerActive = false;
+    scannerIndicator.classList.remove('show');
+}
+
+// ----- Shift Management -----
+function showNoShiftMessage() {
+    userDisplay.textContent = 'No Shift';
+    shiftDisplay.textContent = 'No active shift';
+    dateDisplay.textContent = '-';
+    
+    passengerEntryCard.classList.add('disabled');
+    showAlert('No active shift found. Please wait or refresh.', true);
+}
+
+function loadCurrentShiftFromLocalStorage() {
+    const cachedShift = JSON.parse(localStorage.getItem('currentShiftCache') || 'null');
+    
+    if (cachedShift && cachedShift.timestamp) {
+        const cacheAge = Date.now() - cachedShift.timestamp;
+        const maxCacheAge = 30 * 60 * 1000; // 30 minutes
+        
+        if (cacheAge < maxCacheAge && cachedShift.status === 'open') {
+            currentShiftType = cachedShift.type;
+            currentShiftDate = cachedShift.date;
+            currentShiftStatus = cachedShift.status;
+            
+            userDisplay.textContent = cachedShift.user || 'User';
+            shiftDisplay.textContent = cachedShift.type || 'Shift';
+            dateDisplay.textContent = cachedShift.date || '-';
+            
+            passengerEntryCard.classList.remove('disabled');
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+function fetchCurrentOpenShift() {
+    // Simulated shift fetch for standalone version
+    const mockShift = {
+        type: 'Morning',
+        date: new Date().toISOString().split('T')[0],
+        status: 'open',
+        user: 'Demo User'
+    };
+    
+    currentShiftType = mockShift.type;
+    currentShiftDate = mockShift.date;
+    currentShiftStatus = mockShift.status;
+    
+    userDisplay.textContent = mockShift.user;
+    shiftDisplay.textContent = mockShift.type;
+    dateDisplay.textContent = mockShift.date;
+    
+    // Cache the shift
+    const shiftCache = {
+        type: mockShift.type,
+        date: mockShift.date,
+        status: mockShift.status,
+        user: mockShift.user,
+        timestamp: Date.now()
+    };
+    
+    localStorage.setItem('currentShiftCache', JSON.stringify(shiftCache));
+    passengerEntryCard.classList.remove('disabled');
+    
+    showAlert(`Shift loaded: ${mockShift.type} - ${mockShift.date}`, false, false, true);
+}
+
+// ----- QR System (Simplified for standalone) -----
+function initializeQRFirebase() {
+    // In standalone version, we simulate QR system
+    console.log("QR System initialized (standalone mode)");
+}
+
+function loadQREntries() {
+    // Simulate loading QR entries
+    console.log("Loading QR entries (standalone mode)");
+}
+
+function saveToQRSystem(code) {
+    return Promise.resolve(true); // Always succeed in standalone
+}
+
+// ----- Approved Entries Cache -----
+let approvedEntriesCache = {};
+
+function loadApprovedEntriesCache() {
+    try {
+        const cache = JSON.parse(localStorage.getItem('approvedEntriesCache') || '{}');
+        approvedEntriesCache = cache;
+        console.log(`Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
+    } catch (e) {
+        console.error("Error loading approved entries cache:", e);
+        approvedEntriesCache = {};
+    }
+}
+
+function processBackgroundSaveQueue() {
+    if (isBackgroundSaving || backgroundSaveQueue.length === 0) return;
+    
+    isBackgroundSaving = true;
+    
+    // Simulate background save
+    setTimeout(() => {
+        console.log(`Processed ${backgroundSaveQueue.length} entries in background`);
+        backgroundSaveQueue = [];
+        isBackgroundSaving = false;
+    }, 1000);
+}
+
+// ----- Clear Old Processed Codes -----
+function clearOldProcessedCodes() {
+    // Clear old processed codes to prevent memory issues
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    qrEntriesProcessed = qrEntriesProcessed.filter(entry => entry.timestamp > oneDayAgo);
+}
+
+// ----- Numeric Keyboard Functions -----
+function initializeNumericKeyboard() {
+    const numericKeys = document.querySelectorAll('.numeric-key');
+    const numericDisplay = document.getElementById('numericDisplay');
+    const applyNumericBtn = document.getElementById('applyNumericBtn');
+    const clearNumericBtn = document.getElementById('clearNumericBtn');
+    const closeNumericBtn = document.getElementById('closeNumericBtn');
+    const closeNumericKeyboardBtn = document.getElementById('closeNumericKeyboardBtn');
+    const backspaceKey = document.getElementById('backspaceKey');
+    const clearKey = document.getElementById('clearKey');
+    const numericKeyboardModal = document.getElementById('numericKeyboardModal');
+    
+    let numericValue = '0';
+    let sqPassengerIndex = null;
+    
+    numericKeys.forEach(key => {
+        key.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const action = this.getAttribute('data-action');
+            
+            if (value) {
+                if (numericValue === '0') {
+                    numericValue = value;
+                } else {
+                    numericValue += value;
+                }
+                numericDisplay.textContent = numericValue;
+            } else if (action === 'backspace') {
+                if (numericValue.length > 1) {
+                    numericValue = numericValue.slice(0, -1);
+                } else {
+                    numericValue = '0';
+                }
+                numericDisplay.textContent = numericValue;
+            } else if (action === 'clear') {
+                numericValue = '0';
+                numericDisplay.textContent = numericValue;
+            }
+        });
+    });
+    
+    function closeNumericKeyboard() {
+        numericKeyboardModal.classList.remove('show');
+        numericValue = '0';
+        numericDisplay.textContent = '0';
+        sqPassengerIndex = null;
+    }
+    
+    applyNumericBtn.addEventListener('click', function() {
+        if (sqPassengerIndex !== null && parseInt(numericValue) > 0) {
+            // Update the SQ passenger with the number
+            const data = JSON.parse(localStorage.getItem('codesData') || '[]');
+            if (data[sqPassengerIndex]) {
+                data[sqPassengerIndex].remarks = `SQ Passenger #${numericValue}`;
+                localStorage.setItem('codesData', JSON.stringify(data));
+                renderEntries();
+                showAlert(`SQ passenger updated with number ${numericValue}`);
+            }
+        }
+        closeNumericKeyboard();
+    });
+    
+    clearNumericBtn.addEventListener('click', function() {
+        numericValue = '0';
+        numericDisplay.textContent = '0';
+    });
+    
+    closeNumericBtn.addEventListener('click', closeNumericKeyboard);
+    closeNumericKeyboardBtn.addEventListener('click', closeNumericKeyboard);
+    
+    // Close modal when clicking outside
+    numericKeyboardModal.addEventListener('click', (e) => {
+        if (e.target === numericKeyboardModal) {
+            closeNumericKeyboard();
+        }
+    });
+    
+    // Make function globally available
+    window.showNumericKeyboardForSQ = function(index) {
+        sqPassengerIndex = index;
+        numericValue = '0';
+        numericDisplay.textContent = '0';
+        numericKeyboardModal.classList.add('show');
+    };
+}
+
+// ----- Float Navigation Functions -----
+document.getElementById('storageManagerBtn').addEventListener('click', function() {
+    showStorageManager();
+});
+
+document.getElementById('delayChargeBtn').addEventListener('click', function() {
+    showDelayChargeModal();
+});
+
+document.getElementById('refreshShiftBtn').addEventListener('click', function() {
+    fetchCurrentOpenShift();
+    showAlert('Shift refreshed', false, false, true);
+});
+
+// ----- Storage Manager Functions -----
+function showStorageManager() {
+    const modal = document.getElementById('localStorageModal');
+    refreshStorageView();
+    modal.classList.add('show');
+}
+
+function refreshStorageView() {
+    const storageStats = document.getElementById('storageStats');
+    const storageTabs = document.getElementById('storageTabs');
+    const allStoragePanel = document.getElementById('allStoragePanel');
+    
+    // Calculate storage statistics
+    let totalSize = 0;
+    let totalItems = 0;
+    const storageItems = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        const size = new Blob([value]).size;
+        
+        totalSize += size;
+        totalItems++;
+        
+        storageItems.push({
+            key,
+            value,
+            size,
+            sizeFormatted: formatBytes(size)
+        });
+    }
+    
+    // Update stats
+    storageStats.innerHTML = `
+        <div class="storage-stat-item">
+            <div class="storage-stat-value">${totalItems}</div>
+            <div class="storage-stat-label">Total Items</div>
+        </div>
+        <div class="storage-stat-item">
+            <div class="storage-stat-value">${formatBytes(totalSize)}</div>
+            <div class="storage-stat-label">Total Size</div>
+        </div>
+        <div class="storage-stat-item">
+            <div class="storage-stat-value">${formatBytes(5 * 1024 * 1024 - totalSize)}</div>
+            <div class="storage-stat-label">Available</div>
+        </div>
+    `;
+    
+    // Update tabs
+    storageTabs.innerHTML = `
+        <div class="storage-tab active" data-tab="all">All Storage (${totalItems})</div>
+        <div class="storage-tab" data-tab="codes">Passenger Data</div>
+        <div class="storage-tab" data-tab="approved">Approved Data</div>
+        <div class="storage-tab" data-tab="shift">Shift Data</div>
+        <div class="storage-tab" data-tab="qr">QR Data</div>
+    `;
+    
+    // Update all storage panel
+    allStoragePanel.innerHTML = '';
+    
+    if (storageItems.length === 0) {
+        allStoragePanel.innerHTML = '<div class="empty-storage">No data in local storage</div>';
+    } else {
+        storageItems.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'storage-data-item';
+            
+            itemDiv.innerHTML = `
+                <div class="storage-data-header">
+                    <div class="storage-key">${item.key}</div>
+                    <div class="storage-size">${item.sizeFormatted}</div>
+                </div>
+                <div class="storage-value">${truncateString(item.value, 200)}</div>
+                <div style="margin-top: 8px; display: flex; gap: 5px;">
+                    <button class="view-json-btn" onclick="viewStorageItem('${item.key}')">
+                        <i class="fas fa-eye"></i> View JSON
+                    </button>
+                    <button class="view-json-btn" style="background: var(--error);" onclick="deleteStorageItem('${item.key}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            `;
+            
+            allStoragePanel.appendChild(itemDiv);
+        });
+    }
+    
+    // Add tab click handlers
+    document.querySelectorAll('.storage-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            
+            // Update active tab
+            document.querySelectorAll('.storage-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show corresponding panel
+            document.querySelectorAll('.storage-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            if (tabName === 'all') {
+                allStoragePanel.classList.add('active');
+            } else {
+                // Create and show filtered panel
+                showFilteredStoragePanel(tabName);
+            }
+        });
+    });
+}
+
+function showFilteredStoragePanel(filter) {
+    let panel = document.getElementById(`${filter}StoragePanel`);
+    
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = `${filter}StoragePanel`;
+        panel.className = 'storage-panel';
+        document.querySelector('.storage-tab-content').appendChild(panel);
+    }
+    
+    panel.innerHTML = '';
+    
+    let items = [];
+    
+    switch(filter) {
+        case 'codes':
+            items = JSON.parse(localStorage.getItem('codesData') || '[]');
+            break;
+        case 'approved':
+            items = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
+            break;
+        case 'shift':
+            const shiftCache = localStorage.getItem('currentShiftCache');
+            items = shiftCache ? [JSON.parse(shiftCache)] : [];
+            break;
+        case 'qr':
+            items = qrEntriesProcessed;
+            break;
+    }
+    
+    if (items.length === 0) {
+        panel.innerHTML = `<div class="empty-storage">No ${filter} data found</div>`;
+    } else {
+        panel.innerHTML = `<pre style="white-space: pre-wrap; font-family: monospace; font-size: 12px;">${JSON.stringify(items, null, 2)}</pre>`;
+    }
+    
+    panel.classList.add('active');
+    allStoragePanel.classList.remove('active');
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function truncateString(str, maxLength) {
+    if (str.length <= maxLength) return str;
+    return str.substring(0, maxLength) + '...';
+}
+
+function viewStorageItem(key) {
+    const value = localStorage.getItem(key);
+    const jsonViewerModal = document.getElementById('jsonViewerModal');
+    const jsonViewerBody = document.getElementById('jsonViewerBody');
+    const jsonViewerTitle = document.getElementById('jsonViewerTitle');
+    
+    jsonViewerTitle.textContent = `JSON Viewer: ${key}`;
+    
+    try {
+        const parsed = JSON.parse(value);
+        jsonViewerBody.textContent = JSON.stringify(parsed, null, 2);
+    } catch {
+        jsonViewerBody.textContent = value;
+    }
+    
+    jsonViewerModal.classList.add('show');
+}
+
+function deleteStorageItem(key) {
+    if (confirm(`Are you sure you want to delete "${key}" from local storage?`)) {
+        localStorage.removeItem(key);
+        refreshStorageView();
+        showAlert(`"${key}" deleted from local storage`);
+    }
+}
+
+// ----- JSON Viewer Functions -----
+document.getElementById('closeJsonViewerBtn').addEventListener('click', function() {
+    document.getElementById('jsonViewerModal').classList.remove('show');
+});
+
+// ----- Storage Modal Functions -----
+document.getElementById('closeStorageModalBtn').addEventListener('click', function() {
+    document.getElementById('localStorageModal').classList.remove('show');
+});
+
+document.getElementById('refreshStorageBtn').addEventListener('click', refreshStorageView);
+
+document.getElementById('clearAllStorageBtn').addEventListener('click', function() {
+    if (confirm('⚠️ WARNING: This will delete ALL data from local storage!\n\nThis includes:\n- All passenger entries\n- Approved entries\n- Shift data\n- QR data\n\nAre you absolutely sure?')) {
+        localStorage.clear();
+        refreshStorageView();
+        renderEntries();
+        showAlert('All local storage cleared!', false, false, true);
+    }
+});
+
+// ----- Delay Charge Modal Functions -----
+function showDelayChargeModal() {
+    const modal = document.getElementById('delayChargeModal');
+    
+    // Reset form
+    document.getElementById('delayFlightInput').value = '';
+    document.getElementById('entryTimeInput').value = '00:00';
+    document.getElementById('exitTimeInput').value = '00:00';
+    document.getElementById('stdTimeInput').value = '00:00';
+    document.getElementById('delayPaxInput').value = '1';
+    document.getElementById('delayCalcResult').style.display = 'none';
+    
+    modal.classList.add('show');
+}
+
+document.getElementById('closeModalBtn').addEventListener('click', function() {
+    document.getElementById('delayChargeModal').classList.remove('show');
+});
+
+document.getElementById('calculateDelayBtn').addEventListener('click', calculateDelayCharge);
+
+document.getElementById('saveDelayBtn').addEventListener('click', saveDelayCharge);
+
+function calculateDelayCharge() {
+    const flight = document.getElementById('delayFlightInput').value.trim();
+    const entryTime = document.getElementById('entryTimeInput').value;
+    const exitTime = document.getElementById('exitTimeInput').value;
+    const stdTime = document.getElementById('stdTimeInput').value;
+    const pax = parseInt(document.getElementById('delayPaxInput').value) || 1;
+    
+    if (!flight) {
+        showAlert('Please enter flight number', true);
+        return;
+    }
+    
+    // Convert times to minutes
+    const entryMinutes = timeToMinutes(entryTime);
+    const exitMinutes = timeToMinutes(exitTime);
+    const stdMinutes = timeToMinutes(stdTime);
+    
+    // Calculate delay
+    const delayMinutes = Math.max(0, exitMinutes - stdMinutes);
+    
+    // Calculate charge based on airline and delay
+    const airline = flight.substring(0, 2).toUpperCase();
+    let chargePerPax = 0;
+    let chargeType = '';
+    
+    if (delayMinutes >= 180) { // 3 hours or more
+        if (['EK', 'QR', 'EY', 'FZ'].includes(airline)) {
+            chargePerPax = 100;
+            chargeType = 'Major Delay (3+ hours)';
+        } else {
+            chargePerPax = 75;
+            chargeType = 'Major Delay (3+ hours)';
+        }
+    } else if (delayMinutes >= 120) { // 2 hours or more
+        if (['EK', 'QR', 'EY', 'FZ'].includes(airline)) {
+            chargePerPax = 75;
+            chargeType = 'Medium Delay (2-3 hours)';
+        } else {
+            chargePerPax = 50;
+            chargeType = 'Medium Delay (2-3 hours)';
+        }
+    } else if (delayMinutes >= 60) { // 1 hour or more
+        if (['EK', 'QR', 'EY', 'FZ'].includes(airline)) {
+            chargePerPax = 50;
+            chargeType = 'Minor Delay (1-2 hours)';
+        } else {
+            chargePerPax = 25;
+            chargeType = 'Minor Delay (1-2 hours)';
+        }
+    }
+    
+    const totalCharge = chargePerPax * pax;
+    
+    // Display results
+    const delayCalcDetails = document.getElementById('delayCalcDetails');
+    const delayCalcResult = document.getElementById('delayCalcResult');
+    
+    if (delayMinutes === 0) {
+        delayCalcDetails.innerHTML = `
+            <p><strong>Status:</strong> <span class="no-charge">No Delay Charge Applicable</span></p>
+            <p>Exit time is before STD. No delay charge required.</p>
+        `;
+    } else if (delayMinutes < 60) {
+        delayCalcDetails.innerHTML = `
+            <p><strong>Status:</strong> <span class="no-charge">No Charge (Less than 1 hour delay)</span></p>
+            <p>Delay: ${delayMinutes} minutes (less than 1 hour)</p>
+            <p>No charge applies for delays under 1 hour.</p>
+        `;
+    } else {
+        delayCalcDetails.innerHTML = `
+            <p><strong>Flight:</strong> ${flight} (${airline})</p>
+            <p><strong>Delay:</strong> ${delayMinutes} minutes (${Math.floor(delayMinutes/60)}h ${delayMinutes%60}m)</p>
+            <p><strong>Charge Type:</strong> ${chargeType}</p>
+            <p><strong>Charge per Pax:</strong> $${chargePerPax}</p>
+            <p><strong>Number of Pax:</strong> ${pax}</p>
+            <p><strong>Total Charge:</strong> <span class="delay-amount">$${totalCharge}</span></p>
+        `;
+    }
+    
+    delayCalcResult.style.display = 'block';
+}
+
+function saveDelayCharge() {
+    const flight = document.getElementById('delayFlightInput').value.trim();
+    const entryTime = document.getElementById('entryTimeInput').value;
+    const exitTime = document.getElementById('exitTimeInput').value;
+    const stdTime = document.getElementById('stdTimeInput').value;
+    const pax = parseInt(document.getElementById('delayPaxInput').value) || 1;
+    
+    if (!flight) {
+        showAlert('Please enter flight number', true);
+        return;
+    }
+    
+    // Convert times to minutes for calculation
+    const entryMinutes = timeToMinutes(entryTime);
+    const exitMinutes = timeToMinutes(exitTime);
+    const stdMinutes = timeToMinutes(stdTime);
+    const delayMinutes = Math.max(0, exitMinutes - stdMinutes);
+    
+    // Save to localStorage
+    const delayEntry = {
+        flight,
+        entryTime,
+        exitTime,
+        stdTime,
+        pax,
+        delayMinutes,
+        date: new Date().toISOString().split('T')[0],
+        timestamp: Date.now()
+    };
+    
+    // Get existing delay entries
+    const delayEntries = JSON.parse(localStorage.getItem('delayChargeEntries') || '[]');
+    delayEntries.push(delayEntry);
+    localStorage.setItem('delayChargeEntries', JSON.stringify(delayEntries));
+    
+    // Close modal
+    document.getElementById('delayChargeModal').classList.remove('show');
+    
+    showAlert(`Delay charge saved for flight ${flight}`);
+}
+
+function timeToMinutes(timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+}
+
+// ----- Helper Functions -----
+function autoCorrectPaxFromSeat(seatElement, paxElement) {
+    const seatValue = seatElement.value.trim();
+    if (seatValue) {
+        const calculatedPax = calculatePaxFromSeatNumber(seatValue);
+        const currentPax = parseInt(paxElement.value) || 1;
+        
+        if (calculatedPax !== currentPax) {
+            paxElement.value = calculatedPax;
+            showAlert(`Pax auto-corrected to ${calculatedPax} based on seat ${seatValue}`, false, false, true);
+        }
+    }
+}
 
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
     console.log("🚀 Initializing unified passenger approval system...");
     console.log("📋 System Configuration:");
-    console.log("- Card System: cardsystem-21773");
-    console.log("- QR System: qrcards-2378e");
+    console.log("- Card System: Standalone Mode");
+    console.log("- QR System: Standalone Mode");
     console.log("- Delay Charge System: Enabled");
     console.log("- Storage Manager: Enabled");
     console.log("- FIXED: Manual Entry Zoom - Click only (no tab)");
@@ -3760,33 +4645,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log("- FIXED: Seat-Pax alerts only on actual field changes");
     console.log("- FIXED: FQTV Tier mapping: Shows correct P/G/S, Platinum/Gold/Silver, or Emerald/Sapphire/Ruby");
     console.log("- FIXED: Auto-correct seats for restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK)");
-    console.log("- FIXED: QR system saves with same tier logic");
-    console.log("- OPTIMIZED: Reduced Firebase reads (30min cache, 15min refresh)");
     console.log("- FIXED: Seat-Pax tally system (1A=1 pax, 1AB=2 pax, 1A/2B=2 pax)");
     console.log("- FIXED: Restricted airlines = 1 pax only and single seat only");
     
     clearOldProcessedCodes();
-    
     loadApprovedEntriesCache();
-    
-    // Initialize numeric keyboard
     initializeNumericKeyboard();
-    
-    // Set up auto-zoom fields (FIXED: Click only, no tab)
     setupAutoZoomFields();
-    
-    // Setup FQTV field (FIXED: Both click and tab)
     setupFqtvField();
-    
-    setTimeout(() => {
-        initializeQRFirebase();
-        loadQREntries();
-    }, 1000);
     
     const loadedFromCache = loadCurrentShiftFromLocalStorage();
     
     if (!loadedFromCache) {
-        console.log("🔄 No fresh cache, fetching shift data from server");
+        console.log("🔄 No fresh cache, fetching shift data");
         showNoShiftMessage();
         
         setTimeout(() => {
@@ -3814,22 +4685,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     renderEntries();
     
-    // OPTIMIZED: Reduced periodic shift checks from 5 to 15 minutes
+    // Periodic shift checks
     setInterval(() => {
         if (currentShiftStatus === 'open') {
-            console.log("🔄 Periodic shift check (15 min interval)");
+            console.log("🔄 Periodic shift check");
             fetchCurrentOpenShift();
         }
-    }, 15 * 60 * 1000); // 15 minutes
+    }, 15 * 60 * 1000);
     
-    // OPTIMIZED: Reduced QR entry loading from 2 to 10 minutes
+    // Background sync
     setInterval(() => {
-        loadQREntries();
-    }, 10 * 60 * 1000); // 10 minutes
-    
-    // Background sync of approved entries
-    setInterval(() => {
-        if (window.passengerDb && backgroundSaveQueue.length === 0) {
+        if (backgroundSaveQueue.length === 0) {
             processBackgroundSaveQueue();
         }
     }, 30 * 1000);
@@ -3839,7 +4705,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 });
 
-// ----- Test function for FQTV tier mapping -----
+// ----- Test Functions -----
 window.testFqtvTierMapping = function() {
     const testCases = [
         {
@@ -3943,14 +4809,10 @@ window.testFqtvTierMapping = function() {
     }
 };
 
-// ----- Debug Functions -----
 window.debugSystemsInfo = function() {
     console.log("=== DEBUG SYSTEMS INFO ===");
-    console.log("Card System Project:", window.passengerDb ? "cardsystem-21773" : "Not initialized");
-    console.log("QR System Project:", qrFirebaseConfig ? qrFirebaseConfig.projectId : "Not configured");
-    console.log("QR Firebase Initialized:", qrFirebaseInitialized);
-    console.log("QR System Available:", qrSystemAvailable);
-    console.log("QR Entries Count:", qrEntries.length);
+    console.log("Card System: Standalone Mode");
+    console.log("QR System: Standalone Mode");
     console.log("QR Processed Codes:", qrEntriesProcessed.length);
     
     console.log("\n=== LOCAL STORAGE INFO ===");
@@ -3964,10 +4826,8 @@ window.debugSystemsInfo = function() {
     console.log("Current Shift Status:", currentShiftStatus);
     
     alert(`System Information:\n\n` +
-          `Card System: ${window.passengerDb ? '✅ Initialized (cardsystem-21773)' : '❌ Not initialized'}\n` +
-          `QR System: ${qrFirebaseInitialized ? '✅ Initialized (' + qrFirebaseConfig.projectId + ')' : '❌ Not initialized'}\n` +
-          `QR Available: ${qrSystemAvailable ? '✅' : '❌'}\n` +
-          `QR Entries: ${qrEntries.length}\n` +
+          `Card System: Standalone Mode\n` +
+          `QR System: Standalone Mode\n` +
           `QR Processed: ${qrEntriesProcessed.length}\n\n` +
           `Pending Entries: ${JSON.parse(localStorage.getItem('codesData') || '[]').length}\n` +
           `Approved (Local): ${JSON.parse(localStorage.getItem('approvedLocalData') || '[]').length}\n\n` +
@@ -3976,39 +4836,6 @@ window.debugSystemsInfo = function() {
           `Status: ${currentShiftStatus}`);
 };
 
-// ----- QR System Helper Functions -----
-window.openQRReport = function() {
-    window.open('qrReport.html', '_blank');
-};
-
-// ----- Test QR System Connection -----
-window.testQRConnection = async function() {
-    if (!qrFirebaseInitialized || !qrSystemAvailable) {
-        alert("QR system not initialized");
-        return;
-    }
-    
-    try {
-        showAlert("Testing QR system connection...", false, false, true);
-        
-        const testData = {
-            test: true,
-            timestamp: getMaldivesDateTimeISO(),
-            message: "Connection test from unified system"
-        };
-        
-        const docRef = await qrDb.collection('testConnections').add(testData);
-        alert(`✅ QR System Connection Successful!\n\nProject: ${qrFirebaseConfig.projectId}\nTest Document ID: ${docRef.id}\n\nDocument saved successfully.`);
-        
-        await docRef.delete();
-        
-    } catch (error) {
-        alert(`❌ QR System Connection Failed!\n\nError: ${error.message}\n\nProject: ${qrFirebaseConfig.projectId}\n\nCheck:\n1. Firebase Firestore Rules\n2. Internet Connection\n3. Project Configuration`);
-        console.error("Connection test error:", error);
-    }
-};
-
-// ----- Test the pax calculation function -----
 window.testPaxCalculation = function() {
     const testCases = [
         { seat: '1A', expected: 1 },
@@ -4051,7 +4878,6 @@ window.testPaxCalculation = function() {
     alert("Seat-Pax calculation tests completed. Check console for results.");
 };
 
-// ----- Quick test function -----
 window.testSeatPax = function() {
     const testData = [
         { flight: 'FZ123', seat: '12ABC', expectedPax: 1 },
