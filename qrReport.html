@@ -376,7 +376,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1000px; /* Reduced for better fit */
+            min-width: 1100px; /* Adjusted for all columns */
         }
         
         .data-table thead {
@@ -395,7 +395,6 @@
             font-size: 11px;
             white-space: nowrap;
             min-width: 70px;
-            max-width: 100px;
         }
         
         .data-table tbody tr {
@@ -417,7 +416,6 @@
             font-size: 11px;
             vertical-align: middle;
             min-width: 70px;
-            max-width: 100px;
         }
         
         .data-table input,
@@ -892,11 +890,15 @@
                                 <th>Last Name</th>
                                 <th>PAX Type</th>
                                 <th>Flight No</th>
-                                <th>Seat</th>
-                                <th>Cabin</th>
-                                <th>Guest Type</th>
-                                <th>FFP No</th>
+                                <th>Flight Date</th>
+                                <th>Carrier Code</th>
+                                <th>Sec Number</th>
+                                <th>FFP Owner</th>
+                                <th>FFP Number</th>
                                 <th>FFP Tier</th>
+                                <th>Guest Type</th>
+                                <th>Cabin</th>
+                                <th>Seat Number</th>
                                 <th>Origin</th>
                                 <th>Destination</th>
                                 <th>Actions</th>
@@ -904,7 +906,7 @@
                         </thead>
                         <tbody id="tableBody">
                             <tr>
-                                <td colspan="13">
+                                <td colspan="17">
                                     <div class="no-data">
                                         <div class="no-data-icon">✈️</div>
                                         <h3>No Data Loaded</h3>
@@ -1352,7 +1354,7 @@
                 
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="13">
+                        <td colspan="17">
                             <div class="no-data">
                                 <div class="no-data-icon">👥</div>
                                 <h3>${message}</h3>
@@ -1396,22 +1398,11 @@
                                     <option value="Infant" ${entry.paxType === 'Infant' ? 'selected' : ''}>Infant</option>
                                 </select>
                             </td>
-                            <td>${entry.flightNumber || '-'}</td>
-                            <td><input type="text" class="edit-input" value="${entry.seatNumber || ''}" placeholder="Seat"></td>
-                            <td>
-                                <select class="edit-input">
-                                    <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
-                                    <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
-                                    <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
-                                    <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First Class</option>
-                                </select>
-                            </td>
-                            <td>
-                                <select class="edit-input">
-                                    <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
-                                    <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
-                                </select>
-                            </td>
+                            <td><input type="text" class="edit-input" value="${entry.flightNumber || ''}" placeholder="Flight No"></td>
+                            <td><input type="date" class="edit-input" value="${entry.flightDate || ''}"></td>
+                            <td><input type="text" class="edit-input" value="${entry.carrierCode || ''}" placeholder="Carrier Code"></td>
+                            <td><input type="text" class="edit-input" value="${entry.secNumber || ''}" placeholder="Sec Number"></td>
+                            <td><input type="text" class="edit-input" value="${entry.ffpOwner || ''}" placeholder="FFP Owner"></td>
                             <td><input type="text" class="edit-input" value="${entry.ffpNumber || ''}" placeholder="FFP No"></td>
                             <td>
                                 <select class="edit-input">
@@ -1422,6 +1413,21 @@
                                     <option value="N0" ${entry.ffpTier === 'N0' ? 'selected' : ''}>N0</option>
                                 </select>
                             </td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
+                                    <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
+                                    <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
+                                    <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
+                                    <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First Class</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="edit-input" value="${entry.seatNumber || ''}" placeholder="Seat"></td>
                             <td><input type="text" class="edit-input" value="${entry.origin || ''}" placeholder="Origin"></td>
                             <td><input type="text" class="edit-input" value="${entry.destination || ''}" placeholder="Destination"></td>
                             <td class="actions-cell">
@@ -1443,17 +1449,21 @@
                                 <span class="badge ${paxBadgeClass}">${entry.paxType || 'Adult'}</span>
                             </td>
                             <td><strong>${entry.flightNumber || '-'}</strong></td>
-                            <td><strong>${entry.seatNumber || '-'}</strong></td>
-                            <td>
-                                <span class="badge ${cabinBadgeClass}">${entry.cabin || 'Economy'}</span>
-                            </td>
-                            <td>
-                                <span class="badge ${guestBadgeClass}">${entry.guestCategory || 'Guest'}</span>
-                            </td>
+                            <td>${entry.flightDate || '-'}</td>
+                            <td>${entry.carrierCode || '-'}</td>
+                            <td>${entry.secNumber || '-'}</td>
+                            <td>${entry.ffpOwner || '-'}</td>
                             <td class="text-ellipsis">${entry.ffpNumber || '-'}</td>
                             <td>
                                 ${entry.ffpTier ? `<span class="badge ${tierBadgeClass}">${entry.ffpTier}</span>` : '-'}
                             </td>
+                            <td>
+                                <span class="badge ${guestBadgeClass}">${entry.guestCategory || 'Guest'}</span>
+                            </td>
+                            <td>
+                                <span class="badge ${cabinBadgeClass}">${entry.cabin || 'Economy'}</span>
+                            </td>
+                            <td><strong>${entry.seatNumber || '-'}</strong></td>
                             <td>${entry.origin || '-'}</td>
                             <td>${entry.destination || '-'}</td>
                             <td class="actions-cell">
@@ -1510,18 +1520,23 @@
             // Get all inputs from the row
             const inputs = row.querySelectorAll('input, select');
             
-            // Map inputs to fields
+            // Map inputs to fields - IN THE EXACT ORDER SPECIFIED FOR CSV
             const updatedData = {
                 firstName: inputs[0]?.value || '',
                 lastName: inputs[1]?.value || '',
                 paxType: inputs[2]?.value || 'Adult',
-                seatNumber: inputs[3]?.value || '',
-                cabin: inputs[4]?.value || 'Economy',
-                guestCategory: inputs[5]?.value || 'Guest',
-                ffpNumber: inputs[6]?.value || '',
-                ffpTier: inputs[7]?.value || '',
-                origin: inputs[8]?.value || '',
-                destination: inputs[9]?.value || '',
+                flightNumber: inputs[3]?.value || '',
+                flightDate: inputs[4]?.value || '',
+                carrierCode: inputs[5]?.value || '',
+                secNumber: inputs[6]?.value || '',
+                ffpOwner: inputs[7]?.value || '',
+                ffpNumber: inputs[8]?.value || '',
+                ffpTier: inputs[9]?.value || '',
+                guestCategory: inputs[10]?.value || 'Guest',
+                cabin: inputs[11]?.value || 'Economy',
+                seatNumber: inputs[12]?.value || '',
+                origin: inputs[13]?.value || '',
+                destination: inputs[14]?.value || '',
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
@@ -1592,7 +1607,7 @@
                 });
         };
 
-        // Download filtered data
+        // Download filtered data - FIXED FORMAT
         async function downloadFilteredData() {
             if (filteredEntries.length === 0) {
                 showToast('No Data', 'No data available to download', 'warning');
@@ -1601,51 +1616,67 @@
             
             showLoading('Preparing download...');
             
-            // Create CSV content
+            // Create CSV content with EXACT column order as requested
             const headers = [
-                'First_Name', 'Last_Name', 'PAX_Type', 'Flight_Number',
-                'Seat_Number', 'Cabin', 'Guest_Category', 'FFP_Number',
-                'FFP_Tier', 'Origin', 'Destination', 'Flight_Date'
+                'Flight_Date',
+                'Carrier_Code',
+                'Flight_Number',
+                'Sec_Number',
+                'FFP_Owner',
+                'FFP_Number',
+                'FFP_Tier',
+                'Guest_Type',
+                'Cabin',
+                'Seat_Number',
+                'Origin',
+                'Destination',
+                'First_Name',
+                'Last_Name',
+                'PAX_Type'
             ];
             
-            let csvContent = headers.join(',') + '\n';
+            let csvContent = headers.join('\t') + '\n';  // Using tabs as requested
             
             filteredEntries.forEach(entry => {
                 const row = [
-                    entry.firstName || '',
-                    entry.lastName || '',
-                    entry.paxType || 'Adult',
+                    entry.flightDate || '',
+                    entry.carrierCode || '',
                     entry.flightNumber || '',
-                    entry.seatNumber || '',
-                    entry.cabin || 'Economy',
-                    entry.guestCategory || 'Guest',
+                    entry.secNumber || '',
+                    entry.ffpOwner || '',
                     entry.ffpNumber || '',
                     entry.ffpTier || '',
+                    entry.guestCategory || 'Guest',
+                    entry.cabin || 'Economy',
+                    entry.seatNumber || '',
                     entry.origin || '',
                     entry.destination || '',
-                    entry.flightDate || ''
+                    entry.firstName || '',
+                    entry.lastName || '',
+                    entry.paxType || 'Adult'
                 ];
                 
-                // Escape commas and quotes
+                // Escape tabs and quotes
                 const escapedRow = row.map(value => {
                     const stringValue = String(value);
-                    if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                    if (stringValue.includes('\t') || stringValue.includes('"') || stringValue.includes('\n')) {
                         return `"${stringValue.replace(/"/g, '""')}"`;
                     }
                     return stringValue;
                 });
                 
-                csvContent += escapedRow.join(',') + '\n';
+                csvContent += escapedRow.join('\t') + '\n';
             });
             
             // Create and trigger download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const blob = new Blob([csvContent], { type: 'text/tab-separated-values;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             
             const dateStr = new Date().toISOString().split('T')[0];
-            let filename = `qatar_passengers_${dateStr}`;
+            let filename = `flight_data_${dateStr}`;
             if (currentFilters.flight) filename += `_${currentFilters.flight}`;
+            if (currentFilters.date) filename += `_${currentFilters.date}`;
             
             link.setAttribute('href', url);
             link.setAttribute('download', `${filename}.csv`);
@@ -1656,7 +1687,7 @@
             document.body.removeChild(link);
             
             hideLoading();
-            showToast('Download Complete', `${filteredEntries.length} records exported`, 'success');
+            showToast('Download Complete', `${filteredEntries.length} records exported in requested format`, 'success');
         }
 
         // Event Listeners
