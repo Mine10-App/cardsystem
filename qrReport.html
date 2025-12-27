@@ -101,39 +101,36 @@
             box-shadow: 0 0 10px #F44336;
         }
         
-        /* Main Layout */
-        .main-content {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            min-height: 800px;
-        }
-        
-        /* Sidebar */
-        .sidebar {
+        /* Filters Section - TOP */
+        .filters-section {
             background: var(--qatar-light);
-            padding: 24px;
-            border-right: 1px solid var(--qatar-accent);
+            padding: 20px;
+            border-bottom: 1px solid var(--qatar-accent);
         }
         
-        .sidebar-section {
-            margin-bottom: 32px;
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
         }
         
-        .sidebar-title {
-            font-size: 16px;
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .filters-title {
+            font-size: 18px;
             font-weight: 600;
             color: var(--qatar-primary);
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--qatar-secondary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
         
         /* Form Elements */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 0;
         }
         
         .form-label {
@@ -146,7 +143,7 @@
         
         .form-input, .form-select {
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 14px;
@@ -158,10 +155,6 @@
             outline: none;
             border-color: var(--qatar-primary);
             box-shadow: 0 0 0 3px rgba(140, 0, 50, 0.1);
-        }
-        
-        .form-input::placeholder {
-            color: #999;
         }
         
         /* Flight Selector */
@@ -234,7 +227,7 @@
         
         /* Buttons */
         .btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
             font-size: 14px;
@@ -244,7 +237,6 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            text-decoration: none;
         }
         
         .btn:hover {
@@ -304,17 +296,21 @@
             margin-top: 16px;
         }
         
-        /* Main Content Area */
+        /* Main Content Area - MAXIMIZED FOR EDITING */
         .content-area {
-            padding: 24px;
+            padding: 20px;
             background: white;
+            height: calc(100vh - 280px);
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
         }
         
         .content-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             padding-bottom: 16px;
             border-bottom: 1px solid var(--qatar-accent);
         }
@@ -351,36 +347,45 @@
             letter-spacing: 0.5px;
         }
         
-        /* Table */
+        /* Enhanced Table for Editing */
         .table-container {
             background: white;
             border-radius: 8px;
             border: 1px solid var(--qatar-accent);
             overflow: hidden;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
         
         .table-responsive {
-            overflow-x: auto;
+            flex: 1;
+            overflow: auto;
+            position: relative;
         }
         
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1200px;
+            min-width: 1400px; /* Ensure all columns fit */
         }
         
         .data-table thead {
             background: var(--qatar-light);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
         .data-table th {
-            padding: 16px;
+            padding: 14px 12px;
             text-align: left;
             font-weight: 600;
             color: var(--qatar-primary);
             border-bottom: 2px solid var(--qatar-accent);
-            font-size: 14px;
+            font-size: 13px;
             white-space: nowrap;
+            min-width: 120px;
         }
         
         .data-table tbody tr {
@@ -398,24 +403,38 @@
         }
         
         .data-table td {
-            padding: 12px 16px;
-            font-size: 14px;
+            padding: 10px 12px;
+            font-size: 13px;
             vertical-align: middle;
+            min-width: 120px;
         }
         
         .data-table input,
         .data-table select {
             width: 100%;
-            padding: 8px 12px;
+            padding: 8px 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 13px;
+            transition: all 0.2s ease;
         }
         
         .data-table input:focus,
         .data-table select:focus {
             outline: none;
             border-color: var(--qatar-primary);
+            box-shadow: 0 0 0 2px rgba(140, 0, 50, 0.1);
+        }
+        
+        /* Compact form elements for table */
+        .compact-input {
+            padding: 6px 8px !important;
+            font-size: 12px !important;
+        }
+        
+        .compact-select {
+            padding: 6px 8px !important;
+            font-size: 12px !important;
         }
         
         /* Badges */
@@ -462,11 +481,12 @@
         /* Actions */
         .actions-cell {
             white-space: nowrap;
+            min-width: 140px;
         }
         
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
         
         /* Loading Overlay */
@@ -585,7 +605,10 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 16px;
+            padding: 12px;
+            background: rgba(140, 0, 50, 0.05);
+            border-radius: 8px;
+            margin-top: 12px;
         }
         
         .filter-tag {
@@ -617,24 +640,33 @@
         
         /* Responsive Design */
         @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr;
+            .filters-grid {
+                grid-template-columns: repeat(3, 1fr);
             }
             
-            .sidebar {
-                border-right: none;
-                border-bottom: 1px solid var(--qatar-accent);
-            }
-            
-            .flight-dropdown {
-                position: fixed;
-                left: 24px;
-                right: 24px;
-                max-height: 50vh;
+            .data-table {
+                min-width: 1600px;
             }
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .content-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .content-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+        
+        @media (max-width: 600px) {
             .header {
                 flex-direction: column;
                 gap: 16px;
@@ -646,15 +678,15 @@
                 justify-content: center;
             }
             
-            .content-header {
-                flex-direction: column;
-                gap: 16px;
-                align-items: flex-start;
+            .filters-grid {
+                grid-template-columns: 1fr;
             }
             
-            .content-stats {
-                width: 100%;
-                justify-content: space-between;
+            .flight-dropdown {
+                position: fixed;
+                left: 24px;
+                right: 24px;
+                max-height: 50vh;
             }
         }
         
@@ -679,12 +711,66 @@
             margin-top: 16px;
         }
         
-        .mb-24 {
-            margin-bottom: 24px;
-        }
-        
         .full-width {
             width: 100%;
+        }
+        
+        /* Quick Edit Panel */
+        .quick-edit-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            z-index: 100;
+            min-width: 300px;
+            border: 2px solid var(--qatar-primary);
+            display: none;
+        }
+        
+        .quick-edit-panel.active {
+            display: block;
+        }
+        
+        .quick-edit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--qatar-accent);
+        }
+        
+        .quick-edit-title {
+            font-weight: 600;
+            color: var(--qatar-primary);
+        }
+        
+        .quick-edit-form {
+            display: grid;
+            gap: 12px;
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
         }
     </style>
     
@@ -704,7 +790,7 @@
                     </svg>
                     Qatar Airways Flight Editor
                 </h1>
-                <p>Manage flight passenger data efficiently</p>
+                <p>Edit passenger records in real-time</p>
             </div>
             <div class="header-controls">
                 <div class="status-indicator">
@@ -720,145 +806,174 @@
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Sidebar Filters -->
-            <div class="sidebar">
-                <div class="sidebar-section">
-                    <h3 class="sidebar-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
-                        </svg>
-                        Filters
-                    </h3>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Flight Date</label>
-                        <input type="date" class="form-input" id="filterDate" value="">
-                    </div>
-                    
-                    <div class="form-group flight-selector">
-                        <label class="form-label">Flight Number</label>
-                        <input type="text" class="form-input" id="filterFlight" placeholder="Select a flight" readonly>
-                        <div class="flight-dropdown" id="flightDropdown">
-                            <!-- Flight options will be populated here -->
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Cabin Class</label>
-                        <select class="form-select" id="filterCabin">
-                            <option value="">All Cabins</option>
-                            <option value="Economy">Economy</option>
-                            <option value="Premium Economy">Premium Economy</option>
-                            <option value="Business">Business</option>
-                            <option value="First">First Class</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Passenger Type</label>
-                        <select class="form-select" id="filterPaxType">
-                            <option value="">All Types</option>
-                            <option value="Adult">Adult</option>
-                            <option value="Child">Child</option>
-                            <option value="Infant">Infant</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Service Shift</label>
-                        <select class="form-select" id="filterShift">
-                            <option value="">All Shifts</option>
-                            <option value="Morning">Morning</option>
-                            <option value="Afternoon">Afternoon</option>
-                            <option value="Evening">Evening</option>
-                            <option value="Night">Night</option>
-                        </select>
-                    </div>
-                    
-                    <div class="btn-group">
-                        <button class="btn btn-primary full-width" id="applyFiltersBtn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"/>
-                                <path d="m21 21-4.35-4.35"/>
-                            </svg>
-                            Apply Filters
-                        </button>
-                        <button class="btn btn-outline" id="clearFiltersBtn">
-                            Clear
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Active Filters -->
-                <div class="sidebar-section">
-                    <h3 class="sidebar-title">Active Filters</h3>
-                    <div class="filter-tags" id="activeFilters">
-                        <!-- Active filters will appear here -->
-                    </div>
-                </div>
-                
-                <!-- Quick Actions -->
-                <div class="sidebar-section">
-                    <h3 class="sidebar-title">Quick Actions</h3>
-                    <button class="btn btn-secondary full-width mb-16" id="downloadBtn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                        </svg>
-                        Export Data (CSV)
-                    </button>
+        <!-- Filters Section - MOVED TO TOP -->
+        <div class="filters-section">
+            <div class="filters-header">
+                <h3 class="filters-title">Search & Filter</h3>
+                <div class="content-stats">
                     <div class="stat-card">
                         <div class="stat-value" id="totalRecords">0</div>
-                        <div class="stat-label">Total Records</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="filteredRecords">0</div>
+                        <div class="stat-label">Filtered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="flightCount">0</div>
+                        <div class="stat-label">Flights</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Main Content Area -->
-            <div class="content-area">
-                <div class="content-header">
-                    <h2 class="content-title">Passenger Records</h2>
-                    <div class="content-stats">
-                        <div class="stat-card">
-                            <div class="stat-value" id="filteredRecords">0</div>
-                            <div class="stat-label">Filtered</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value" id="flightCount">0</div>
-                            <div class="stat-label">Flights Today</div>
-                        </div>
+            
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label">Flight Date</label>
+                    <input type="date" class="form-input" id="filterDate" value="">
+                </div>
+                
+                <div class="form-group flight-selector">
+                    <label class="form-label">Flight Number</label>
+                    <input type="text" class="form-input" id="filterFlight" placeholder="Select a flight" readonly>
+                    <div class="flight-dropdown" id="flightDropdown">
+                        <!-- Flight options will be populated here -->
                     </div>
                 </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Cabin Class</label>
+                    <select class="form-select" id="filterCabin">
+                        <option value="">All Cabins</option>
+                        <option value="Economy">Economy</option>
+                        <option value="Premium Economy">Premium Economy</option>
+                        <option value="Business">Business</option>
+                        <option value="First">First Class</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Passenger Type</label>
+                    <select class="form-select" id="filterPaxType">
+                        <option value="">All Types</option>
+                        <option value="Adult">Adult</option>
+                        <option value="Child">Child</option>
+                        <option value="Infant">Infant</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Service Shift</label>
+                    <select class="form-select" id="filterShift">
+                        <option value="">All Shifts</option>
+                        <option value="Morning">Morning</option>
+                        <option value="Afternoon">Afternoon</option>
+                        <option value="Evening">Evening</option>
+                        <option value="Night">Night</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">FFP Tier</label>
+                    <select class="form-select" id="filterFfpTier">
+                        <option value="">All Tiers</option>
+                        <option value="Platinum">Platinum</option>
+                        <option value="Gold">Gold</option>
+                        <option value="Silver">Silver</option>
+                        <option value="N0">N0</option>
+                        <option value="Emerald">Emerald</option>
+                        <option value="Sapphire">Sapphire</option>
+                        <option value="Ruby">Ruby</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Guest Category</label>
+                    <select class="form-select" id="filterGuestCategory">
+                        <option value="">All Categories</option>
+                        <option value="Guest">Guest</option>
+                        <option value="Primary">Primary</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="btn-group" style="margin-top: 0;">
+                <button class="btn btn-primary" id="applyFiltersBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                    Apply Filters
+                </button>
+                <button class="btn btn-outline" id="clearFiltersBtn">
+                    Clear All
+                </button>
+                <button class="btn btn-secondary" id="downloadBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+            
+            <!-- Active Filters Display -->
+            <div class="filter-tags" id="activeFilters">
+                <span class="text-muted">No active filters</span>
+            </div>
+        </div>
 
-                <!-- Data Table -->
-                <div class="table-container">
-                    <div class="table-responsive">
-                        <table class="data-table" id="dataTable">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Passenger</th>
-                                    <th>Flight Details</th>
-                                    <th>Cabin & Seat</th>
-                                    <th>Frequent Flyer</th>
-                                    <th>Route</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <tr>
-                                    <td colspan="7">
-                                        <div class="no-data">
-                                            <div class="no-data-icon">✈️</div>
-                                            <h3>No Data Loaded</h3>
-                                            <p class="text-muted">Select a flight date and number to view passenger records</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+        <!-- Main Content Area - MAXIMIZED FOR EDITING -->
+        <div class="content-area">
+            <div class="content-header">
+                <h2 class="content-title">Passenger Records Editor</h2>
+                <div class="btn-group">
+                    <button class="btn btn-outline" id="toggleEditMode">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        Bulk Edit Mode
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enhanced Table for Editing -->
+            <div class="table-container">
+                <div class="table-responsive">
+                    <table class="data-table" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>PAX Type</th>
+                                <th>Flight Number</th>
+                                <th>Carrier Code</th>
+                                <th>Flight Date</th>
+                                <th>Shift</th>
+                                <th>Seat Number</th>
+                                <th>Sec Number</th>
+                                <th>Cabin</th>
+                                <th>Guest Category</th>
+                                <th>FFP Number</th>
+                                <th>FFP Tier</th>
+                                <th>FFP Owner</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="18">
+                                    <div class="no-data">
+                                        <div class="no-data-icon">✈️</div>
+                                        <h3>No Data Loaded</h3>
+                                        <p class="text-muted">Select a flight date and number to view passenger records</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -873,6 +988,30 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Quick Edit Panel -->
+    <div class="quick-edit-panel" id="quickEditPanel">
+        <div class="quick-edit-header">
+            <h4 class="quick-edit-title">Quick Edit</h4>
+            <button class="btn btn-sm btn-outline" onclick="document.getElementById('quickEditPanel').classList.remove('active')">×</button>
+        </div>
+        <div class="quick-edit-form">
+            <input type="text" id="quickEditFirstName" class="form-input" placeholder="First Name">
+            <input type="text" id="quickEditLastName" class="form-input" placeholder="Last Name">
+            <select id="quickEditPaxType" class="form-select">
+                <option value="Adult">Adult</option>
+                <option value="Child">Child</option>
+                <option value="Infant">Infant</option>
+            </select>
+            <select id="quickEditCabin" class="form-select">
+                <option value="Economy">Economy</option>
+                <option value="Premium Economy">Premium Economy</option>
+                <option value="Business">Business</option>
+                <option value="First">First Class</option>
+            </select>
+            <button class="btn btn-primary" onclick="saveQuickEdit()">Save Changes</button>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize variables
@@ -883,6 +1022,8 @@
         let currentFilters = {};
         let editingRowId = null;
         let flightNumbersCache = {};
+        let bulkEditMode = false;
+        let selectedRows = new Set();
 
         // DOM Elements
         const firebaseStatus = document.getElementById('firebaseStatus');
@@ -900,8 +1041,11 @@
         const filterCabin = document.getElementById('filterCabin');
         const filterPaxType = document.getElementById('filterPaxType');
         const filterShift = document.getElementById('filterShift');
+        const filterFfpTier = document.getElementById('filterFfpTier');
+        const filterGuestCategory = document.getElementById('filterGuestCategory');
         const flightDropdown = document.getElementById('flightDropdown');
         const activeFilters = document.getElementById('activeFilters');
+        const toggleEditModeBtn = document.getElementById('toggleEditMode');
 
         // Button elements
         const applyFiltersBtn = document.getElementById('applyFiltersBtn');
@@ -1158,13 +1302,17 @@
                 date: filterDate.value,
                 cabin: filterCabin.value,
                 paxType: filterPaxType.value,
-                shift: filterShift.value
+                shift: filterShift.value,
+                ffpTier: filterFfpTier.value,
+                guestCategory: filterGuestCategory.value
             };
             
             filteredEntries = allEntries.filter(entry => {
                 if (currentFilters.cabin && entry.cabin !== currentFilters.cabin) return false;
                 if (currentFilters.paxType && entry.paxType !== currentFilters.paxType) return false;
                 if (currentFilters.shift && entry.shift !== currentFilters.shift) return false;
+                if (currentFilters.ffpTier && entry.ffpTier !== currentFilters.ffpTier) return false;
+                if (currentFilters.guestCategory && entry.guestCategory !== currentFilters.guestCategory) return false;
                 return true;
             });
             
@@ -1209,8 +1357,24 @@
                 });
             }
             
+            if (currentFilters.ffpTier) {
+                activeFiltersArray.push({
+                    key: 'ffpTier',
+                    label: `FFP Tier: ${currentFilters.ffpTier}`,
+                    value: currentFilters.ffpTier
+                });
+            }
+            
+            if (currentFilters.guestCategory) {
+                activeFiltersArray.push({
+                    key: 'guestCategory',
+                    label: `Guest: ${currentFilters.guestCategory}`,
+                    value: currentFilters.guestCategory
+                });
+            }
+            
             if (activeFiltersArray.length > 0) {
-                let html = '';
+                let html = '<strong>Active Filters:</strong>';
                 activeFiltersArray.forEach(filter => {
                     html += `
                         <div class="filter-tag">
@@ -1244,6 +1408,14 @@
                     filterShift.value = '';
                     currentFilters.shift = '';
                     break;
+                case 'ffpTier':
+                    filterFfpTier.value = '';
+                    currentFilters.ffpTier = '';
+                    break;
+                case 'guestCategory':
+                    filterGuestCategory.value = '';
+                    currentFilters.guestCategory = '';
+                    break;
             }
             
             applyAdditionalFilters();
@@ -1256,6 +1428,8 @@
             filterCabin.value = '';
             filterPaxType.value = '';
             filterShift.value = '';
+            filterFfpTier.value = '';
+            filterGuestCategory.value = '';
             
             currentFilters = {};
             allEntries = [];
@@ -1268,7 +1442,7 @@
             showToast('Filters Cleared', 'All filters have been cleared', 'info');
         }
 
-        // Render table
+        // Render table with all editable fields
         function renderTable() {
             if (filteredEntries.length === 0) {
                 let message = 'No data loaded';
@@ -1281,7 +1455,7 @@
                 
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7">
+                        <td colspan="18">
                             <div class="no-data">
                                 <div class="no-data-icon">👥</div>
                                 <h3>${message}</h3>
@@ -1297,85 +1471,107 @@
             
             filteredEntries.forEach((entry, index) => {
                 const isEditing = editingRowId === entry.id;
-                
-                // Get badge classes based on data
-                const cabinBadge = entry.cabin === 'Business' ? 'badge-secondary' : 
-                                  entry.cabin === 'First' ? 'badge-warning' : 'badge-info';
-                
-                const paxBadge = entry.paxType === 'Adult' ? 'badge-primary' : 
-                                entry.paxType === 'Child' ? 'badge-success' : 'badge-info';
-                
-                const tierBadge = entry.ffpTier === 'Platinum' ? 'badge-secondary' :
-                                 entry.ffpTier === 'Gold' ? 'badge-warning' : 
-                                 entry.ffpTier === 'Silver' ? 'badge-info' : '';
+                const isSelected = selectedRows.has(entry.id);
                 
                 if (isEditing) {
-                    // Editing mode
+                    // EDITING MODE - ALL FIELDS EDITABLE
                     html += `
                         <tr class="editing" id="row-${entry.id}">
                             <td>${index + 1}</td>
+                            <td><input type="text" class="compact-input" value="${entry.firstName || ''}" placeholder="First Name"></td>
+                            <td><input type="text" class="compact-input" value="${entry.lastName || ''}" placeholder="Last Name"></td>
                             <td>
-                                <input type="text" value="${entry.firstName || ''}" placeholder="First Name" style="width: 100px; margin-bottom: 4px;">
-                                <input type="text" value="${entry.lastName || ''}" placeholder="Last Name" style="width: 100px;">
+                                <select class="compact-select">
+                                    <option value="Adult" ${entry.paxType === 'Adult' ? 'selected' : ''}>Adult</option>
+                                    <option value="Child" ${entry.paxType === 'Child' ? 'selected' : ''}>Child</option>
+                                    <option value="Infant" ${entry.paxType === 'Infant' ? 'selected' : ''}>Infant</option>
+                                </select>
                             </td>
+                            <td><input type="text" class="compact-input" value="${entry.flightNumber || ''}" placeholder="Flight No"></td>
+                            <td><input type="text" class="compact-input" value="${entry.carrierCode || ''}" placeholder="Carrier"></td>
+                            <td><input type="date" class="compact-input" value="${entry.flightDate || ''}"></td>
                             <td>
-                                <div><strong>${entry.flightNumber || ''}</strong></div>
-                                <input type="date" value="${entry.flightDate || ''}" style="width: 140px;">
+                                <select class="compact-select">
+                                    <option value="">Select Shift</option>
+                                    <option value="Morning" ${entry.shift === 'Morning' ? 'selected' : ''}>Morning</option>
+                                    <option value="Afternoon" ${entry.shift === 'Afternoon' ? 'selected' : ''}>Afternoon</option>
+                                    <option value="Evening" ${entry.shift === 'Evening' ? 'selected' : ''}>Evening</option>
+                                    <option value="Night" ${entry.shift === 'Night' ? 'selected' : ''}>Night</option>
+                                </select>
                             </td>
+                            <td><input type="text" class="compact-input" value="${entry.seatNumber || ''}" placeholder="Seat"></td>
+                            <td><input type="text" class="compact-input" value="${entry.secNumber || ''}" placeholder="Sec No"></td>
                             <td>
-                                <select style="width: 120px; margin-bottom: 4px;">
+                                <select class="compact-select">
                                     <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
                                     <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
                                     <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
                                     <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First Class</option>
                                 </select>
-                                <input type="text" value="${entry.seatNumber || ''}" placeholder="Seat" style="width: 80px;">
                             </td>
                             <td>
-                                <input type="text" value="${entry.ffpNumber || ''}" placeholder="FFP Number" style="width: 120px; margin-bottom: 4px;">
-                                <select style="width: 120px;">
+                                <select class="compact-select">
+                                    <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
+                                    <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="compact-input" value="${entry.ffpNumber || ''}" placeholder="FFP No"></td>
+                            <td>
+                                <select class="compact-select">
                                     <option value="">Select Tier</option>
                                     <option value="Platinum" ${entry.ffpTier === 'Platinum' ? 'selected' : ''}>Platinum</option>
                                     <option value="Gold" ${entry.ffpTier === 'Gold' ? 'selected' : ''}>Gold</option>
                                     <option value="Silver" ${entry.ffpTier === 'Silver' ? 'selected' : ''}>Silver</option>
+                                    <option value="N0" ${entry.ffpTier === 'N0' ? 'selected' : ''}>N0</option>
+                                    <option value="Emerald" ${entry.ffpTier === 'Emerald' ? 'selected' : ''}>Emerald</option>
+                                    <option value="Sapphire" ${entry.ffpTier === 'Sapphire' ? 'selected' : ''}>Sapphire</option>
+                                    <option value="Ruby" ${entry.ffpTier === 'Ruby' ? 'selected' : ''}>Ruby</option>
                                 </select>
                             </td>
-                            <td>
-                                <input type="text" value="${entry.origin || ''}" placeholder="Origin" style="width: 80px; margin-bottom: 4px;">
-                                <span>→</span>
-                                <input type="text" value="${entry.destination || ''}" placeholder="Destination" style="width: 80px;">
-                            </td>
+                            <td><input type="text" class="compact-input" value="${entry.ffpOwner || ''}" placeholder="FFP Owner"></td>
+                            <td><input type="text" class="compact-input" value="${entry.origin || ''}" placeholder="Origin"></td>
+                            <td><input type="text" class="compact-input" value="${entry.destination || ''}" placeholder="Destination"></td>
                             <td class="actions-cell">
-                                <button class="btn btn-success btn-sm" onclick="saveEntry('${entry.id}')">Save</button>
-                                <button class="btn btn-outline btn-sm" onclick="cancelEdit('${entry.id}')">Cancel</button>
+                                <div class="action-buttons">
+                                    <button class="btn btn-success btn-sm" onclick="saveEntry('${entry.id}')">Save</button>
+                                    <button class="btn btn-outline btn-sm" onclick="cancelEdit('${entry.id}')">Cancel</button>
+                                </div>
                             </td>
                         </tr>
                     `;
                 } else {
-                    // View mode
+                    // VIEW MODE - ALL FIELDS SHOWN
                     html += `
-                        <tr id="row-${entry.id}">
+                        <tr id="row-${entry.id}" ${isSelected ? 'style="background-color: rgba(212, 175, 55, 0.2);"' : ''}>
                             <td>${index + 1}</td>
+                            <td>${entry.firstName || '-'}</td>
+                            <td>${entry.lastName || '-'}</td>
                             <td>
-                                <div><strong>${entry.firstName || ''} ${entry.lastName || ''}</strong></div>
-                                <div><span class="badge ${paxBadge}">${entry.paxType || 'Adult'}</span></div>
+                                ${entry.paxType || '-'}
+                                ${entry.paxType ? `<span class="badge ${entry.paxType === 'Adult' ? 'badge-primary' : entry.paxType === 'Child' ? 'badge-success' : 'badge-info'}">${entry.paxType}</span>` : ''}
+                            </td>
+                            <td><strong>${entry.flightNumber || '-'}</strong></td>
+                            <td>${entry.carrierCode || '-'}</td>
+                            <td>${entry.flightDate || '-'}</td>
+                            <td>${entry.shift || '-'}</td>
+                            <td>${entry.seatNumber || '-'}</td>
+                            <td>${entry.secNumber || '-'}</td>
+                            <td>
+                                ${entry.cabin || '-'}
+                                ${entry.cabin ? `<span class="badge ${entry.cabin === 'Business' ? 'badge-secondary' : entry.cabin === 'First' ? 'badge-warning' : 'badge-info'}">${entry.cabin}</span>` : ''}
                             </td>
                             <td>
-                                <div><strong>${entry.flightNumber || ''}</strong></div>
-                                <div class="text-muted">${entry.flightDate || ''}</div>
-                                <div><small>${entry.shift || 'Shift not specified'}</small></div>
+                                ${entry.guestCategory || 'Guest'}
+                                <span class="badge ${entry.guestCategory === 'Primary' ? 'badge-primary' : 'badge-secondary'}">${entry.guestCategory || 'Guest'}</span>
                             </td>
+                            <td>${entry.ffpNumber || '-'}</td>
                             <td>
-                                <div><span class="badge ${cabinBadge}">${entry.cabin || 'Economy'}</span></div>
-                                <div><strong>${entry.seatNumber || 'N/A'}</strong></div>
+                                ${entry.ffpTier || '-'}
+                                ${entry.ffpTier ? `<span class="badge ${entry.ffpTier === 'Platinum' ? 'badge-secondary' : entry.ffpTier === 'Gold' ? 'badge-warning' : 'badge-info'}">${entry.ffpTier}</span>` : ''}
                             </td>
-                            <td>
-                                <div>${entry.ffpNumber || 'No FFP'}</div>
-                                ${entry.ffpTier ? `<div><span class="badge ${tierBadge}">${entry.ffpTier}</span></div>` : ''}
-                            </td>
-                            <td>
-                                <div>${entry.origin || 'N/A'} → ${entry.destination || 'N/A'}</div>
-                            </td>
+                            <td>${entry.ffpOwner || '-'}</td>
+                            <td>${entry.origin || '-'}</td>
+                            <td>${entry.destination || '-'}</td>
                             <td class="actions-cell">
                                 <div class="action-buttons">
                                     <button class="btn btn-primary btn-sm" onclick="editEntry('${entry.id}')">Edit</button>
@@ -1388,6 +1584,29 @@
             });
             
             tableBody.innerHTML = html;
+            
+            // Add row selection for bulk edit mode
+            if (bulkEditMode) {
+                document.querySelectorAll('.data-table tbody tr').forEach((row, index) => {
+                    if (index > 0) { // Skip header
+                        row.style.cursor = 'pointer';
+                        row.addEventListener('click', function(e) {
+                            if (!e.target.closest('button')) { // Don't trigger on button clicks
+                                const entryId = filteredEntries[index - 1]?.id;
+                                if (entryId) {
+                                    if (selectedRows.has(entryId)) {
+                                        selectedRows.delete(entryId);
+                                        this.style.backgroundColor = '';
+                                    } else {
+                                        selectedRows.add(entryId);
+                                        this.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+            }
         }
 
         // Edit entry
@@ -1427,18 +1646,27 @@
             const row = document.getElementById(`row-${entryId}`);
             if (!row) return;
             
-            // Get updated values from inputs
+            // Get all inputs from the row
             const inputs = row.querySelectorAll('input, select');
+            
+            // Map inputs to fields
             const updatedData = {
                 firstName: inputs[0]?.value || '',
                 lastName: inputs[1]?.value || '',
-                flightDate: inputs[2]?.value || '',
-                cabin: inputs[3]?.value || 'Economy',
-                seatNumber: inputs[4]?.value || '',
-                ffpNumber: inputs[5]?.value || '',
-                ffpTier: inputs[6]?.value || '',
-                origin: inputs[7]?.value || '',
-                destination: inputs[9]?.value || '',
+                paxType: inputs[2]?.value || 'Adult',
+                flightNumber: inputs[3]?.value || '',
+                carrierCode: inputs[4]?.value || '',
+                flightDate: inputs[5]?.value || '',
+                shift: inputs[6]?.value || '',
+                seatNumber: inputs[7]?.value || '',
+                secNumber: inputs[8]?.value || '',
+                cabin: inputs[9]?.value || 'Economy',
+                guestCategory: inputs[10]?.value || 'Guest',
+                ffpNumber: inputs[11]?.value || '',
+                ffpTier: inputs[12]?.value || '',
+                ffpOwner: inputs[13]?.value || '',
+                origin: inputs[14]?.value || '',
+                destination: inputs[15]?.value || '',
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
@@ -1497,6 +1725,7 @@
                     renderTable();
                     updateActiveFilters();
                     filteredRecords.textContent = filteredEntries.length;
+                    totalRecords.textContent = allEntries.length;
                     hideLoading();
                     
                     showToast('Deleted', 'Passenger record deleted successfully', 'success');
@@ -1517,11 +1746,12 @@
             
             showLoading('Preparing download...');
             
-            // Create CSV content
+            // Create CSV content with all fields
             const headers = [
-                'Flight_Date', 'Carrier_Code', 'Flight_Number', 'Shift', 
-                'First_Name', 'Last_Name', 'PAX_Type', 'Cabin', 'Seat_Number',
-                'FFP_Number', 'FFP_Tier', 'Origin', 'Destination'
+                'Flight_Date', 'Carrier_Code', 'Flight_Number', 'Shift',
+                'Sec_Number', 'FFP_Owner', 'FFP_Number', 'FFP_Tier',
+                'Guest_Category', 'Cabin', 'Seat_Number', 'Origin',
+                'Destination', 'First_Name', 'Last_Name', 'PAX_Type'
             ];
             
             let csvContent = headers.join(',') + '\n';
@@ -1532,15 +1762,18 @@
                     entry.carrierCode || '',
                     entry.flightNumber || '',
                     entry.shift || '',
-                    entry.firstName || '',
-                    entry.lastName || '',
-                    entry.paxType || 'Adult',
-                    entry.cabin || 'Economy',
-                    entry.seatNumber || '',
+                    entry.secNumber || '',
+                    entry.ffpOwner || '',
                     entry.ffpNumber || '',
                     entry.ffpTier || '',
+                    entry.guestCategory || 'Guest',
+                    entry.cabin || 'Economy',
+                    entry.seatNumber || '',
                     entry.origin || '',
-                    entry.destination || ''
+                    entry.destination || '',
+                    entry.firstName || '',
+                    entry.lastName || '',
+                    entry.paxType || 'Adult'
                 ];
                 
                 // Escape commas and quotes
@@ -1576,6 +1809,39 @@
             showToast('Download Complete', `${filteredEntries.length} records exported`, 'success');
         }
 
+        // Toggle bulk edit mode
+        toggleEditModeBtn.addEventListener('click', function() {
+            bulkEditMode = !bulkEditMode;
+            selectedRows.clear();
+            
+            if (bulkEditMode) {
+                this.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>
+                    Exit Bulk Edit
+                `;
+                this.classList.add('btn-primary');
+                this.classList.remove('btn-outline');
+                showToast('Bulk Edit Mode', 'Click on rows to select multiple records', 'info');
+            } else {
+                this.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                    </svg>
+                    Bulk Edit Mode
+                `;
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-outline');
+                showToast('Bulk Edit Mode', 'Bulk edit mode disabled', 'info');
+            }
+            
+            renderTable();
+        });
+
         // Event Listeners
         applyFiltersBtn.addEventListener('click', applyAdditionalFilters);
         clearFiltersBtn.addEventListener('click', clearAllFilters);
@@ -1598,8 +1864,8 @@
             }
         });
 
-        // Apply filters when any filter changes (except flight)
-        [filterCabin, filterPaxType, filterShift].forEach(select => {
+        // Apply filters when any filter changes
+        [filterCabin, filterPaxType, filterShift, filterFfpTier, filterGuestCategory].forEach(select => {
             select.addEventListener('change', function() {
                 if (currentFilters.flight) {
                     applyAdditionalFilters();
@@ -1624,6 +1890,12 @@
             if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
                 e.preventDefault();
                 loadFlightNumbers();
+            }
+            
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && editingRowId) {
+                e.preventDefault();
+                window.saveEntry(editingRowId);
             }
         });
     });
