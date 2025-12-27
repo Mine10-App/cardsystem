@@ -30,17 +30,17 @@
             color: var(--qatar-dark);
             line-height: 1.6;
             min-height: 100vh;
-            padding: 15px;
+            padding: 10px;
         }
         
         .container {
             max-width: 1600px;
             margin: 0 auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 6px 24px rgba(140, 0, 50, 0.08);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(140, 0, 50, 0.08);
             overflow: hidden;
-            height: calc(100vh - 30px);
+            height: calc(100vh - 20px);
             display: flex;
             flex-direction: column;
         }
@@ -49,16 +49,16 @@
         .header {
             background: linear-gradient(135deg, var(--qatar-primary) 0%, #6a0024 100%);
             color: white;
-            padding: 18px 24px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 4px solid var(--qatar-secondary);
+            border-bottom: 3px solid var(--qatar-secondary);
             flex-shrink: 0;
         }
         
         .header-content h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 600;
             margin-bottom: 4px;
             display: flex;
@@ -68,12 +68,12 @@
         
         .header-content p {
             opacity: 0.9;
-            font-size: 13px;
+            font-size: 12px;
         }
         
         .header-controls {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         
         /* Status Indicators */
@@ -81,8 +81,8 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            font-size: 13px;
-            padding: 6px 12px;
+            font-size: 12px;
+            padding: 6px 10px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             backdrop-filter: blur(10px);
@@ -108,27 +108,27 @@
         /* Filters Section - TOP */
         .filters-section {
             background: var(--qatar-light);
-            padding: 16px;
+            padding: 15px;
             border-bottom: 1px solid var(--qatar-accent);
             flex-shrink: 0;
         }
         
         .filters-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
         }
         
         .filters-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         
         .filters-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--qatar-primary);
         }
@@ -140,18 +140,18 @@
         
         .form-label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
             font-weight: 500;
             color: var(--qatar-dark);
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .form-input, .form-select {
             width: 100%;
-            padding: 8px 12px;
+            padding: 7px 10px;
             border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 13px;
+            border-radius: 5px;
+            font-size: 12px;
             transition: all 0.3s ease;
             background: white;
         }
@@ -176,10 +176,10 @@
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             margin-top: 4px;
-            max-height: 300px;
+            max-height: 250px;
             overflow-y: auto;
             z-index: 1000;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             display: none;
         }
         
@@ -188,7 +188,7 @@
         }
         
         .flight-option {
-            padding: 10px 12px;
+            padding: 8px 10px;
             cursor: pointer;
             border-bottom: 1px solid #f0f0f0;
             display: flex;
@@ -214,10 +214,11 @@
         .flight-code {
             font-weight: 600;
             color: var(--qatar-primary);
+            font-size: 12px;
         }
         
         .flight-number {
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
         }
         
@@ -225,28 +226,29 @@
             background: var(--qatar-primary);
             color: white;
             padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 11px;
+            border-radius: 8px;
+            font-size: 10px;
             font-weight: 600;
         }
         
-        /* Buttons */
+        /* Buttons - VISIBLE AND CLEAR */
         .btn {
-            padding: 8px 16px;
+            padding: 6px 12px;
             border: none;
-            border-radius: 6px;
-            font-size: 13px;
+            border-radius: 5px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+            min-height: 30px;
         }
         
         .btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
         
         .btn:disabled {
@@ -286,24 +288,25 @@
         
         .btn-outline {
             background: transparent;
-            border: 2px solid var(--qatar-primary);
+            border: 1px solid var(--qatar-primary);
             color: var(--qatar-primary);
         }
         
         .btn-sm {
             padding: 4px 8px;
             font-size: 11px;
+            min-height: 24px;
         }
         
         .btn-group {
             display: flex;
             gap: 8px;
-            margin-top: 12px;
+            margin-top: 10px;
         }
         
         /* Main Content Area - MAXIMIZED */
         .content-area {
-            padding: 16px;
+            padding: 15px;
             background: white;
             flex: 1;
             overflow: hidden;
@@ -315,48 +318,48 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
             border-bottom: 1px solid var(--qatar-accent);
             flex-shrink: 0;
         }
         
         .content-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--qatar-primary);
         }
         
         .content-stats {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             align-items: center;
         }
         
         .stat-card {
             background: var(--qatar-light);
-            padding: 8px 12px;
-            border-radius: 6px;
+            padding: 6px 10px;
+            border-radius: 5px;
             border-left: 3px solid var(--qatar-primary);
         }
         
         .stat-value {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: var(--qatar-primary);
         }
         
         .stat-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
         
-        /* Enhanced Table for Editing - OPTIMIZED COLUMNS */
+        /* Enhanced Table for Editing - FIXED FOR VISIBILITY */
         .table-container {
             background: white;
-            border-radius: 6px;
+            border-radius: 5px;
             border: 1px solid var(--qatar-accent);
             overflow: hidden;
             flex: 1;
@@ -373,7 +376,7 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 1200px; /* Reduced for better fit */
+            min-width: 1000px; /* Reduced for better fit */
         }
         
         .data-table thead {
@@ -384,15 +387,15 @@
         }
         
         .data-table th {
-            padding: 10px 8px;
+            padding: 8px;
             text-align: left;
             font-weight: 600;
             color: var(--qatar-primary);
             border-bottom: 2px solid var(--qatar-accent);
-            font-size: 12px;
+            font-size: 11px;
             white-space: nowrap;
-            min-width: 80px;
-            max-width: 120px;
+            min-width: 70px;
+            max-width: 100px;
         }
         
         .data-table tbody tr {
@@ -411,12 +414,10 @@
         
         .data-table td {
             padding: 6px 8px;
-            font-size: 12px;
+            font-size: 11px;
             vertical-align: middle;
-            min-width: 80px;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            min-width: 70px;
+            max-width: 100px;
         }
         
         .data-table input,
@@ -424,8 +425,8 @@
             width: 100%;
             padding: 4px 6px;
             border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 12px;
+            border-radius: 3px;
+            font-size: 11px;
             transition: all 0.2s ease;
         }
         
@@ -436,26 +437,16 @@
             box-shadow: 0 0 0 2px rgba(140, 0, 50, 0.1);
         }
         
-        /* Compact form elements for table */
-        .compact-input {
-            padding: 4px 6px !important;
-            font-size: 11px !important;
-        }
-        
-        .compact-select {
-            padding: 4px 6px !important;
-            font-size: 11px !important;
-        }
-        
-        /* Badges */
+        /* Badges - VISIBLE */
         .badge {
             display: inline-block;
-            padding: 2px 6px;
+            padding: 2px 5px;
             border-radius: 3px;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
+            margin: 1px;
         }
         
         .badge-primary {
@@ -488,15 +479,23 @@
             color: white;
         }
         
-        /* Actions */
+        /* Actions - VISIBLE AND CLEAR */
         .actions-cell {
             white-space: nowrap;
-            min-width: 100px;
+            min-width: 80px;
         }
         
         .action-buttons {
             display: flex;
             gap: 4px;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .action-buttons button {
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: inline-flex !important;
         }
         
         /* Loading Overlay */
@@ -520,13 +519,13 @@
         }
         
         .loader {
-            width: 40px;
-            height: 40px;
+            width: 35px;
+            height: 35px;
             border: 3px solid #f3f3f3;
             border-top: 3px solid var(--qatar-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         
         @keyframes spin {
@@ -537,24 +536,24 @@
         /* Toast Notifications */
         .toast-container {
             position: fixed;
-            bottom: 16px;
-            right: 16px;
+            bottom: 12px;
+            right: 12px;
             z-index: 1000;
         }
         
         .toast {
             background: white;
-            border-radius: 6px;
-            padding: 12px 16px;
-            margin-top: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 5px;
+            padding: 10px 14px;
+            margin-top: 6px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
             border-left: 3px solid var(--qatar-primary);
             display: flex;
             align-items: center;
             gap: 8px;
             animation: slideIn 0.3s ease;
-            min-width: 250px;
-            font-size: 13px;
+            min-width: 200px;
+            font-size: 12px;
         }
         
         @keyframes slideIn {
@@ -581,7 +580,7 @@
         }
         
         .toast-icon {
-            font-size: 16px;
+            font-size: 14px;
         }
         
         .toast-content {
@@ -591,24 +590,24 @@
         .toast-title {
             font-weight: 600;
             margin-bottom: 2px;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         .toast-message {
-            font-size: 12px;
+            font-size: 11px;
             color: #666;
         }
         
         /* No Data State */
         .no-data {
             text-align: center;
-            padding: 40px 16px;
+            padding: 30px 15px;
             color: #999;
         }
         
         .no-data-icon {
-            font-size: 32px;
-            margin-bottom: 12px;
+            font-size: 24px;
+            margin-bottom: 10px;
             opacity: 0.5;
         }
         
@@ -616,24 +615,24 @@
         .filter-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            padding: 8px;
+            gap: 5px;
+            padding: 6px;
             background: rgba(140, 0, 50, 0.05);
-            border-radius: 6px;
-            margin-top: 8px;
-            font-size: 11px;
+            border-radius: 5px;
+            margin-top: 6px;
+            font-size: 10px;
         }
         
         .filter-tag {
             background: rgba(140, 0, 50, 0.1);
             color: var(--qatar-primary);
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 10px;
             font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
         
         .filter-tag button {
@@ -641,43 +640,26 @@
             border: none;
             color: var(--qatar-primary);
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             line-height: 1;
             padding: 0;
-            width: 14px;
-            height: 14px;
+            width: 12px;
+            height: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         
         /* Responsive Design */
-        @media (max-width: 1400px) {
+        @media (max-width: 1200px) {
             .filters-grid {
                 grid-template-columns: repeat(3, 1fr);
             }
         }
         
-        @media (max-width: 1100px) {
+        @media (max-width: 900px) {
             .filters-grid {
                 grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .header {
-                flex-direction: column;
-                gap: 12px;
-                text-align: center;
-            }
-            
-            .header-controls {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .filters-grid {
-                grid-template-columns: 1fr;
             }
             
             .content-header {
@@ -690,19 +672,29 @@
                 width: 100%;
                 justify-content: space-between;
             }
+        }
+        
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
             
-            .flight-dropdown {
-                position: fixed;
-                left: 16px;
-                right: 16px;
-                max-height: 40vh;
+            .header-controls {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
             }
         }
         
         /* Scrollbar Styling */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
         }
         
         ::-webkit-scrollbar-track {
@@ -719,31 +711,31 @@
             background: #a8a8a8;
         }
         
-        /* Utility Classes */
-        .hidden {
-            display: none;
+        /* Edit Mode Styling */
+        .edit-row {
+            background-color: rgba(212, 175, 55, 0.1) !important;
         }
         
-        .text-center {
-            text-align: center;
+        .edit-row td {
+            padding: 5px 6px !important;
         }
         
-        .text-muted {
-            color: #999;
+        .edit-input {
+            background: white !important;
+            border: 1px solid var(--qatar-primary) !important;
         }
         
-        .full-width {
-            width: 100%;
+        /* Make sure everything is visible */
+        .visible {
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
-        /* Column Grouping for Better Organization */
-        .column-group {
-            background: rgba(140, 0, 50, 0.05);
-            font-weight: 600;
-            text-align: center;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        /* Column styling for better visibility */
+        .text-ellipsis {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
     </style>
     
@@ -758,7 +750,7 @@
         <div class="header">
             <div class="header-content">
                 <h1>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
                     </svg>
                     Qatar Airways Flight Editor
@@ -771,7 +763,7 @@
                     <span>Firebase</span>
                 </div>
                 <button class="btn btn-secondary" id="refreshBtn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                     </svg>
                     Refresh
@@ -779,7 +771,7 @@
             </div>
         </div>
 
-        <!-- Filters Section - OPTIMIZED -->
+        <!-- Filters Section -->
         <div class="filters-section">
             <div class="filters-header">
                 <h3 class="filters-title">Search & Filter</h3>
@@ -842,9 +834,6 @@
                         <option value="Gold">Gold</option>
                         <option value="Silver">Silver</option>
                         <option value="N0">N0</option>
-                        <option value="Emerald">Emerald</option>
-                        <option value="Sapphire">Sapphire</option>
-                        <option value="Ruby">Ruby</option>
                     </select>
                 </div>
                 
@@ -858,9 +847,9 @@
                 </div>
             </div>
             
-            <div class="btn-group" style="margin-top: 8px;">
+            <div class="btn-group">
                 <button class="btn btn-primary" id="applyFiltersBtn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"/>
                         <path d="m21 21-4.35-4.35"/>
                     </svg>
@@ -870,7 +859,7 @@
                     Clear All
                 </button>
                 <button class="btn btn-secondary" id="downloadBtn">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                     </svg>
                     Export CSV
@@ -883,50 +872,39 @@
             </div>
         </div>
 
-        <!-- Main Content Area - OPTIMIZED FOR SINGLE WINDOW -->
+        <!-- Main Content Area -->
         <div class="content-area">
             <div class="content-header">
                 <h2 class="content-title">Passenger Records Editor</h2>
+                <div style="font-size: 11px; color: #666;">
+                    Click Edit to modify, Save to confirm changes
+                </div>
             </div>
 
-            <!-- Enhanced Table - FITS IN SINGLE WINDOW -->
+            <!-- Enhanced Table - ALL DATA VISIBLE -->
             <div class="table-container">
                 <div class="table-responsive">
                     <table class="data-table" id="dataTable">
                         <thead>
                             <tr>
                                 <th>#</th>
-                                <th colspan="2" class="column-group">Passenger Info</th>
-                                <th class="column-group">Flight Details</th>
-                                <th colspan="2" class="column-group">Seating</th>
-                                <th colspan="3" class="column-group">Frequent Flyer</th>
-                                <th colspan="2" class="column-group">Route</th>
-                                <th class="column-group">Actions</th>
-                            </tr>
-                            <tr>
-                                <th style="min-width: 40px;">#</th>
-                                <!-- Passenger Info -->
-                                <th style="min-width: 90px;">First Name</th>
-                                <th style="min-width: 90px;">Last Name</th>
-                                <!-- Flight Details -->
-                                <th style="min-width: 120px;">Flight/Date</th>
-                                <!-- Seating -->
-                                <th style="min-width: 70px;">Seat</th>
-                                <th style="min-width: 80px;">Cabin</th>
-                                <!-- Frequent Flyer -->
-                                <th style="min-width: 100px;">FFP No</th>
-                                <th style="min-width: 80px;">Tier</th>
-                                <th style="min-width: 80px;">Category</th>
-                                <!-- Route -->
-                                <th style="min-width: 60px;">Origin</th>
-                                <th style="min-width: 80px;">Destination</th>
-                                <!-- Actions -->
-                                <th style="min-width: 100px;">Actions</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>PAX Type</th>
+                                <th>Flight No</th>
+                                <th>Seat</th>
+                                <th>Cabin</th>
+                                <th>Guest Type</th>
+                                <th>FFP No</th>
+                                <th>FFP Tier</th>
+                                <th>Origin</th>
+                                <th>Destination</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <tr>
-                                <td colspan="12">
+                                <td colspan="13">
                                     <div class="no-data">
                                         <div class="no-data-icon">✈️</div>
                                         <h3>No Data Loaded</h3>
@@ -950,20 +928,6 @@
     <!-- Toast Notifications Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Quick Edit Modal -->
-    <div id="editModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 8px; padding: 24px; max-width: 800px; max-height: 90vh; overflow-y: auto;">
-            <h3 style="margin-bottom: 20px; color: var(--qatar-primary);">Edit Passenger Record</h3>
-            <div id="editModalContent">
-                <!-- Dynamic content will be inserted here -->
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 20px;">
-                <button class="btn btn-primary" id="modalSaveBtn">Save Changes</button>
-                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-            </div>
-        </div>
-    </div>
-
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Initialize variables
@@ -974,7 +938,6 @@
         let currentFilters = {};
         let editingRowId = null;
         let flightNumbersCache = {};
-        let currentEditEntry = null;
 
         // DOM Elements
         const firebaseStatus = document.getElementById('firebaseStatus');
@@ -985,9 +948,6 @@
         const filteredRecords = document.getElementById('filteredRecords');
         const flightCount = document.getElementById('flightCount');
         const toastContainer = document.getElementById('toastContainer');
-        const editModal = document.getElementById('editModal');
-        const editModalContent = document.getElementById('editModalContent');
-        const modalSaveBtn = document.getElementById('modalSaveBtn');
 
         // Filter elements
         const filterDate = document.getElementById('filterDate');
@@ -1018,17 +978,17 @@
                     <div class="toast-title">${title}</div>
                     <div class="toast-message">${message}</div>
                 </div>
-                <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:20px;">×</button>
+                <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:16px;padding:0 4px;">×</button>
             `;
             
             toastContainer.appendChild(toast);
             
-            // Auto-remove after 5 seconds
+            // Auto-remove after 4 seconds
             setTimeout(() => {
                 if (toast.parentElement) {
                     toast.remove();
                 }
-            }, 5000);
+            }, 4000);
         }
 
         // Show loading overlay
@@ -1041,17 +1001,6 @@
         function hideLoading() {
             loadingOverlay.classList.remove('active');
         }
-
-        // Show modal
-        function showModal() {
-            editModal.style.display = 'flex';
-        }
-
-        // Close modal
-        window.closeModal = function() {
-            editModal.style.display = 'none';
-            currentEditEntry = null;
-        };
 
         // Initialize Firebase
         try {
@@ -1157,7 +1106,7 @@
             
             if (flightKeys.length === 0) {
                 flightDropdown.innerHTML = `
-                    <div class="flight-option" style="text-align: center; color: #999; padding: 16px;">
+                    <div class="flight-option" style="text-align: center; color: #999; padding: 12px;">
                         No flights found for this date
                     </div>
                 `;
@@ -1390,7 +1339,7 @@
             showToast('Filters Cleared', 'All filters have been cleared', 'info');
         }
 
-        // Render table - OPTIMIZED FOR SINGLE WINDOW
+        // Render table with INLINE EDITING
         function renderTable() {
             if (filteredEntries.length === 0) {
                 let message = 'No data loaded';
@@ -1403,7 +1352,7 @@
                 
                 tableBody.innerHTML = `
                     <tr>
-                        <td colspan="12">
+                        <td colspan="13">
                             <div class="no-data">
                                 <div class="no-data-icon">👥</div>
                                 <h3>${message}</h3>
@@ -1418,6 +1367,8 @@
             let html = '';
             
             filteredEntries.forEach((entry, index) => {
+                const isEditing = editingRowId === entry.id;
+                
                 // Determine badges
                 const paxBadgeClass = entry.paxType === 'Adult' ? 'badge-primary' : 
                                       entry.paxType === 'Child' ? 'badge-success' : 'badge-info';
@@ -1427,170 +1378,150 @@
                 
                 const tierBadgeClass = entry.ffpTier === 'Platinum' ? 'badge-secondary' :
                                       entry.ffpTier === 'Gold' ? 'badge-warning' : 
-                                      entry.ffpTier === 'Silver' ? 'badge-info' : '';
+                                      entry.ffpTier === 'Silver' ? 'badge-info' : 'badge-primary';
                 
                 const guestBadgeClass = entry.guestCategory === 'Primary' ? 'badge-primary' : 'badge-secondary';
                 
-                html += `
-                    <tr id="row-${entry.id}" onclick="rowClickHandler('${entry.id}')" style="cursor: pointer;">
-                        <td>${index + 1}</td>
-                        <td><strong>${entry.firstName || '-'}</strong></td>
-                        <td><strong>${entry.lastName || '-'}</strong></td>
-                        <td>
-                            <div><strong>${entry.flightNumber || '-'}</strong></div>
-                            <div class="text-muted" style="font-size: 11px;">${entry.flightDate || '-'}</div>
-                        </td>
-                        <td><strong>${entry.seatNumber || '-'}</strong></td>
-                        <td>
-                            <span class="badge ${cabinBadgeClass}">${entry.cabin || 'Economy'}</span>
-                        </td>
-                        <td>${entry.ffpNumber || '-'}</td>
-                        <td>
-                            ${entry.ffpTier ? `<span class="badge ${tierBadgeClass}">${entry.ffpTier}</span>` : '-'}
-                        </td>
-                        <td>
-                            <span class="badge ${guestBadgeClass}">${entry.guestCategory || 'Guest'}</span>
-                        </td>
-                        <td>${entry.origin || '-'}</td>
-                        <td>${entry.destination || '-'}</td>
-                        <td class="actions-cell">
-                            <div class="action-buttons">
-                                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); editEntry('${entry.id}')">Edit</button>
-                                <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteEntry('${entry.id}')">Delete</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                if (isEditing) {
+                    // EDITING MODE - SHOW INPUTS
+                    html += `
+                        <tr class="editing edit-row" id="row-${entry.id}">
+                            <td>${index + 1}</td>
+                            <td><input type="text" class="edit-input" value="${entry.firstName || ''}" placeholder="First Name"></td>
+                            <td><input type="text" class="edit-input" value="${entry.lastName || ''}" placeholder="Last Name"></td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="Adult" ${entry.paxType === 'Adult' ? 'selected' : ''}>Adult</option>
+                                    <option value="Child" ${entry.paxType === 'Child' ? 'selected' : ''}>Child</option>
+                                    <option value="Infant" ${entry.paxType === 'Infant' ? 'selected' : ''}>Infant</option>
+                                </select>
+                            </td>
+                            <td>${entry.flightNumber || '-'}</td>
+                            <td><input type="text" class="edit-input" value="${entry.seatNumber || ''}" placeholder="Seat"></td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="Economy" ${entry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
+                                    <option value="Premium Economy" ${entry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
+                                    <option value="Business" ${entry.cabin === 'Business' ? 'selected' : ''}>Business</option>
+                                    <option value="First" ${entry.cabin === 'First' ? 'selected' : ''}>First Class</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="Guest" ${entry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
+                                    <option value="Primary" ${entry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="edit-input" value="${entry.ffpNumber || ''}" placeholder="FFP No"></td>
+                            <td>
+                                <select class="edit-input">
+                                    <option value="">Select Tier</option>
+                                    <option value="Platinum" ${entry.ffpTier === 'Platinum' ? 'selected' : ''}>Platinum</option>
+                                    <option value="Gold" ${entry.ffpTier === 'Gold' ? 'selected' : ''}>Gold</option>
+                                    <option value="Silver" ${entry.ffpTier === 'Silver' ? 'selected' : ''}>Silver</option>
+                                    <option value="N0" ${entry.ffpTier === 'N0' ? 'selected' : ''}>N0</option>
+                                </select>
+                            </td>
+                            <td><input type="text" class="edit-input" value="${entry.origin || ''}" placeholder="Origin"></td>
+                            <td><input type="text" class="edit-input" value="${entry.destination || ''}" placeholder="Destination"></td>
+                            <td class="actions-cell">
+                                <div class="action-buttons visible">
+                                    <button class="btn btn-success btn-sm" onclick="saveEntry('${entry.id}')">Save</button>
+                                    <button class="btn btn-outline btn-sm" onclick="cancelEdit('${entry.id}')">Cancel</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    // VIEW MODE - SHOW DATA
+                    html += `
+                        <tr id="row-${entry.id}" ${editingRowId ? 'style="opacity: 0.7;"' : ''}>
+                            <td>${index + 1}</td>
+                            <td><strong>${entry.firstName || '-'}</strong></td>
+                            <td><strong>${entry.lastName || '-'}</strong></td>
+                            <td>
+                                <span class="badge ${paxBadgeClass}">${entry.paxType || 'Adult'}</span>
+                            </td>
+                            <td><strong>${entry.flightNumber || '-'}</strong></td>
+                            <td><strong>${entry.seatNumber || '-'}</strong></td>
+                            <td>
+                                <span class="badge ${cabinBadgeClass}">${entry.cabin || 'Economy'}</span>
+                            </td>
+                            <td>
+                                <span class="badge ${guestBadgeClass}">${entry.guestCategory || 'Guest'}</span>
+                            </td>
+                            <td class="text-ellipsis">${entry.ffpNumber || '-'}</td>
+                            <td>
+                                ${entry.ffpTier ? `<span class="badge ${tierBadgeClass}">${entry.ffpTier}</span>` : '-'}
+                            </td>
+                            <td>${entry.origin || '-'}</td>
+                            <td>${entry.destination || '-'}</td>
+                            <td class="actions-cell">
+                                <div class="action-buttons visible">
+                                    <button class="btn btn-primary btn-sm" onclick="editEntry('${entry.id}')">Edit</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteEntry('${entry.id}')">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
             });
             
             tableBody.innerHTML = html;
         }
 
-        // Handle row click
-        window.rowClickHandler = function(entryId) {
-            // Optional: Add selection highlighting
-            document.querySelectorAll('.data-table tbody tr').forEach(row => {
-                row.style.backgroundColor = '';
-            });
-            document.getElementById(`row-${entryId}`).style.backgroundColor = 'rgba(140, 0, 50, 0.05)';
-        };
-
-        // Edit entry - opens modal
+        // Edit entry
         window.editEntry = function(entryId) {
-            currentEditEntry = filteredEntries.find(e => e.id === entryId);
-            if (!currentEditEntry) return;
+            if (editingRowId && editingRowId !== entryId) {
+                showToast('Edit in Progress', 'Please save or cancel the current edit first', 'warning');
+                return;
+            }
             
-            // Populate modal with all fields
-            editModalContent.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
-                    <div class="form-group">
-                        <label class="form-label">First Name</label>
-                        <input type="text" class="form-input" id="modalFirstName" value="${currentEditEntry.firstName || ''}" placeholder="First Name">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" class="form-input" id="modalLastName" value="${currentEditEntry.lastName || ''}" placeholder="Last Name">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">PAX Type</label>
-                        <select class="form-select" id="modalPaxType">
-                            <option value="Adult" ${currentEditEntry.paxType === 'Adult' ? 'selected' : ''}>Adult</option>
-                            <option value="Child" ${currentEditEntry.paxType === 'Child' ? 'selected' : ''}>Child</option>
-                            <option value="Infant" ${currentEditEntry.paxType === 'Infant' ? 'selected' : ''}>Infant</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Flight Number</label>
-                        <input type="text" class="form-input" id="modalFlightNumber" value="${currentEditEntry.flightNumber || ''}" placeholder="Flight Number">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Carrier Code</label>
-                        <input type="text" class="form-input" id="modalCarrierCode" value="${currentEditEntry.carrierCode || ''}" placeholder="Carrier Code">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Flight Date</label>
-                        <input type="date" class="form-input" id="modalFlightDate" value="${currentEditEntry.flightDate || ''}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Seat Number</label>
-                        <input type="text" class="form-input" id="modalSeatNumber" value="${currentEditEntry.seatNumber || ''}" placeholder="Seat Number">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Sec Number</label>
-                        <input type="text" class="form-input" id="modalSecNumber" value="${currentEditEntry.secNumber || ''}" placeholder="Sec Number">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Cabin</label>
-                        <select class="form-select" id="modalCabin">
-                            <option value="Economy" ${currentEditEntry.cabin === 'Economy' ? 'selected' : ''}>Economy</option>
-                            <option value="Premium Economy" ${currentEditEntry.cabin === 'Premium Economy' ? 'selected' : ''}>Premium Economy</option>
-                            <option value="Business" ${currentEditEntry.cabin === 'Business' ? 'selected' : ''}>Business</option>
-                            <option value="First" ${currentEditEntry.cabin === 'First' ? 'selected' : ''}>First Class</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Guest Category</label>
-                        <select class="form-select" id="modalGuestCategory">
-                            <option value="Guest" ${currentEditEntry.guestCategory === 'Guest' ? 'selected' : ''}>Guest</option>
-                            <option value="Primary" ${currentEditEntry.guestCategory === 'Primary' ? 'selected' : ''}>Primary</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">FFP Number</label>
-                        <input type="text" class="form-input" id="modalFfpNumber" value="${currentEditEntry.ffpNumber || ''}" placeholder="FFP Number">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">FFP Tier</label>
-                        <select class="form-select" id="modalFfpTier">
-                            <option value="">Select Tier</option>
-                            <option value="Platinum" ${currentEditEntry.ffpTier === 'Platinum' ? 'selected' : ''}>Platinum</option>
-                            <option value="Gold" ${currentEditEntry.ffpTier === 'Gold' ? 'selected' : ''}>Gold</option>
-                            <option value="Silver" ${currentEditEntry.ffpTier === 'Silver' ? 'selected' : ''}>Silver</option>
-                            <option value="N0" ${currentEditEntry.ffpTier === 'N0' ? 'selected' : ''}>N0</option>
-                            <option value="Emerald" ${currentEditEntry.ffpTier === 'Emerald' ? 'selected' : ''}>Emerald</option>
-                            <option value="Sapphire" ${currentEditEntry.ffpTier === 'Sapphire' ? 'selected' : ''}>Sapphire</option>
-                            <option value="Ruby" ${currentEditEntry.ffpTier === 'Ruby' ? 'selected' : ''}>Ruby</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">FFP Owner</label>
-                        <input type="text" class="form-input" id="modalFfpOwner" value="${currentEditEntry.ffpOwner || ''}" placeholder="FFP Owner">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Origin</label>
-                        <input type="text" class="form-input" id="modalOrigin" value="${currentEditEntry.origin || ''}" placeholder="Origin">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Destination</label>
-                        <input type="text" class="form-input" id="modalDestination" value="${currentEditEntry.destination || ''}" placeholder="Destination">
-                    </div>
-                </div>
-            `;
+            editingRowId = entryId;
+            renderTable();
             
-            showModal();
+            // Scroll to editing row
+            setTimeout(() => {
+                const row = document.getElementById(`row-${entryId}`);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+            
+            showToast('Edit Mode', 'You can now edit this passenger record', 'info');
         };
 
-        // Save entry from modal
-        modalSaveBtn.addEventListener('click', async function() {
-            if (!currentEditEntry) return;
+        // Cancel edit
+        window.cancelEdit = function(entryId) {
+            editingRowId = null;
+            renderTable();
+            showToast('Edit Cancelled', 'Changes were not saved', 'info');
+        };
+
+        // Save entry
+        window.saveEntry = async function(entryId) {
+            const entry = filteredEntries.find(e => e.id === entryId);
+            if (!entry) return;
             
-            // Get updated values from modal
+            // Get row element
+            const row = document.getElementById(`row-${entryId}`);
+            if (!row) return;
+            
+            // Get all inputs from the row
+            const inputs = row.querySelectorAll('input, select');
+            
+            // Map inputs to fields
             const updatedData = {
-                firstName: document.getElementById('modalFirstName').value.trim(),
-                lastName: document.getElementById('modalLastName').value.trim(),
-                paxType: document.getElementById('modalPaxType').value,
-                flightNumber: document.getElementById('modalFlightNumber').value.trim(),
-                carrierCode: document.getElementById('modalCarrierCode').value.trim(),
-                flightDate: document.getElementById('modalFlightDate').value,
-                seatNumber: document.getElementById('modalSeatNumber').value.trim(),
-                secNumber: document.getElementById('modalSecNumber').value.trim(),
-                cabin: document.getElementById('modalCabin').value,
-                guestCategory: document.getElementById('modalGuestCategory').value,
-                ffpNumber: document.getElementById('modalFfpNumber').value.trim(),
-                ffpTier: document.getElementById('modalFfpTier').value,
-                ffpOwner: document.getElementById('modalFfpOwner').value.trim(),
-                origin: document.getElementById('modalOrigin').value.trim(),
-                destination: document.getElementById('modalDestination').value.trim(),
+                firstName: inputs[0]?.value || '',
+                lastName: inputs[1]?.value || '',
+                paxType: inputs[2]?.value || 'Adult',
+                seatNumber: inputs[3]?.value || '',
+                cabin: inputs[4]?.value || 'Economy',
+                guestCategory: inputs[5]?.value || 'Guest',
+                ffpNumber: inputs[6]?.value || '',
+                ffpTier: inputs[7]?.value || '',
+                origin: inputs[8]?.value || '',
+                destination: inputs[9]?.value || '',
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
             
@@ -1604,20 +1535,20 @@
             
             try {
                 // Update in Firebase
-                await db.collection('flightEntries').doc(currentEditEntry.id).update(updatedData);
+                await db.collection('flightEntries').doc(entryId).update(updatedData);
                 
                 // Update local data
-                Object.assign(currentEditEntry, updatedData);
+                Object.assign(entry, updatedData);
                 
                 // Update in allEntries
-                const allEntriesIndex = allEntries.findIndex(e => e.id === currentEditEntry.id);
+                const allEntriesIndex = allEntries.findIndex(e => e.id === entryId);
                 if (allEntriesIndex !== -1) {
                     Object.assign(allEntries[allEntriesIndex], updatedData);
                 }
                 
+                editingRowId = null;
                 renderTable();
                 hideLoading();
-                closeModal();
                 
                 showToast('Success', 'Passenger record updated successfully', 'success');
                 
@@ -1626,7 +1557,7 @@
                 console.error('Error updating entry:', error);
                 showToast('Update Failed', 'Failed to save changes', 'error');
             }
-        });
+        };
 
         // Delete entry
         window.deleteEntry = function(entryId) {
@@ -1641,6 +1572,10 @@
                     // Remove from local arrays
                     allEntries = allEntries.filter(e => e.id !== entryId);
                     filteredEntries = filteredEntries.filter(e => e.id !== entryId);
+                    
+                    if (editingRowId === entryId) {
+                        editingRowId = null;
+                    }
                     
                     renderTable();
                     updateActiveFilters();
@@ -1666,33 +1601,29 @@
             
             showLoading('Preparing download...');
             
-            // Create CSV content with all fields
+            // Create CSV content
             const headers = [
-                'Flight_Date', 'Carrier_Code', 'Flight_Number',
-                'Sec_Number', 'FFP_Owner', 'FFP_Number', 'FFP_Tier',
-                'Guest_Category', 'Cabin', 'Seat_Number', 'Origin',
-                'Destination', 'First_Name', 'Last_Name', 'PAX_Type'
+                'First_Name', 'Last_Name', 'PAX_Type', 'Flight_Number',
+                'Seat_Number', 'Cabin', 'Guest_Category', 'FFP_Number',
+                'FFP_Tier', 'Origin', 'Destination', 'Flight_Date'
             ];
             
             let csvContent = headers.join(',') + '\n';
             
             filteredEntries.forEach(entry => {
                 const row = [
-                    entry.flightDate || '',
-                    entry.carrierCode || '',
-                    entry.flightNumber || '',
-                    entry.secNumber || '',
-                    entry.ffpOwner || '',
-                    entry.ffpNumber || '',
-                    entry.ffpTier || '',
-                    entry.guestCategory || 'Guest',
-                    entry.cabin || 'Economy',
-                    entry.seatNumber || '',
-                    entry.origin || '',
-                    entry.destination || '',
                     entry.firstName || '',
                     entry.lastName || '',
-                    entry.paxType || 'Adult'
+                    entry.paxType || 'Adult',
+                    entry.flightNumber || '',
+                    entry.seatNumber || '',
+                    entry.cabin || 'Economy',
+                    entry.guestCategory || 'Guest',
+                    entry.ffpNumber || '',
+                    entry.ffpTier || '',
+                    entry.origin || '',
+                    entry.destination || '',
+                    entry.flightDate || ''
                 ];
                 
                 // Escape commas and quotes
@@ -1761,9 +1692,9 @@
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
-            // Escape to close modal
-            if (e.key === 'Escape' && editModal.style.display === 'flex') {
-                closeModal();
+            // Escape to cancel edit
+            if (e.key === 'Escape' && editingRowId) {
+                window.cancelEdit(editingRowId);
             }
             
             // Ctrl/Cmd + F to focus on flight filter
@@ -1776,6 +1707,12 @@
             if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
                 e.preventDefault();
                 loadFlightNumbers();
+            }
+            
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's' && editingRowId) {
+                e.preventDefault();
+                window.saveEntry(editingRowId);
             }
         });
     });
