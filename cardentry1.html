@@ -31,14 +31,14 @@
     box-sizing: border-box;
   }
   
-  body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    padding: 20px; 
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 80px 20px 20px 20px; /* Increased top padding from 20px to 80px */
     background: var(--white);
     margin: 0;
     color: #333;
     background-color: #f9f9f9;
-  }
+}
   
   .container {
     display: flex;
@@ -332,7 +332,7 @@
   
   .clear-notification {
     position: fixed;
-    top: 20px;
+    top: 90px; /* Moved down to be below float buttons */
     right: 20px;
     background: var(--success);
     color: white;
@@ -342,16 +342,16 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 1000;
+    z-index: 999;
     opacity: 0;
     transform: translateY(-20px);
     transition: all 0.3s ease;
-  }
-  
-  .clear-notification.show {
+}
+
+.clear-notification.show {
     opacity: 1;
     transform: translateY(0);
-  }
+}
   
   .shift-status {
     display: flex;
@@ -380,17 +380,18 @@
     pointer-events: none;
   }
   
-  .float-nav {
+  /* Float Navigation - MOVED TO TOP */
+.float-nav {
     position: fixed;
-    bottom: 30px;
+    top: 20px;
     right: 30px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 15px;
     z-index: 1000;
-  }
-  
-  .float-btn {
+}
+
+.float-btn {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -406,15 +407,15 @@
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-  }
-  
-  .float-btn:hover {
+}
+
+.float-btn:hover {
     background: var(--gold-dark);
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  }
-  
-  .float-btn::after {
+}
+
+.float-btn::after {
     content: '';
     position: absolute;
     top: 0;
@@ -424,15 +425,17 @@
     background: rgba(255,255,255,0.1);
     opacity: 0;
     transition: opacity 0.3s ease;
-  }
-  
-  .float-btn:hover::after {
+}
+
+.float-btn:hover::after {
     opacity: 1;
-  }
-  
-  .float-tooltip {
+}
+
+.float-tooltip {
     position: absolute;
-    right: 70px;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
     background: rgba(0,0,0,0.8);
     color: white;
     padding: 8px 12px;
@@ -440,15 +443,73 @@
     font-size: 14px;
     white-space: nowrap;
     opacity: 0;
-    transform: translateX(10px);
     transition: all 0.3s ease;
     pointer-events: none;
-  }
-  
-  .float-btn:hover .float-tooltip {
+    z-index: 1001;
+}
+
+.float-btn:hover .float-tooltip {
     opacity: 1;
-    transform: translateX(0);
-  }
+    bottom: -35px;
+}
+
+/* Individual button colors */
+.float-btn:nth-child(1) { background: var(--info); } /* Storage Manager */
+.float-btn:nth-child(2) { background: var(--delay-orange); } /* Delay Charge */
+.float-btn:nth-child(3) { background: var(--shift-blue); } /* Refresh Shift */
+.float-btn:nth-child(4) { background: var(--gold); } /* Home Dashboard */
+.float-btn:nth-child(5) { background: var(--gold-dark); } /* Reports */
+.float-btn:nth-child(6) { background: var(--qr-green); } /* QR Reports */
+
+/* Responsive adjustments for top placement */
+@media (max-width: 768px) {
+    .float-nav {
+        top: 15px;
+        right: 15px;
+        gap: 10px;
+    }
+    
+    .float-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 18px;
+    }
+    
+    .float-tooltip {
+        font-size: 12px;
+        padding: 6px 10px;
+        bottom: -35px;
+    }
+    
+    .float-btn:hover .float-tooltip {
+        bottom: -30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .float-nav {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        max-width: 60%;
+    }
+    
+    .float-btn {
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+    
+    .float-tooltip {
+        font-size: 11px;
+        padding: 5px 8px;
+        bottom: -30px;
+    }
+    
+    .float-btn:hover .float-tooltip {
+        bottom: -25px;
+    }
+}
   
   @media (max-width: 768px) {
     .float-nav {
@@ -504,7 +565,7 @@
   
   .alert-notification {
     position: fixed;
-    top: 20px;
+    top: 90px; /* Moved down to be below float buttons */
     left: 50%;
     transform: translateX(-50%) translateY(-20px);
     background: var(--success);
@@ -515,15 +576,15 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 1000;
+    z-index: 999;
     opacity: 0;
     transition: all 0.3s ease;
-  }
-  
-  .alert-notification.show {
+}
+
+.alert-notification.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-  }
+}
   
   .alert-notification.error {
     background: var(--error);
