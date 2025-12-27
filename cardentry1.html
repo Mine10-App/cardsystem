@@ -2506,7 +2506,114 @@ function validatePaxCount(flightNumber, seatNumber, enteredPax) {
       message: `Flight ${flightNumber} (${flightNumber.substring(0, 2)}) allows only 1 passenger per seat`
     };
   }
+  // ----- Extract FQTV from QR code -----
+function extractFqtvFromQRCode(codeValue) {
+  const codeUpper = codeValue.toUpperCase();
+  let fqtv = '';
+  let tier = '';
   
+  // Pattern 1: QR 243049639 N1
+  const pattern1 = /QR\s+(\d+)\s+(N[0-3])/i;
+  const match1 = codeUpper.match(pattern1);
+  if (match1) {
+    fqtv = `QR ${match1[1]}`;
+    tier = match1[2];
+  }
+  
+  // Pattern 2: QR243049639N1
+  const pattern2 = /QR(\d+)(N[0-3])/i;
+  const match2 = codeUpper.match(pattern2);
+  if (match2 && !fqtv) {
+    fqtv = `QR ${match2[1]}`;
+    tier = match2[2];
+  }
+  
+  // Pattern 3: Look for any airline code followed by number and N1/N2/N3
+  const pattern3 = /([A-Z]{2})\s*(\d+)\s*(N[0-3])/i;
+  const match3 = codeUpper.match(pattern3);
+  if (match3 && !fqtv) {
+    fqtv = `${match3[1]} ${match3[2]}`;
+    tier = match3[3];
+  }
+  
+  // Map tier code to tier name
+  let tierName = '';
+  if (tier) {
+    switch(tier.toUpperCase()) {
+      case 'N1':
+        tierName = 'Platinum';
+        break;
+      case 'N2':
+        tierName = 'Gold';
+        break;
+      case 'N3':
+        tierName = 'Silver';
+        break;
+      default:
+        tierName = tier;
+    }
+  }
+  
+  // Combine FQTV and tier
+  if (fqtv && tierName) {
+    return `${fqtv}/${tierName}`;
+  } else if (fqtv) {
+    return fqtv;
+  }
+  
+  return '';
+}
+
+// ----- Validate Seat for Restricted Airlines -----
+function validateAndFixSeatForRestrictedAirline(flightNumber, seatValue) {
+  if (!flightNumber || !seatValue) return seatValue;
+  
+  const restrictedAirlines = ['FZ', 'SQ', 'EY', 'QR', 'BA', 'MH', 'DE', 'GF', 'EK', 'VS', 'MU', 'HK'];
+  const airlineCode = flightNumber.substring(0, 2).toUpperCase();
+  
+  if (restrictedAirlines.includes(airlineCode)) {
+    // If seat contains multiple seats (like 1AB or 3A/4C), keep only the first seat
+    const seat = seatValue.toUpperCase().trim();
+    
+    // Check for multiple seats separated by delimiters
+    if (seat.includes('/') || seat.includes(',') || seat.includes(';') || seat.includes(' ')) {
+      // Split and take only the first seat
+      const seats = seat.split(/[\/,\s;]+/);
+      const firstSeat = seats[0].trim();
+      
+      // Extract just one seat letter (e.g., from "12ABC" take "12A")
+      const match = firstSeat.match(/^(\d+)([A-Z]*)/);
+      if (match) {
+        const rowNumber = match[1];
+        const seatLetters = match[2];
+        // Take only the first seat letter
+        if (seatLetters.length > 0) {
+          return rowNumber + seatLetters.charAt(0);
+        } else {
+          return rowNumber; // Just row number, no letter
+        }
+      }
+      return firstSeat;
+    }
+    
+    // Check for multiple seat letters without delimiter (e.g., "12ABC")
+    const match = seat.match(/^(\d+)([A-Z]+)/);
+    if (match && match[2].length > 1) {
+      // Multiple seat letters, take only first one
+      const rowNumber = match[1];
+      return rowNumber + match[2].charAt(0);
+    }
+  }
+  
+  return seatValue;
+}
+
+// ======== END OF NEW FUNCTIONS ========
+
+// ----- Parse code -----
+function parseCode(){
+  // ... the updated parseCode() function ...
+}
   // Then check seat-pax match for non-restricted airlines
   if (!isRestricted) {
     const seatPaxValidation = validateSeatPaxMatch(seatNumber, enteredPax);
@@ -5204,157 +5311,109 @@ function parseCode(){
     }
   }
 
-  // FQTV detection
-  let fqtv = null;
-  let fqtvTierCode = '';
+  // FQTV detection - IMPROVED VERSION
+  let fqtv = '';
+  let fqtvTier = '';
   let hasNoFqtv = false;
 
-  const allPossibleAirlineCodes = [
-    ...Object.keys(airlines),
-    'LX', 'LH', 'AC', 'NH', 'BR', 'CI', 'NZ', 'VA', 'AF', 'KL', 'DL', 'UA', 'B6', 'WN',
-    'WS', 'AS', 'F9', 'G4', 'NK', 'SY', '9W', 'AI', 'ET', 'KE', 'OZ', 'PR', 'TG'
-  ];
-
-  for (let i = 0; i < parts.length; i++) {
-    const currentToken = parts[i].toUpperCase();
+  // First, look for FQTV number and tier in the code
+  // The pattern in your example: QR 243049639 N1
+  // or sometimes: QR 243049639N1 (without space)
+  
+  // Join all parts for better searching
+  const fullCode = code;
+  
+  // Look for QR airline code followed by numbers
+  const qrMatch = fullCode.match(/QR\s*(\d+)\s*(N[0-3])/i);
+  if (qrMatch) {
+    const [, fqtvNumber, tierCode] = qrMatch;
+    fqtv = `QR ${fqtvNumber}`;
     
-    for (const airlineCode of allPossibleAirlineCodes) {
-      if (currentToken === airlineCode) {
-        if (i + 1 < parts.length) {
-          const nextToken = parts[i + 1];
-          
-          if (/^\d+$/.test(nextToken)) {
-            fqtv = airlineCode + ' ' + nextToken;
-            
-            for (let j = i + 2; j < parts.length && j < i + 5; j++) {
-              const tierToken = parts[j].toUpperCase();
-              if (tierToken.includes('SAPPHIRE')) {
-                fqtvTierCode = 'n2';
-              } else if (tierToken.includes('EMERALD')) {
-                fqtvTierCode = 'n3';
-              } else if (tierToken.includes('RUBY')) {
-                fqtvTierCode = 'n1';
-              } else if (tierToken.includes('PLATINUM')) {
-                fqtvTierCode = 'n3';
-              } else if (tierToken.includes('GOLD')) {
-                fqtvTierCode = 'n2';
-              } else if (tierToken.includes('SILVER')) {
-                fqtvTierCode = 'n1';
-              } else if (tierToken === 'N0') {
-                hasNoFqtv = true;
-                fqtv = '';
-              } else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') {
-                fqtvTierCode = tierToken.toLowerCase();
-              }
-            }
-            break;
-          }
-        }
-      }
+    // Map tier code to tier name
+    switch(tierCode.toUpperCase()) {
+      case 'N1':
+        fqtvTier = 'Platinum';
+        break;
+      case 'N2':
+        fqtvTier = 'Gold';
+        break;
+      case 'N3':
+        fqtvTier = 'Silver';
+        break;
+      case 'N0':
+        fqtvTier = 'N0';
+        break;
+      default:
+        fqtvTier = tierCode;
+    }
+  }
+  
+  // If no QR match, try other airline codes
+  if (!fqtv) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const nextPart = parts[i + 1] || '';
+      const nextNextPart = parts[i + 2] || '';
       
-      if (currentToken.startsWith(airlineCode) && currentToken.length > airlineCode.length) {
-        const remainder = currentToken.substring(airlineCode.length);
-        if (/^\d+$/.test(remainder)) {
-          fqtv = airlineCode + ' ' + remainder;
+      // Check if this part is an airline code
+      if (part.length === 2 && /^[A-Z]{2}$/.test(part)) {
+        // Check if next part is a number (FQTV number)
+        if (/^\d+$/.test(nextPart)) {
+          fqtv = `${part} ${nextPart}`;
           
-          for (let j = i + 1; j < parts.length && j < i + 4; j++) {
-            const tierToken = parts[j].toUpperCase();
-            if (tierToken.includes('SAPPHIRE')) fqtvTierCode = 'n2';
-            else if (tierToken.includes('EMERALD')) fqtvTierCode = 'n3';
-            else if (tierToken.includes('RUBY')) fqtvTierCode = 'n1';
-            else if (tierToken.includes('PLATINUM')) fqtvTierCode = 'n3';
-            else if (tierToken.includes('GOLD')) fqtvTierCode = 'n2';
-            else if (tierToken.includes('SILVER')) fqtvTierCode = 'n1';
-            else if (tierToken === 'N0') { hasNoFqtv = true; fqtv = ''; }
-            else if (tierToken === 'N1' || tierToken === 'N2' || tierToken === 'N3') fqtvTierCode = tierToken.toLowerCase();
+          // Check for tier in the following parts
+          for (let j = i + 2; j < Math.min(i + 5, parts.length); j++) {
+            const tierPart = parts[j].toUpperCase();
+            if (tierPart.includes('N1')) {
+              fqtvTier = 'Platinum';
+              break;
+            } else if (tierPart.includes('N2')) {
+              fqtvTier = 'Gold';
+              break;
+            } else if (tierPart.includes('N3')) {
+              fqtvTier = 'Silver';
+              break;
+            } else if (tierPart === 'N0') {
+              fqtvTier = 'N0';
+              hasNoFqtv = true;
+              break;
+            }
+          }
+          break;
+        }
+        // Check if part itself contains airline code + number (e.g., QR243049639)
+        else if (part.length > 2 && /^[A-Z]{2}\d+$/.test(part)) {
+          const airlineCode = part.substring(0, 2);
+          const fqtvNumber = part.substring(2);
+          fqtv = `${airlineCode} ${fqtvNumber}`;
+          
+          // Check for tier in next parts
+          for (let j = i + 1; j < Math.min(i + 4, parts.length); j++) {
+            const tierPart = parts[j].toUpperCase();
+            if (tierPart.includes('N1')) {
+              fqtvTier = 'Platinum';
+              break;
+            } else if (tierPart.includes('N2')) {
+              fqtvTier = 'Gold';
+              break;
+            } else if (tierPart.includes('N3')) {
+              fqtvTier = 'Silver';
+              break;
+            }
           }
           break;
         }
       }
     }
-    
-    if (fqtv) break;
   }
-
-  if (!fqtv && !hasNoFqtv) {
-    for (let i = 0; i < parts.length - 2; i++) {
-      if ((parts[i] === 'LX' || parts[i] === 'LH') && 
-          /^\d+$/.test(parts[i + 1])) {
-        fqtv = parts[i] + ' ' + parts[i + 1];
-        break;
-      }
-    }
-  }
-
+  
+  // Combine FQTV and tier
+  let finalFqtv = '';
   if (!hasNoFqtv && fqtv) {
-    fqtv = fqtv.trim();
-    
-    if (fqtv) {
-      const airlineCode = fqtv.substring(0, 2).toUpperCase();
-      
-      if (allPossibleAirlineCodes.includes(airlineCode)) {
-        fqtv = fqtv.replace(/^([A-Z0-9]{2})\s+/, '$1-');
-      }
-    }
-    
-    if (fqtv && fqtvTierCode) {
-      const flightAirlineCode = flightNo.slice(0, 2).toUpperCase();
-      let fqtvAirlineCode = '';
-      
-      const fqtvUpper = fqtv.toUpperCase();
-      
-      const dashMatch = fqtvUpper.match(/^([A-Z0-9]{2})[- ]/);
-      if (dashMatch) {
-        fqtvAirlineCode = dashMatch[1];
-      } else {
-        fqtvAirlineCode = fqtvUpper.substring(0, 2);
-      }
-      
-      let tierName;
-      if (fqtvAirlineCode && flightAirlineCode && 
-          fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-        tierMapping = fqtvTierMappings.same;
-      } else {
-        tierMapping = fqtvTierMappings.different;
-      }
-      
-      if (tierName) {
-        const standardTierRegex = /\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver)$/i;
-        if (!standardTierRegex.test(fqtv)) {
-          fqtv = fqtv.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|SAPPHIRE|EMERALD|RUBY|PLATINUM|GOLD|SILVER|G|S)\s*$/i, '');
-          fqtv = fqtv.replace(/[Nn][123]\s*$/, '').trim();
-          fqtv = `${fqtv}/${tierName}`;
-        }
-      }
-    }
-  }
-
-  const lastTwo = code.slice(-2);
-  if (!hasNoFqtv && (flightNo.startsWith('BA') || flightNo.startsWith('MH')) && fqtv) {
-    if (lastTwo === 'Y1') {
-      if (!fqtv.includes('/')) {
-        fqtv += '/G';
-      } else if (!fqtv.includes('/G')) {
-        fqtv = fqtv.replace(/\/[^\/]+$/, '/G');
-      }
-    } else if (lastTwo === 'Y2') {
-      if (!fqtv.includes('/')) {
-        fqtv += '/S';
-      } else if (!fqtv.includes('/S')) {
-        fqtv = fqtv.replace(/\/[^\/]+$/, '/S');
-      }
-    } else if (flightNo.startsWith('OS')) {
-      const lastIndex = parts.length - 1;
-      const fourthLast = parts[lastIndex - 3] || '';
-      const thirdLast = parts[lastIndex - 2] || '';
-      const fourthLastToken = fourthLast.trim();
-      const thirdLastToken = thirdLast.trim();
-      
-      if (fourthLastToken.length === 2 && thirdLastToken.length > 4) {
-        if (!fqtv) {
-          fqtv = (fourthLastToken + ' ' + thirdLastToken).trim();
-        }
-      }
+    if (fqtvTier) {
+      finalFqtv = `${fqtv}/${fqtvTier}`;
+    } else {
+      finalFqtv = fqtv;
     }
   }
 
@@ -5369,7 +5428,7 @@ function parseCode(){
   flightInput.value = flightNo;
   seatInput.value = seatNo;
   classInput.value = seatClass;
-  fqtvInput.value = hasNoFqtv ? '' : (fqtv || '');
+  fqtvInput.value = finalFqtv;
   serialInput.value = '';
   remarksInput.value = '';
   
