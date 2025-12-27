@@ -2435,6 +2435,7 @@
 <script src="./qr-firebase-config.js"></script>
 <script>
 // ----- Airlines dropdown -----
+// ----- Airlines dropdown -----
 const airlines = {
     'EK':'Emirates','FZ':'Flydubai','BA':'British Airways','EY':'Etihad',
     'MH':'Malaysia Airlines','AI':'Air India','AZ':'ITA Airways','VS':'Virgin Atlantic',
@@ -2484,40 +2485,65 @@ let qrEntriesProcessed = [];
 let lastSeatValue = '';
 let lastPaxValue = '1';
 
+// ----- NEW: Auto-correct seat format (remove slashes and combine) -----
+function autoCorrectSeatFormat(seatNumber) {
+    if (!seatNumber || seatNumber.trim() === '') return '';
+    
+    const seat = seatNumber.toUpperCase().trim();
+    
+    // Remove spaces and special characters, keep only letters, numbers, and forward slashes
+    const cleaned = seat.replace(/[^A-Z0-9\/]/g, '');
+    
+    // If no slash found, return as is
+    if (!cleaned.includes('/')) {
+        return cleaned;
+    }
+    
+    // Split by slash and process each part
+    const parts = cleaned.split('/').filter(part => part.trim() !== '');
+    const correctedSeats = [];
+    
+    parts.forEach(part => {
+        // Extract numbers and letters
+        const match = part.match(/^(\d+)([A-Z]*)$/);
+        if (match) {
+            const rowNumber = match[1];
+            const seatLetters = match[2];
+            correctedSeats.push(rowNumber + seatLetters);
+        } else {
+            correctedSeats.push(part);
+        }
+    });
+    
+    // Join without slashes (e.g., "3A4B")
+    return correctedSeats.join('');
+}
+
 // ----- Calculate Pax from Seat Number (IMPROVED) -----
 function calculatePaxFromSeatNumber(seatNumber) {
     if (!seatNumber || seatNumber.trim() === '') return 1;
     
-    const seat = seatNumber.toUpperCase().trim();
+    // First auto-correct the seat format
+    const correctedSeat = autoCorrectSeatFormat(seatNumber);
     
-    // Check for multiple seats separated by common delimiters
-    if (seat.includes('/') || seat.includes(',') || seat.includes(' ') || seat.includes(';')) {
-        // Split by any delimiter and count
-        const seats = seat.split(/[\/,\s;]+/);
-        let totalPax = 0;
-        
-        seats.forEach(seatItem => {
-            if (seatItem.trim() === '') return;
-            
-            // For each seat, count individual letters after numbers
-            const match = seatItem.match(/^(\d+)([A-Z]*)$/);
-            if (match) {
-                const seatLetters = match[2];
-                if (seatLetters.length > 0) {
-                    totalPax += seatLetters.length; // Each letter is a seat
-                } else {
-                    totalPax += 1; // Just a number counts as 1 seat
+    // Check for multiple seats (now without slashes, like "3A4B")
+    if (/(\d+[A-Z]+){2,}/.test(correctedSeat)) {
+        // Pattern for seat groups like "3A4B" or "12ABC15DEF"
+        const seatGroups = correctedSeat.match(/\d+[A-Z]+/g);
+        if (seatGroups) {
+            let totalPax = 0;
+            seatGroups.forEach(group => {
+                const match = group.match(/^(\d+)([A-Z]+)$/);
+                if (match) {
+                    totalPax += match[2].length; // Count letters
                 }
-            } else {
-                totalPax += 1; // Default to 1 if pattern doesn't match
-            }
-        });
-        
-        return totalPax > 0 ? totalPax : 1;
+            });
+            return totalPax > 0 ? totalPax : 1;
+        }
     }
     
-    // Single seat format (e.g., "12A", "1ABC", "25")
-    const match = seat.match(/^(\d+)([A-Z]*)$/);
+    // Single seat or combined format
+    const match = correctedSeat.match(/^(\d+)([A-Z]*)$/);
     if (match) {
         const seatLetters = match[2];
         if (seatLetters.length > 0) {
@@ -2532,12 +2558,13 @@ function calculatePaxFromSeatNumber(seatNumber) {
 
 // ----- Validate Seat-Pax Match -----
 function validateSeatPaxMatch(seatNumber, paxCount) {
-    const calculatedPax = calculatePaxFromSeatNumber(seatNumber);
+    const correctedSeat = autoCorrectSeatFormat(seatNumber);
+    const calculatedPax = calculatePaxFromSeatNumber(correctedSeat);
     
     if (calculatedPax !== paxCount) {
         return {
             isValid: false,
-            message: `Seat ${seatNumber} indicates ${calculatedPax} passenger(s), but ${paxCount} was entered. Please adjust.`,
+            message: `Seat ${seatNumber} (corrected to ${correctedSeat}) indicates ${calculatedPax} passenger(s), but ${paxCount} was entered. Please adjust.`,
             calculatedPax: calculatedPax
         };
     }
@@ -2584,6 +2611,89 @@ function validatePaxCount(flightNumber, seatNumber, enteredPax) {
     return { isValid: true };
 }
 
+// ----- FIXED: Enhanced FQTV extraction from code with multiple patterns -----
+function extractFqtvFromQRCode(codeValue, flightNumber = '') {
+    const codeUpper = codeValue.toUpperCase();
+    let fqtv = '';
+    let tier = '';
+    let fqtvAirlineCode = '';
+    
+    console.log("🔍 Extracting FQTV from code:", codeUpper);
+    console.log("📊 Flight airline:", flightNumber ? flightNumber.substring(0, 2).toUpperCase() : '');
+    
+    // Try multiple patterns to extract FQTV with tier
+    const patterns = [
+        // Pattern: JL 408435355 N2 (with spaces and trailing N2)
+        /([A-Z]{2})\s+(\d+)\s+(N[0-3])\s*$/i,
+        // Pattern: JL408435355N2 (without spaces)
+        /([A-Z]{2})(\d+)(N[0-3])\s*$/i,
+        // Pattern: QR 410865662 N2 (with spaces in middle)
+        /([A-Z]{2})\s+(\d+)\s+(N[0-3])/i,
+        // Pattern: JL 408435355           N2 (multiple spaces)
+        /([A-Z]{2})\s+(\d+)\s+(N[0-3])/i,
+        // Pattern with trailing spaces and N0-N3
+        /([A-Z]{2})\s*(\d+)\s*(N[0-3])/i
+    ];
+    
+    for (let pattern of patterns) {
+        const match = codeUpper.match(pattern);
+        if (match) {
+            fqtv = `${match[1]} ${match[2]}`;
+            tier = match[3].toUpperCase();
+            fqtvAirlineCode = match[1];
+            console.log("✅ Found FQTV pattern:", { fqtv, tier, fqtvAirlineCode, pattern: pattern.toString() });
+            break;
+        }
+    }
+    
+    // If no pattern found with tier, try to extract just airline + number
+    if (!fqtv) {
+        // Look for airline code followed by number anywhere in string
+        const words = codeUpper.split(/\s+/);
+        
+        for (let i = 0; i < words.length; i++) {
+            // Check if word is exactly 2 letters (airline code)
+            if (words[i].length === 2 && /^[A-Z]{2}$/.test(words[i])) {
+                const airlineCode = words[i];
+                
+                // Check next word for number
+                if (i + 1 < words.length && /^\d+$/.test(words[i + 1])) {
+                    fqtv = `${airlineCode} ${words[i + 1]}`;
+                    fqtvAirlineCode = airlineCode;
+                    
+                    // Check for tier in nearby words
+                    for (let j = i + 2; j < Math.min(i + 5, words.length); j++) {
+                        if (words[j].match(/^N[0-3]$/i)) {
+                            tier = words[j].toUpperCase();
+                            break;
+                        }
+                    }
+                    console.log("✅ Found FQTV by scanning words:", { fqtv, tier, fqtvAirlineCode });
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Handle N0 case - if tier is N0, return empty string
+    if (tier && tier.toUpperCase() === 'N0') {
+        console.log("⚠️ N0 tier detected, returning empty FQTV");
+        return '';
+    }
+    
+    // Format FQTV with correct tier based on airline relationship
+    if (fqtv && tier) {
+        const result = formatFqtvWithTier(`${fqtv}/${tier}`, flightNumber);
+        console.log("🎯 Final FQTV result:", result);
+        return result;
+    } else if (fqtv) {
+        console.log("ℹ️ FQTV without tier:", fqtv);
+        return fqtv;
+    }
+    
+    return '';
+}
+
 // ----- FIXED: Process FQTV Tier Level with proper airline matching -----
 function processFqtvTierWithAirline(fqtvNumber, flightNumber) {
     if (!fqtvNumber || fqtvNumber.trim() === '') return '';
@@ -2599,6 +2709,12 @@ function processFqtvTierWithAirline(fqtvNumber, flightNumber) {
     const fqtvMatch = fqtvUpper.match(/^([A-Z]{2})\s*\d+/);
     if (fqtvMatch) {
         fqtvAirlineCode = fqtvMatch[1];
+    } else {
+        // Try to extract from the format like "JL 408435355"
+        const words = fqtvUpper.split(/\s+/);
+        if (words.length >= 2 && words[0].length === 2 && /^[A-Z]{2}$/.test(words[0])) {
+            fqtvAirlineCode = words[0];
+        }
     }
     
     // Extract flight airline code
@@ -2615,20 +2731,23 @@ function processFqtvTierWithAirline(fqtvNumber, flightNumber) {
     const tierMatch = fqtvUpper.match(/\/(N[0-3]|P|G|S|PLATINUM|GOLD|SILVER|EMERALD|SAPPHIRE|RUBY)$/i);
     if (tierMatch) {
         tier = tierMatch[1].toUpperCase();
-    }
-    
-    console.log("🎯 Extracted tier:", tier);
-    
-    // If no tier found in FQTV string, check for N1/N2/N3 elsewhere in the string
-    if (!tier) {
+    } else {
+        // Look for N1/N2/N3/N0 at the end of the string or as separate word
         const words = fqtvUpper.split(/\s+/);
-        for (const word of words) {
-            if (word === 'N1' || word === 'N2' || word === 'N3' || word === 'N0') {
-                tier = word;
-                break;
+        const lastWord = words[words.length - 1];
+        if (lastWord.match(/^N[0-3]$/)) {
+            tier = lastWord;
+        }
+        // Also check second last word
+        else if (words.length >= 2) {
+            const secondLastWord = words[words.length - 2];
+            if (secondLastWord.match(/^N[0-3]$/)) {
+                tier = secondLastWord;
             }
         }
     }
+    
+    console.log("🎯 Extracted tier:", tier);
     
     // Handle N0 tier - no FQTV
     if (tier === 'N0') {
@@ -2726,8 +2845,16 @@ function processFqtvTierWithAirline(fqtvNumber, flightNumber) {
 function formatFqtvWithTier(fqtvNumber, flightNumber) {
     if (!fqtvNumber || fqtvNumber.trim() === '') return '';
     
-    // Remove any existing tier suffix
-    let cleanFqtv = fqtvNumber.replace(/\/(N[0-3]|P|G|S|Platinum|Gold|Silver|Emerald|Sapphire|Ruby)$/i, '').trim();
+    // Extract the base FQTV (airline + number) without any existing tier
+    let cleanFqtv = fqtvNumber;
+    
+    // Remove any existing tier suffix at the end
+    cleanFqtv = cleanFqtv.replace(/\s*\/(N[0-3]|P|G|S|Platinum|Gold|Silver|Emerald|Sapphire|Ruby)\s*$/i, '');
+    
+    // Also remove N0-N3 as separate words at the end
+    cleanFqtv = cleanFqtv.replace(/\s+(N[0-3])\s*$/i, '');
+    
+    cleanFqtv = cleanFqtv.trim();
     
     // Get the proper tier for this FQTV/flight combination
     const tier = processFqtvTierWithAirline(fqtvNumber, flightNumber);
@@ -2739,113 +2866,6 @@ function formatFqtvWithTier(fqtvNumber, flightNumber) {
     return `${cleanFqtv}/${tier}`;
 }
 
-// ----- FIXED: Extract FQTV from QR code with proper tier handling -----
-function extractFqtvFromQRCode(codeValue, flightNumber = '') {
-    const codeUpper = codeValue.toUpperCase();
-    let fqtv = '';
-    let tier = '';
-    let fqtvAirlineCode = '';
-    
-    // Extract flight airline code
-    const flightAirlineCode = flightNumber ? flightNumber.substring(0, 2).toUpperCase() : '';
-    const isQRFlight = flightAirlineCode === 'QR';
-    
-    console.log("🔍 Extracting FQTV from:", codeUpper);
-    console.log("📊 Flight airline:", flightAirlineCode, "Is QR:", isQRFlight);
-    
-    // Look for patterns with airline code + number + tier
-    const patterns = [
-        // Pattern: BA 15915367 N2 (with spaces)
-        /([A-Z]{2})\s+(\d+)\s+(N[0-3])/i,
-        // Pattern: BA15915367N2 (without spaces)
-        /([A-Z]{2})(\d+)(N[0-3])/i,
-        // Pattern: BA 15915367/N2 (with slash)
-        /([A-Z]{2})\s+(\d+)\s*\/(N[0-3])/i,
-        // Pattern: BA 15915367/G or BA 15915367/Gold
-        /([A-Z]{2})\s+(\d+)\s*\/(P|G|S|PLATINUM|GOLD|SILVER)/i
-    ];
-    
-    for (let pattern of patterns) {
-        const match = codeUpper.match(pattern);
-        if (match) {
-            fqtv = `${match[1]} ${match[2]}`;
-            tier = match[3].toUpperCase();
-            fqtvAirlineCode = match[1];
-            console.log("✅ Found FQTV pattern:", { fqtv, tier, fqtvAirlineCode });
-            break;
-        }
-    }
-    
-    // If no pattern found, search for airline code + number anywhere in the string
-    if (!fqtv) {
-        const words = codeUpper.split(/\s+/);
-        
-        // Look for airline code followed by number
-        for (let i = 0; i < words.length; i++) {
-            // Check if word is exactly 2 letters (airline code)
-            if (words[i].length === 2 && /^[A-Z]{2}$/.test(words[i])) {
-                const airlineCode = words[i];
-                
-                // Check next word for number
-                if (i + 1 < words.length && /^\d+$/.test(words[i + 1])) {
-                    fqtv = `${airlineCode} ${words[i + 1]}`;
-                    fqtvAirlineCode = airlineCode;
-                    
-                    // Look for tier in nearby words
-                    for (let j = i + 2; j < Math.min(i + 5, words.length); j++) {
-                        const tierWord = words[j].toUpperCase();
-                        if (tierWord.includes('N1') || tierWord.includes('N2') || tierWord.includes('N3') || 
-                            tierWord.includes('N0')) {
-                            tier = tierWord;
-                            break;
-                        }
-                    }
-                    console.log("✅ Found FQTV by scanning:", { fqtv, tier, fqtvAirlineCode });
-                    break;
-                }
-                
-                // Check if word contains airline code + number (e.g., BA15915367)
-                const combinedPattern = /^([A-Z]{2})(\d+)$/;
-                const combinedMatch = words[i].match(combinedPattern);
-                if (combinedMatch) {
-                    fqtv = `${combinedMatch[1]} ${combinedMatch[2]}`;
-                    fqtvAirlineCode = combinedMatch[1];
-                    
-                    // Look for tier in nearby words
-                    for (let j = i + 1; j < Math.min(i + 4, words.length); j++) {
-                        const tierWord = words[j].toUpperCase();
-                        if (tierWord.includes('N1') || tierWord.includes('N2') || tierWord.includes('N3') || 
-                            tierWord.includes('N0')) {
-                            tier = tierWord;
-                            break;
-                        }
-                    }
-                    console.log("✅ Found combined FQTV:", { fqtv, tier, fqtvAirlineCode });
-                    break;
-                }
-            }
-        }
-    }
-    
-    // Handle N0 case - if tier is N0, return empty string
-    if (tier && tier.toUpperCase() === 'N0') {
-        console.log("⚠️ N0 tier detected, returning empty FQTV");
-        return '';
-    }
-    
-    // Format FQTV with correct tier based on airline relationship
-    if (fqtv && tier) {
-        const result = formatFqtvWithTier(`${fqtv}/${tier}`, flightNumber);
-        console.log("🎯 Final FQTV result:", result);
-        return result;
-    } else if (fqtv) {
-        console.log("ℹ️ FQTV without tier:", fqtv);
-        return fqtv;
-    }
-    
-    return '';
-}
-
 // ----- Validate Seat for Restricted Airlines -----
 function validateAndFixSeatForRestrictedAirline(flightNumber, seatValue) {
     if (!flightNumber || !seatValue) return seatValue;
@@ -2854,40 +2874,30 @@ function validateAndFixSeatForRestrictedAirline(flightNumber, seatValue) {
     const airlineCode = flightNumber.substring(0, 2).toUpperCase();
     
     if (restrictedAirlines.includes(airlineCode)) {
-        // If seat contains multiple seats (like 1AB or 3A/4C), keep only the first seat
-        const seat = seatValue.toUpperCase().trim();
+        // First auto-correct the seat format
+        let correctedSeat = autoCorrectSeatFormat(seatValue);
         
-        // Check for multiple seats separated by delimiters
-        if (seat.includes('/') || seat.includes(',') || seat.includes(';') || seat.includes(' ')) {
-            // Split and take only the first seat
-            const seats = seat.split(/[\/,\s;]+/);
-            const firstSeat = seats[0].trim();
-            
-            // Extract just one seat letter (e.g., from "12ABC" take "12A")
-            const match = firstSeat.match(/^(\d+)([A-Z]*)/);
-            if (match) {
-                const rowNumber = match[1];
-                const seatLetters = match[2];
+        // For restricted airlines, take only the first seat
+        if (correctedSeat) {
+            // Extract first seat group (e.g., from "3A4B" take "3A")
+            const firstSeatMatch = correctedSeat.match(/^(\d+)([A-Z]*)/);
+            if (firstSeatMatch) {
+                const rowNumber = firstSeatMatch[1];
+                const seatLetters = firstSeatMatch[2];
                 // Take only the first seat letter
                 if (seatLetters.length > 0) {
-                    return rowNumber + seatLetters.charAt(0);
+                    correctedSeat = rowNumber + seatLetters.charAt(0);
                 } else {
-                    return rowNumber; // Just row number, no letter
+                    correctedSeat = rowNumber; // Just row number, no letter
                 }
             }
-            return firstSeat;
         }
         
-        // Check for multiple seat letters without delimiter (e.g., "12ABC")
-        const match = seat.match(/^(\d+)([A-Z]+)/);
-        if (match && match[2].length > 1) {
-            // Multiple seat letters, take only first one
-            const rowNumber = match[1];
-            return rowNumber + match[2].charAt(0);
-        }
+        return correctedSeat;
     }
     
-    return seatValue;
+    // For non-restricted airlines, just auto-correct the format
+    return autoCorrectSeatFormat(seatValue);
 }
 
 // ----- Auto-correct Seat for Restricted Airlines -----
@@ -2964,8 +2974,8 @@ function parseCode(){
     pnrInput.value = pnr;
     flightInput.value = flightNo;
     
-    // Auto-correct seat for restricted airlines
-    if (isPaxRestrictedAirline(flightNo) && seatNo) {
+    // Auto-correct seat format (remove slashes) and handle restricted airlines
+    if (seatNo) {
         seatNo = autoCorrectSeatForRestrictedAirline(flightNo, seatNo);
     }
     
@@ -3016,259 +3026,168 @@ for(let iata in airlines){
     zoomAirlineSelect.appendChild(opt);
 }
 
-// ----- Elements -----
-const codeInput = document.getElementById('codeInput');
-const nameInput = document.getElementById('nameInput');
-const pnrInput = document.getElementById('pnrInput');
-const flightInput = document.getElementById('flightInput');
-const seatInput = document.getElementById('seatInput');
-const classInput = document.getElementById('classInput');
-const fqtvInput = document.getElementById('fqtvInput');
-const serialInput = document.getElementById('serialInput');
-const remarksInput = document.getElementById('remarksInput');
-const numPaxInput = document.getElementById('numPaxInput');
-const userDisplay = document.getElementById('userDisplay');
-const shiftDisplay = document.getElementById('shiftDisplay');
-const dateDisplay = document.getElementById('dateDisplay');
-const entriesList = document.getElementById('entriesList');
-const manualSaveBtn = document.getElementById('manualSaveBtn');
-const entriesCount = document.getElementById('entriesCount');
-const clearNotification = document.getElementById('clearNotification');
-const alertNotification = document.getElementById('alertNotification');
-const alertMessage = document.getElementById('alertMessage');
-const passengerEntryCard = document.getElementById('passengerEntryCard');
-const scannerIndicator = document.getElementById('scannerIndicator');
-const refreshShiftBtn = document.getElementById('refreshShiftBtn');
-const qrProcessingIndicator = document.getElementById('qrProcessingIndicator');
-const qrStatus = document.getElementById('qrStatus');
-const seatWarning = document.getElementById('seatWarning');
-const seatWarningText = document.getElementById('seatWarningText');
-
-// ----- Zoom Modal Elements -----
-const zoomModal = document.getElementById('zoomModal');
-const closeZoomBtn = document.getElementById('closeZoomBtn');
-const zoomNameInput = document.getElementById('zoomNameInput');
-const zoomFlightInput = document.getElementById('zoomFlightInput');
-const zoomPnrInput = document.getElementById('zoomPnrInput');
-const zoomSeatInput = document.getElementById('zoomSeatInput');
-const zoomClassInput = document.getElementById('zoomClassInput');
-const zoomFqtvInput = document.getElementById('zoomFqtvInput');
-const zoomSerialInput = document.getElementById('zoomSerialInput');
-const zoomRemarksInput = document.getElementById('zoomRemarksInput');
-const zoomPaxInput = document.getElementById('zoomPaxInput');
-const zoomSaveBtn = document.getElementById('zoomSaveBtn');
-const zoomCancelBtn = document.getElementById('zoomCancelBtn');
-const zoomSeatWarning = document.getElementById('zoomSeatWarning');
-const zoomSeatWarningText = document.getElementById('zoomSeatWarningText');
-
-// ----- FQTV Zoom Modal Elements -----
-const fqtvZoomModal = document.getElementById('fqtvZoomModal');
-const closeFqtvZoomBtn = document.getElementById('closeFqtvZoomBtn');
-const fqtvZoomInput = document.getElementById('fqtvZoomInput');
-const fqtvZoomSaveBtn = document.getElementById('fqtvZoomSaveBtn');
-const fqtvZoomCancelBtn = document.getElementById('fqtvZoomCancelBtn');
-
-// ----- Delay Charge Elements -----
-const delayChargeModal = document.getElementById('delayChargeModal');
-const closeModalBtn = document.getElementById('closeModalBtn');
-const delayChargeBtn = document.getElementById('delayChargeBtn');
-const delayFlightInput = document.getElementById('delayFlightInput');
-const entryTimeInput = document.getElementById('entryTimeInput');
-const exitTimeInput = document.getElementById('exitTimeInput');
-const stdTimeInput = document.getElementById('stdTimeInput');
-const delayPaxInput = document.getElementById('delayPaxInput');
-const calculateDelayBtn = document.getElementById('calculateDelayBtn');
-const saveDelayBtn = document.getElementById('saveDelayBtn');
-const delayCalcResult = document.getElementById('delayCalcResult');
-const delayCalcDetails = document.getElementById('delayCalcDetails');
-
-// ----- Local Storage Elements -----
-const localStorageModal = document.getElementById('localStorageModal');
-const closeStorageModalBtn = document.getElementById('closeStorageModalBtn');
-const storageManagerBtn = document.getElementById('storageManagerBtn');
-const refreshStorageBtn = document.getElementById('refreshStorageBtn');
-const clearAllStorageBtn = document.getElementById('clearAllStorageBtn');
-const jsonViewerModal = document.getElementById('jsonViewerModal');
-const closeJsonViewerBtn = document.getElementById('closeJsonViewerBtn');
-const jsonViewerBody = document.getElementById('jsonViewerBody');
-const jsonViewerTitle = document.getElementById('jsonViewerTitle');
-
-// ----- Numeric Keyboard Elements -----
-const numericKeyboardModal = document.getElementById('numericKeyboardModal');
-const closeNumericKeyboardBtn = document.getElementById('closeNumericKeyboardBtn');
-const numericDisplay = document.getElementById('numericDisplay');
-const applyNumericBtn = document.getElementById('applyNumericBtn');
-const closeNumericBtn = document.getElementById('closeNumericBtn');
-const backspaceKey = document.getElementById('backspaceKey');
-const clearKey = document.getElementById('clearKey');
-
-// ----- Global Variables -----
-let isApproving = false;
-let currentShiftType = null;
-let currentShiftDate = null;
-let renderTimeout = null;
-let isRendering = false;
-let lastRenderData = '';
-let currentShiftStatus = 'not_started';
-let shiftDb = null;
-let backgroundSaveQueue = [];
-let isBackgroundSaving = false;
-let scannerTimer;
-let lastValue = '';
-let isScannerActive = false;
-let isProcessing = false;
-let currentEditingRowIndex = -1;
-let currentEditingField = '';
-
-// ----- Numeric Keyboard Variables -----
-let currentNumericValue = '0';
-
-// ----- QR System Variables -----
-let qrDb = null;
-let qrFirebaseInitialized = false;
-let qrEntries = [];
-let qrEntriesLocal = [];
-let qrSystemAvailable = false;
-
-// ----- Shift Cache -----
-let shiftCacheInitialized = false;
-let shiftCache = {
-    data: null,
-    timestamp: 0,
-    ttl: 30 * 60 * 1000, // 30 minutes (increased from 10 minutes)
-    dateKey: '',
-    shiftType: '',
-    openTime: ''
-};
-
-// ----- Approved Entries Cache -----
-let approvedEntriesCache = {};
-
-// ----- Delay Charge Calculation Constants -----
-const FREE_HOURS = 3; // First 3 hours free
-const CHARGE_PER_HOUR = 0; // Charge amount per hour per pax (0 as requested)
-const MIN_STAY_MINUTES = 60; // Minimum stay to be considered
-
-// ----- Maldives Timezone Functions -----
-function getMaldivesTime() {
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const maldivesTime = new Date(utc + (5 * 3600000));
-    return maldivesTime;
-}
-
-function formatDateToYYYYMMDD(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function getMaldivesTimeString() {
-    const maldivesTime = getMaldivesTime();
-    return maldivesTime.toTimeString().split(' ')[0].slice(0, 5);
-}
-
-function getMaldivesDateTimeISO() {
-    return getMaldivesTime().toISOString();
-}
-
-function formatDateForDocumentId(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}_${month}_${day}`;
-}
-
-function getCurrentDate() {
-    return formatDateToYYYYMMDD(getMaldivesTime());
-}
-
-function getCurrentTime() {
-    return getMaldivesTimeString();
-}
-
-// ----- Date Format Functions -----
-function formatDateForDisplay(dateString) {
-    if (!dateString) return '-';
-    try {
-        if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            const [year, month, day] = dateString.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
-            return date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-            });
+// ----- Seat input listener with auto-correction -----
+seatInput.addEventListener('input', function() {
+    const currentSeat = this.value.trim();
+    const flightValue = flightInput.value.trim();
+    
+    if (currentSeat !== lastSeatValue) {
+        // Auto-correct seat format (remove slashes)
+        let correctedSeat = autoCorrectSeatFormat(currentSeat);
+        
+        // Additional correction for restricted airlines
+        if (flightValue && isPaxRestrictedAirline(flightValue)) {
+            correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, correctedSeat);
         }
-        return dateString;
-    } catch (error) {
-        return dateString;
+        
+        if (correctedSeat !== currentSeat) {
+            this.value = correctedSeat;
+        }
+        
+        checkSeatPaxMatch();
+        lastSeatValue = this.value.trim();
+        
+        // Auto-correct pax based on seat (only for non-restricted airlines)
+        if (this.value.trim()) {
+            if (!isPaxRestrictedAirline(flightValue)) {
+                autoCorrectPaxFromSeat(this, numPaxInput);
+            } else {
+                // For restricted airlines, always set pax to 1
+                numPaxInput.value = '1';
+            }
+        }
     }
-}
+});
 
-// ----- Alert System -----
-function showAlert(message, isError = false, isWarning = false, isInfo = false) {
-    alertMessage.textContent = message;
-    alertNotification.className = 'alert-notification';
+// ----- Zoom seat input listener with auto-correction -----
+zoomSeatInput.addEventListener('input', function() {
+    const flightValue = zoomFlightInput.value.trim();
+    const seatValue = this.value.trim();
     
-    if (isError) {
-        alertNotification.classList.add('error');
-        alertNotification.querySelector('i').className = 'fas fa-exclamation-circle';
-    } else if (isWarning) {
-        alertNotification.classList.add('warning');
-        alertNotification.querySelector('i').className = 'fas fa-exclamation-triangle';
-    } else if (isInfo) {
-        alertNotification.classList.add('info');
-        alertNotification.querySelector('i').className = 'fas fa-info-circle';
-    } else {
-        alertNotification.querySelector('i').className = 'fas fa-check-circle';
+    // Auto-correct seat format (remove slashes)
+    let correctedSeat = autoCorrectSeatFormat(seatValue);
+    
+    // Additional correction for restricted airlines
+    if (flightValue && isPaxRestrictedAirline(flightValue)) {
+        correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, correctedSeat);
     }
     
-    alertNotification.classList.add('show');
+    if (correctedSeat !== seatValue) {
+        this.value = correctedSeat;
+    }
     
-    setTimeout(() => {
-        alertNotification.classList.remove('show');
-    }, 3000);
-}
+    checkZoomSeatPaxMatch();
+    
+    // Auto-correct pax based on seat
+    if (this.value.trim()) {
+        if (!isPaxRestrictedAirline(flightValue)) {
+            autoCorrectPaxFromSeat(this, zoomPaxInput);
+        } else {
+            // For restricted airlines, always set pax to 1
+            zoomPaxInput.value = '1';
+        }
+    }
+});
 
-// ----- Zoom Modal Functions -----
-function showZoomModal() {
+// ----- Save Entry function with seat auto-correction -----
+async function saveEntry(entry){
     if (!currentShiftType || currentShiftStatus !== 'open') {
         showAlert('No active shift or shift not open!', true);
         return;
     }
     
-    // Clear all zoom inputs
-    zoomNameInput.value = '';
-    zoomFlightInput.value = '';
-    zoomPnrInput.value = '';
-    zoomSeatInput.value = '';
-    zoomClassInput.value = '';
-    zoomFqtvInput.value = '';
-    zoomSerialInput.value = '';
-    zoomRemarksInput.value = '';
-    zoomPaxInput.value = '1';
-    zoomAirlineSelect.value = '';
-    zoomSeatWarning.style.display = 'none';
+    entry.date = currentShiftDate;
+    entry.shift = currentShiftType;
     
-    // Show modal
-    zoomModal.classList.add('show');
+    // Auto-correct seat format (remove slashes) and handle restricted airlines
+    if (entry.seat) {
+        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
+        if (correctedSeat !== entry.seat) {
+            entry.seat = correctedSeat;
+            seatInput.value = correctedSeat;
+        }
+    }
     
-    // Focus on name input
-    setTimeout(() => {
-        zoomNameInput.focus();
-    }, 100);
+    // Validate seat-pax match
+    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
+    if (!seatPaxValidation.isValid) {
+        showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
+        // Auto-correct pax
+        entry.numPax = seatPaxValidation.calculatedPax;
+        numPaxInput.value = seatPaxValidation.calculatedPax;
+        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
+    }
+    
+    // Check for restricted airlines
+    if (isPaxRestrictedAirline(entry.flight)) {
+        if (entry.numPax !== 1) {
+            showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
+            entry.numPax = 1;
+            numPaxInput.value = '1';
+        }
+    }
+    
+    // Validate pax count
+    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
+    if (!paxValidation.isValid) {
+        showAlert(`Cannot save: ${paxValidation.message}`, true);
+        return;
+    }
+    
+    if (isDuplicateEntry(entry)) {
+        console.log('Duplicate passenger detected, skipping save');
+        showAlert(`${entry.name} is already entered for flight ${entry.flight}`, true);
+        
+        codeInput.value = '';
+        codeInput.focus();
+        setTimeout(clearInputFields, 2000);
+        return;
+    }
+    
+    const flightUpper = entry.flight.toUpperCase();
+    const isQRFlight = flightUpper.startsWith('QR');
+    
+    let qrSaved = false;
+    if (isQRFlight) {
+        try {
+            qrSaved = await saveToQRSystem(entry.code);
+            if (qrSaved) {
+                console.log('✅ QR data saved successfully');
+            }
+        } catch (error) {
+            console.error('❌ Error saving QR data:', error);
+        }
+    }
+    
+    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
+    data.push(entry);
+    localStorage.setItem('codesData', JSON.stringify(data));
+    
+    if (!renderTimeout) {
+        renderTimeout = setTimeout(() => {
+            renderEntries();
+            renderTimeout = null;
+        }, 50);
+    }
+
+    if (isQRFlight && qrSaved) {
+        showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
+    } else if (isQRFlight && !qrSaved) {
+        showAlert(`Entry saved! ${entry.name} - QR system save failed`, true);
+    } else {
+        showAlert(`Entry saved! ${entry.name}`);
+    }
+
+    codeInput.value = '';
+    codeInput.focus();
+    setTimeout(clearInputFields, 2000);
 }
 
-function closeZoomModal() {
-    zoomModal.classList.remove('show');
-}
-
+// ----- Save Zoom Entry with seat auto-correction -----
 function saveZoomEntry() {
     const name = zoomNameInput.value.trim();
     const flight = zoomFlightInput.value.trim();
-    const seat = zoomSeatInput.value.trim();
+    let seat = zoomSeatInput.value.trim();
     const pax = parseInt(zoomPaxInput.value) || 1;
     
     if (!name) {
@@ -3283,13 +3202,11 @@ function saveZoomEntry() {
         return;
     }
     
-    // Auto-correct seat for restricted airlines
-    let correctedSeat = seat;
-    if (isPaxRestrictedAirline(flight)) {
-        correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
-        if (correctedSeat !== seat) {
-            zoomSeatInput.value = correctedSeat;
-        }
+    // Auto-correct seat format (remove slashes) and handle restricted airlines
+    let correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
+    if (correctedSeat !== seat) {
+        zoomSeatInput.value = correctedSeat;
+        seat = correctedSeat;
     }
     
     // Validate seat-pax match
