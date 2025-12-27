@@ -2893,6 +2893,207 @@ function autoCorrectSeatForRestrictedAirline(flightNumber, seatValue) {
     return correctedSeat;
 }
 
+// ----- Zoom Modal Functions -----
+function showZoomModal() {
+    if (!currentShiftType || currentShiftStatus !== 'open') {
+        showAlert('No active shift or shift not open!', true);
+        return;
+    }
+    
+    // Clear all zoom inputs
+    zoomNameInput.value = '';
+    zoomFlightInput.value = '';
+    zoomPnrInput.value = '';
+    zoomSeatInput.value = '';
+    zoomClassInput.value = '';
+    zoomFqtvInput.value = '';
+    zoomSerialInput.value = '';
+    zoomRemarksInput.value = '';
+    zoomPaxInput.value = '1';
+    zoomAirlineSelect.value = '';
+    zoomSeatWarning.style.display = 'none';
+    
+    // Show modal
+    zoomModal.classList.add('show');
+    
+    // Focus on name input
+    setTimeout(() => {
+        zoomNameInput.focus();
+    }, 100);
+}
+
+function closeZoomModal() {
+    zoomModal.classList.remove('show');
+}
+
+function showZoomModalWithField(fieldId, fieldValue) {
+    if (!currentShiftType || currentShiftStatus !== 'open') {
+        showAlert('No active shift or shift not open!', true);
+        return;
+    }
+    
+    // Get current values from manual fields
+    const name = nameInput.value.trim();
+    const flight = flightInput.value.trim();
+    const pnr = pnrInput.value.trim();
+    const seat = seatInput.value.trim();
+    const seatClass = classInput.value.trim();
+    const fqtv = fqtvInput.value.trim();
+    const serial = serialInput.value.trim();
+    const remarks = remarksInput.value.trim();
+    const pax = parseInt(numPaxInput.value) || 1;
+    const airline = airlineSelect.value;
+    
+    // Auto-correct seat for restricted airlines
+    let correctedSeat = seat;
+    if (isPaxRestrictedAirline(flight)) {
+        correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
+    }
+    
+    // Set zoom modal values
+    zoomNameInput.value = name;
+    zoomFlightInput.value = flight;
+    zoomPnrInput.value = pnr;
+    zoomSeatInput.value = correctedSeat;
+    zoomClassInput.value = seatClass;
+    zoomFqtvInput.value = fqtv;
+    zoomSerialInput.value = serial;
+    zoomRemarksInput.value = remarks;
+    zoomPaxInput.value = pax;
+    zoomAirlineSelect.value = airline;
+    
+    // Show seat warning if needed
+    checkZoomSeatPaxMatch();
+    
+    // Show modal
+    zoomModal.classList.add('show');
+    
+    // Focus on the field that triggered the zoom
+    setTimeout(() => {
+        switch(fieldId) {
+            case 'nameInput':
+                zoomNameInput.focus();
+                zoomNameInput.select();
+                break;
+            case 'flightInput':
+                zoomFlightInput.focus();
+                zoomFlightInput.select();
+                break;
+            case 'pnrInput':
+                zoomPnrInput.focus();
+                zoomPnrInput.select();
+                break;
+            case 'seatInput':
+                zoomSeatInput.focus();
+                zoomSeatInput.select();
+                break;
+            case 'numPaxInput':
+                zoomPaxInput.focus();
+                zoomPaxInput.select();
+                break;
+            case 'serialInput':
+                zoomSerialInput.focus();
+                zoomSerialInput.select();
+                break;
+            case 'remarksInput':
+                zoomRemarksInput.focus();
+                zoomRemarksInput.select();
+                break;
+            default:
+                zoomNameInput.focus();
+                zoomNameInput.select();
+        }
+    }, 100);
+}
+
+function saveZoomEntry() {
+    const name = zoomNameInput.value.trim();
+    const flight = zoomFlightInput.value.trim();
+    let seat = zoomSeatInput.value.trim();
+    const pax = parseInt(zoomPaxInput.value) || 1;
+    
+    if (!name) {
+        showAlert('Please enter passenger name', true);
+        zoomNameInput.focus();
+        return;
+    }
+    
+    if (!flight) {
+        showAlert('Please enter flight number', true);
+        zoomFlightInput.focus();
+        return;
+    }
+    
+    // Auto-correct seat format (remove slashes) and handle restricted airlines
+    let correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
+    if (correctedSeat !== seat) {
+        zoomSeatInput.value = correctedSeat;
+        seat = correctedSeat;
+    }
+    
+    // Validate seat-pax match
+    const seatPaxValidation = validateSeatPaxMatch(correctedSeat, pax);
+    if (!seatPaxValidation.isValid) {
+        showAlert(seatPaxValidation.message, true);
+        zoomPaxInput.value = seatPaxValidation.calculatedPax;
+        zoomPaxInput.focus();
+        return;
+    }
+    
+    // Validate restricted airlines
+    if (isPaxRestrictedAirline(flight) && pax !== 1) {
+        showAlert(`Flight ${flight} (${flight.substring(0, 2)}) allows only 1 passenger per seat`, true);
+        zoomPaxInput.value = '1';
+        zoomPaxInput.focus();
+        return;
+    }
+    
+    const entry = {
+        date: currentShiftDate,
+        user: userDisplay.textContent,
+        shift: currentShiftType,
+        code: 'MANUAL_ENTRY',
+        name: name,
+        pnr: zoomPnrInput.value.trim(),
+        flight: flight,
+        airline: zoomAirlineSelect.value,
+        seat: correctedSeat,
+        class: zoomClassInput.value.trim(),
+        serial: zoomSerialInput.value.trim(),
+        remarks: zoomRemarksInput.value.trim(),
+        fqtv: zoomFqtvInput.value.trim(),
+        numPax: pax,
+        approved: false
+    };
+    
+    saveEntry(entry);
+    closeZoomModal();
+}
+
+function checkZoomSeatPaxMatch() {
+    const seat = zoomSeatInput.value.trim();
+    const pax = parseInt(zoomPaxInput.value) || 1;
+    
+    if (!seat) {
+        zoomSeatWarning.style.display = 'none';
+        return;
+    }
+    
+    const validation = validateSeatPaxMatch(seat, pax);
+    if (!validation.isValid) {
+        zoomSeatWarningText.textContent = validation.message;
+        zoomSeatWarning.style.display = 'flex';
+        
+        // Highlight inputs
+        zoomSeatInput.style.borderColor = 'var(--warning)';
+        zoomPaxInput.style.borderColor = 'var(--warning)';
+    } else {
+        zoomSeatWarning.style.display = 'none';
+        zoomSeatInput.style.borderColor = '';
+        zoomPaxInput.style.borderColor = '';
+    }
+}
+
 // ----- Parse code -----
 function parseCode(){
     const code = codeInput.value.trim().toUpperCase();
@@ -2989,6 +3190,38 @@ function parseCode(){
     checkSeatPaxMatch();
 }
 
+function checkSeatPaxMatch() {
+    const seat = seatInput.value.trim();
+    const pax = parseInt(numPaxInput.value) || 1;
+    
+    // Only check if seat has value AND it's different from last value
+    if (!seat || seat === lastSeatValue) {
+        seatWarning.style.display = 'none';
+        seatInput.parentElement.classList.remove('seat-pax-mismatch');
+        numPaxInput.parentElement.style.borderColor = '';
+        return;
+    }
+    
+    // Update last value
+    lastSeatValue = seat;
+    
+    const validation = validateSeatPaxMatch(seat, pax);
+    if (!validation.isValid) {
+        seatWarningText.textContent = validation.message;
+        seatWarning.style.display = 'flex';
+        
+        // Add warning class to seat input
+        seatInput.parentElement.classList.add('seat-pax-mismatch');
+        
+        // Highlight pax input too
+        numPaxInput.parentElement.style.borderColor = 'var(--warning)';
+    } else {
+        seatWarning.style.display = 'none';
+        seatInput.parentElement.classList.remove('seat-pax-mismatch');
+        numPaxInput.parentElement.style.borderColor = '';
+    }
+}
+
 // ----- Initialize Airline Dropdown -----
 const airlineSelect = document.getElementById('airlineSelect');
 for(let iata in airlines){
@@ -3006,6 +3239,51 @@ for(let iata in airlines){
     opt.textContent = airlines[iata];
     zoomAirlineSelect.appendChild(opt);
 }
+
+// ----- Elements -----
+const codeInput = document.getElementById('codeInput');
+const nameInput = document.getElementById('nameInput');
+const pnrInput = document.getElementById('pnrInput');
+const flightInput = document.getElementById('flightInput');
+const seatInput = document.getElementById('seatInput');
+const classInput = document.getElementById('classInput');
+const fqtvInput = document.getElementById('fqtvInput');
+const serialInput = document.getElementById('serialInput');
+const remarksInput = document.getElementById('remarksInput');
+const numPaxInput = document.getElementById('numPaxInput');
+const userDisplay = document.getElementById('userDisplay');
+const shiftDisplay = document.getElementById('shiftDisplay');
+const dateDisplay = document.getElementById('dateDisplay');
+const entriesList = document.getElementById('entriesList');
+const manualSaveBtn = document.getElementById('manualSaveBtn');
+const entriesCount = document.getElementById('entriesCount');
+const clearNotification = document.getElementById('clearNotification');
+const alertNotification = document.getElementById('alertNotification');
+const alertMessage = document.getElementById('alertMessage');
+const passengerEntryCard = document.getElementById('passengerEntryCard');
+const scannerIndicator = document.getElementById('scannerIndicator');
+const refreshShiftBtn = document.getElementById('refreshShiftBtn');
+const qrProcessingIndicator = document.getElementById('qrProcessingIndicator');
+const qrStatus = document.getElementById('qrStatus');
+const seatWarning = document.getElementById('seatWarning');
+const seatWarningText = document.getElementById('seatWarningText');
+
+// ----- Zoom Modal Elements -----
+const zoomModal = document.getElementById('zoomModal');
+const closeZoomBtn = document.getElementById('closeZoomBtn');
+const zoomNameInput = document.getElementById('zoomNameInput');
+const zoomFlightInput = document.getElementById('zoomFlightInput');
+const zoomPnrInput = document.getElementById('zoomPnrInput');
+const zoomSeatInput = document.getElementById('zoomSeatInput');
+const zoomClassInput = document.getElementById('zoomClassInput');
+const zoomFqtvInput = document.getElementById('zoomFqtvInput');
+const zoomSerialInput = document.getElementById('zoomSerialInput');
+const zoomRemarksInput = document.getElementById('zoomRemarksInput');
+const zoomPaxInput = document.getElementById('zoomPaxInput');
+const zoomSaveBtn = document.getElementById('zoomSaveBtn');
+const zoomCancelBtn = document.getElementById('zoomCancelBtn');
+const zoomSeatWarning = document.getElementById('zoomSeatWarning');
+const zoomSeatWarningText = document.getElementById('zoomSeatWarningText');
 
 // ----- Seat input listener with auto-correction -----
 seatInput.addEventListener('input', function() {
@@ -3068,6 +3346,67 @@ zoomSeatInput.addEventListener('input', function() {
             zoomPaxInput.value = '1';
         }
     }
+});
+
+// ----- Zoom modal event listeners -----
+closeZoomBtn.addEventListener('click', closeZoomModal);
+zoomCancelBtn.addEventListener('click', closeZoomModal);
+zoomSaveBtn.addEventListener('click', saveZoomEntry);
+
+// Close modal when clicking outside
+zoomModal.addEventListener('click', (e) => {
+    if (e.target === zoomModal) {
+        closeZoomModal();
+    }
+});
+
+// Also update the manual entry fields when zoom modal saves
+zoomSaveBtn.addEventListener('click', function() {
+    // Update manual entry fields with zoom values
+    nameInput.value = zoomNameInput.value.trim();
+    flightInput.value = zoomFlightInput.value.trim();
+    pnrInput.value = zoomPnrInput.value.trim();
+    
+    // Auto-correct seat for restricted airlines
+    let correctedSeat = zoomSeatInput.value.trim();
+    if (isPaxRestrictedAirline(flightInput.value)) {
+        correctedSeat = autoCorrectSeatForRestrictedAirline(flightInput.value, correctedSeat);
+    }
+    
+    seatInput.value = correctedSeat;
+    classInput.value = zoomClassInput.value.trim();
+    fqtvInput.value = zoomFqtvInput.value.trim();
+    serialInput.value = zoomSerialInput.value.trim();
+    remarksInput.value = zoomRemarksInput.value.trim();
+    numPaxInput.value = zoomPaxInput.value.trim();
+    airlineSelect.value = zoomAirlineSelect.value;
+    
+    // Check seat-pax match
+    checkSeatPaxMatch();
+    
+    // Save the entry
+    const entry = {
+        date: currentShiftDate,
+        user: userDisplay.textContent,
+        shift: currentShiftType,
+        code: 'MANUAL_ENTRY_ZOOM',
+        name: nameInput.value,
+        pnr: pnrInput.value,
+        flight: flightInput.value,
+        airline: airlineSelect.value,
+        seat: seatInput.value,
+        class: classInput.value,
+        serial: serialInput.value,
+        remarks: remarksInput.value,
+        fqtv: fqtvInput.value,
+        numPax: parseInt(numPaxInput.value) || 1,
+        approved: false
+    };
+    
+    saveEntry(entry);
+    
+    // Close zoom modal
+    closeZoomModal();
 });
 
 // ----- Save Entry function with seat auto-correction -----
@@ -3164,77 +3503,88 @@ async function saveEntry(entry){
     setTimeout(clearInputFields, 2000);
 }
 
-// ----- Save Zoom Entry with seat auto-correction -----
-function saveZoomEntry() {
-    const name = zoomNameInput.value.trim();
-    const flight = zoomFlightInput.value.trim();
-    let seat = zoomSeatInput.value.trim();
-    const pax = parseInt(zoomPaxInput.value) || 1;
+// ----- FIXED: Auto-Zoom for Manual Fields (Click only, no tab) -----
+function setupAutoZoomFields() {
+    const autoZoomFields = document.querySelectorAll('.auto-zoom-field');
     
-    if (!name) {
-        showAlert('Please enter passenger name', true);
-        zoomNameInput.focus();
-        return;
-    }
+    autoZoomFields.forEach(field => {
+        // Remove all existing listeners to prevent duplicates
+        field.removeEventListener('focus', handleAutoZoomFocus);
+        field.removeEventListener('click', handleAutoZoomFocus);
+        
+        // ONLY add click listener (not focus/tab)
+        field.addEventListener('click', handleAutoZoomFocus);
+        
+        // Remove tabindex to prevent tab navigation to these fields
+        field.setAttribute('tabindex', '-1');
+    });
     
-    if (!flight) {
-        showAlert('Please enter flight number', true);
-        zoomFlightInput.focus();
-        return;
-    }
-    
-    // Auto-correct seat format (remove slashes) and handle restricted airlines
-    let correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
-    if (correctedSeat !== seat) {
-        zoomSeatInput.value = correctedSeat;
-        seat = correctedSeat;
-    }
-    
-    // Validate seat-pax match
-    const seatPaxValidation = validateSeatPaxMatch(correctedSeat, pax);
-    if (!seatPaxValidation.isValid) {
-        showAlert(seatPaxValidation.message, true);
-        zoomPaxInput.value = seatPaxValidation.calculatedPax;
-        zoomPaxInput.focus();
-        return;
-    }
-    
-    // Validate restricted airlines
-    if (isPaxRestrictedAirline(flight) && pax !== 1) {
-        showAlert(`Flight ${flight} (${flight.substring(0, 2)}) allows only 1 passenger per seat`, true);
-        zoomPaxInput.value = '1';
-        zoomPaxInput.focus();
-        return;
-    }
-    
-    const entry = {
-        date: currentShiftDate,
-        user: userDisplay.textContent,
-        shift: currentShiftType,
-        code: 'MANUAL_ENTRY',
-        name: name,
-        pnr: zoomPnrInput.value.trim(),
-        flight: flight,
-        airline: zoomAirlineSelect.value,
-        seat: correctedSeat,
-        class: zoomClassInput.value.trim(),
-        serial: zoomSerialInput.value.trim(),
-        remarks: zoomRemarksInput.value.trim(),
-        fqtv: zoomFqtvInput.value.trim(),
-        numPax: pax,
-        approved: false
-    };
-    
-    saveEntry(entry);
-    closeZoomModal();
+    // Setup FQTV field separately (with both click and tab support)
+    setupFqtvField();
 }
 
+// Handle auto-zoom when field is clicked (not focused via tab)
+function handleAutoZoomFocus(event) {
+    const field = event.target;
+    const fieldId = field.id;
+    const fieldValue = field.value;
+    
+    // Don't trigger if zoom modal is already open
+    if (zoomModal.classList.contains('show')) {
+        return;
+    }
+    
+    // Show zoom modal with pre-filled data
+    showZoomModalWithField(fieldId, fieldValue);
+}
 
+// Setup FQTV field with both click and tab support
+function setupFqtvField() {
+    const fqtvInput = document.getElementById('fqtvInput');
+    if (fqtvInput) {
+        // Remove existing listeners
+        fqtvInput.removeEventListener('click', showFqtvZoomFromField);
+        fqtvInput.removeEventListener('focus', handleFqtvFocus);
+        
+        // Add click listener
+        fqtvInput.addEventListener('click', showFqtvZoomFromField);
+        
+        // Add focus listener for tab navigation
+        fqtvInput.addEventListener('focus', handleFqtvFocus);
+        
+        // Keep tabindex for FQTV field
+        fqtvInput.setAttribute('tabindex', '0');
+    }
+}
 
-// Modify the zoom cancel button to not clear manual fields
-zoomCancelBtn.addEventListener('click', function() {
-    closeZoomModal();
-});
+// Handle FQTV field focus (for tab navigation)
+function handleFqtvFocus() {
+    const fqtvInput = document.getElementById('fqtvInput');
+    if (fqtvInput && !fqtvZoomModal.classList.contains('show')) {
+        setTimeout(() => {
+            showFqtvZoomFromField();
+        }, 100);
+    }
+}
+
+// Show FQTV zoom from readonly field
+function showFqtvZoomFromField() {
+    const fqtvValue = fqtvInput.value.trim();
+    fqtvZoomInput.value = fqtvValue;
+    fqtvZoomModal.classList.add('show');
+    
+    setTimeout(() => {
+        fqtvZoomInput.focus();
+        fqtvZoomInput.select();
+    }, 100);
+}
+
+// ----- FQTV Zoom Modal Elements -----
+const fqtvZoomModal = document.getElementById('fqtvZoomModal');
+const closeFqtvZoomBtn = document.getElementById('closeFqtvZoomBtn');
+const fqtvZoomInput = document.getElementById('fqtvZoomInput');
+const fqtvZoomSaveBtn = document.getElementById('fqtvZoomSaveBtn');
+const fqtvZoomCancelBtn = document.getElementById('fqtvZoomCancelBtn');
 
 // ----- FQTV Zoom Modal Functions -----
 function showFqtvZoomModal(rowIndex, cellElement = null) {
@@ -3273,6 +3623,61 @@ function closeFqtvZoomModal() {
     currentEditingField = '';
 }
 
+// Update FQTV field after saving from zoom
+function updateFqtvAndSave(newFqtv) {
+    if (currentEditingRowIndex < 0 || currentEditingField !== 'fqtv') {
+        closeFqtvZoomModal();
+        return;
+    }
+    
+    const newFqtvValue = newFqtv.trim();
+    
+    let data = JSON.parse(localStorage.getItem('codesData') || '[]');
+    const entry = data[currentEditingRowIndex];
+    
+    if (entry) {
+        // Update the entry
+        entry.fqtv = newFqtvValue;
+        localStorage.setItem('codesData', JSON.stringify(data));
+        
+        // Update table display
+        const rows = entriesList.querySelectorAll('tr');
+        if (rows[currentEditingRowIndex]) {
+            const fqtvCell = rows[currentEditingRowIndex].cells[4];
+            if (fqtvCell) {
+                // Clear any existing content
+                fqtvCell.innerHTML = '';
+                
+                // Check if FQTV is required
+                const isFqtvNeeded = isFqtvRequired(entry.class, newFqtvValue);
+                
+                if (isFqtvNeeded && !newFqtvValue) {
+                    // Show warning if FQTV is required but empty
+                    const warningSpan = document.createElement('span');
+                    warningSpan.className = 'fqtv-warning';
+                    warningSpan.textContent = 'FQTV REQUIRED ';
+                    fqtvCell.appendChild(warningSpan);
+                } else if (newFqtvValue) {
+                    // Show the FQTV value
+                    fqtvCell.textContent = newFqtvValue;
+                }
+                
+                // Make the cell editable and add zoom class
+                fqtvCell.classList.add('editable-cell', 'fqtv-field-zoom');
+                fqtvCell.setAttribute('contenteditable', 'true');
+                fqtvCell.setAttribute('data-field', 'fqtv');
+                
+                // Re-add event listener for zoom
+                fqtvCell.addEventListener('click', handleFqtvCellClick);
+            }
+        }
+        
+        showAlert('FQTV updated successfully', false);
+    }
+    
+    closeFqtvZoomModal();
+}
+
 // ----- Modified FQTV Zoom Save Button -----
 fqtvZoomSaveBtn.addEventListener('click', function() {
     const newFqtv = fqtvZoomInput.value.trim();
@@ -3306,2886 +3711,41 @@ function handleFqtvCellClick(event) {
     }
 }
 
-// ----- Add tab navigation support for FQTV field only -----
-document.addEventListener('keydown', function(event) {
-    // Check if we're in a table cell and Tab is pressed
-    if (event.key === 'Tab' && event.target.classList.contains('editable-cell')) {
-        const cell = event.target;
-        const field = cell.getAttribute('data-field');
-        
-        // If it's the FQTV field, show zoom modal
-        if (field === 'fqtv') {
-            event.preventDefault(); // Prevent default tab behavior
-            const row = cell.closest('tr');
-            const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-            
-            // Get current value
-            const currentValue = cell.textContent.trim().replace('FQTV REQUIRED', '').trim();
-            
-            if (rowIndex >= 0) {
-                showFqtvZoomModal(rowIndex, cell);
-                // Set the current value in the modal
-                setTimeout(() => {
-                    fqtvZoomInput.value = currentValue;
-                    fqtvZoomInput.select();
-                }, 100);
-            }
-        }
-    }
-});
-
-// ----- FIXED: Seat-Pax Validation (Only show alerts on actual changes) -----
-function checkSeatPaxMatch() {
-    const seat = seatInput.value.trim();
-    const pax = parseInt(numPaxInput.value) || 1;
-    
-    // Only check if seat has value AND it's different from last value
-    if (!seat || seat === lastSeatValue) {
-        seatWarning.style.display = 'none';
-        seatInput.parentElement.classList.remove('seat-pax-mismatch');
-        numPaxInput.parentElement.style.borderColor = '';
-        return;
-    }
-    
-    // Update last value
-    lastSeatValue = seat;
-    
-    const validation = validateSeatPaxMatch(seat, pax);
-    if (!validation.isValid) {
-        seatWarningText.textContent = validation.message;
-        seatWarning.style.display = 'flex';
-        
-        // Add warning class to seat input
-        seatInput.parentElement.classList.add('seat-pax-mismatch');
-        
-        // Highlight pax input too
-        numPaxInput.parentElement.style.borderColor = 'var(--warning)';
-    } else {
-        seatWarning.style.display = 'none';
-        seatInput.parentElement.classList.remove('seat-pax-mismatch');
-        numPaxInput.parentElement.style.borderColor = '';
-    }
-}
-
-function checkZoomSeatPaxMatch() {
-    const seat = zoomSeatInput.value.trim();
-    const pax = parseInt(zoomPaxInput.value) || 1;
-    
-    if (!seat) {
-        zoomSeatWarning.style.display = 'none';
-        return;
-    }
-    
-    const validation = validateSeatPaxMatch(seat, pax);
-    if (!validation.isValid) {
-        zoomSeatWarningText.textContent = validation.message;
-        zoomSeatWarning.style.display = 'flex';
-        
-        // Highlight inputs
-        zoomSeatInput.style.borderColor = 'var(--warning)';
-        zoomPaxInput.style.borderColor = 'var(--warning)';
-    } else {
-        zoomSeatWarning.style.display = 'none';
-        zoomSeatInput.style.borderColor = '';
-        zoomPaxInput.style.borderColor = '';
-    }
-}
-
-// ----- Auto-correct Seat for Restricted Airlines -----
-function autoCorrectSeatFromInput(inputElement, flightValue) {
-    const seatValue = inputElement.value.trim();
-    if (!seatValue || !flightValue) return;
-    
-    if (isPaxRestrictedAirline(flightValue)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
-        if (correctedSeat !== seatValue) {
-            inputElement.value = correctedSeat;
-        }
-    }
-}
-
-// ----- Auto-correct Pax based on Seat -----
-function autoCorrectPaxFromSeat(inputElement, paxElement) {
-    const seat = inputElement.value.trim();
-    if (!seat) return;
-    
-    const calculatedPax = calculatePaxFromSeatNumber(seat);
-    paxElement.value = calculatedPax;
-    
-    // Show notification if multiple seats detected
-    if (calculatedPax > 1) {
-        showAlert(`Pax auto-corrected to ${calculatedPax} based on seat ${seat}`, false, false, true);
-    }
-}
-
-// ----- Generate Unique Key for QR Code -----
-function generateUniqueKeyFromCode(codeValue) {
-    let hash = 0;
-    for (let i = 0; i < codeValue.length; i++) {
-        const char = codeValue.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
-}
-
-// ----- Check QR Duplicate -----
-function isQRDuplicate(uniqueKey) {
-    if (qrEntriesProcessed.includes(uniqueKey)) {
-        return true;
-    }
-    
-    const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
-    if (processedCodes.includes(uniqueKey)) {
-        return true;
-    }
-    
-    return false;
-}
-
-// ----- Mark QR as Processed -----
-function markQRAsProcessed(uniqueKey) {
-    qrEntriesProcessed.push(uniqueKey);
-    
-    const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
-    if (!processedCodes.includes(uniqueKey)) {
-        processedCodes.push(uniqueKey);
-        if (processedCodes.length > 1000) {
-            processedCodes.splice(0, processedCodes.length - 1000);
-        }
-        localStorage.setItem('qrProcessedCodes', JSON.stringify(processedCodes));
-    }
-}
-
-// ----- Clear Old Processed Codes -----
-function clearOldProcessedCodes() {
-    const processedCodes = JSON.parse(localStorage.getItem('qrProcessedCodes') || '[]');
-    const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-    const recentCodes = processedCodes.filter(code => {
-        const match = code.match(/_(\d+)$/);
-        if (match) {
-            const timestamp = parseInt(match[1]);
-            return timestamp > oneWeekAgo;
-        }
-        return true;
-    });
-    
-    localStorage.setItem('qrProcessedCodes', JSON.stringify(recentCodes));
-    qrEntriesProcessed = recentCodes;
-}
-
-// ----- Initialize QR Firebase -----
-function initializeQRFirebase() {
-    try {
-        console.log("🔄 Initializing QR Firebase...");
-        
-        if (!qrFirebaseConfig) {
-            console.warn("⚠️ QR Firebase config not available");
-            showAlert("QR system configuration not found", true);
-            qrSystemAvailable = false;
-            return false;
-        }
-        
-        console.log("✅ Using QR Firebase project:", qrFirebaseConfig.projectId);
-        
-        let qrApp;
-        try {
-            qrApp = firebase.app('qrSystem');
-            console.log("✅ Using existing QR Firebase app");
-        } catch (e) {
-            try {
-                qrApp = firebase.initializeApp(qrFirebaseConfig, 'qrSystem');
-                console.log("✅ Created new QR Firebase app for project:", qrFirebaseConfig.projectId);
-            } catch (initError) {
-                console.error("❌ Error creating QR Firebase app:", initError);
-                showAlert("Failed to initialize QR system", true);
-                qrSystemAvailable = false;
-                return false;
-            }
-        }
-        
-        try {
-            qrDb = firebase.firestore(qrApp);
-            
-            const settings = {
-                cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED
-            };
-            
-            qrDb.settings(settings);
-            
-            console.log("✅ QR Firestore initialized");
-            qrFirebaseInitialized = true;
-            qrSystemAvailable = true;
-            showAlert("QR system connected successfully", false, false, true);
-            
-            return true;
-            
-        } catch (firestoreError) {
-            console.error("❌ Error initializing QR Firestore:", firestoreError);
-            
-            qrDb = firebase.firestore(qrApp);
-            qrFirebaseInitialized = true;
-            qrSystemAvailable = true;
-            
-            if (firestoreError.code === 'permission-denied') {
-                console.warn("⚠️ Permission denied - check Firebase rules for project:", qrFirebaseConfig.projectId);
-                showAlert("QR system: Permission denied - check Firestore rules", true);
-            } else {
-                showAlert("QR system initialized (offline mode)", false, true, false);
-            }
-            
-            return true;
-        }
-        
-    } catch (error) {
-        console.error("❌ Unexpected error in QR Firebase initialization:", error);
-        showAlert("QR system initialization error", true);
-        qrSystemAvailable = false;
-        return false;
-    }
-}
-
-// ----- Load QR Entries -----
-async function loadQREntries() {
-    if (!qrFirebaseInitialized || !qrSystemAvailable) {
-        console.log("QR system not available, skipping load");
-        return;
-    }
-    
-    try {
-        console.log("📥 Loading QR entries from Firebase...");
-        
-        const snapshot = await qrDb.collection('flightEntries')
-            .orderBy('timestamp', 'desc')
-            .limit(100) // Reduced from 200 to save reads
-            .get();
-        
-        qrEntries = [];
-        snapshot.forEach(doc => {
-            qrEntries.push({
-                id: doc.id,
-                ...doc.data()
-            });
-        });
-        
-        console.log(`✅ Loaded ${qrEntries.length} QR entries from Firebase`);
-        
-    } catch (error) {
-        console.error('❌ Error loading QR entries:', error);
-        qrStatus.innerHTML = `<span style="color: var(--error);"><i class="fas fa-exclamation-circle"></i> QR load failed: ${error.message}</span>`;
-    }
-}
-
-// ----- Save to QR System -----
-async function saveToQRSystem(codeValue) {
-    if (!qrFirebaseInitialized || !qrSystemAvailable) {
-        console.log("QR system not available, skipping save");
-        return false;
-    }
-    
-    try {
-        qrProcessingIndicator.classList.add('show');
-        
-        const uniqueKey = generateUniqueKeyFromCode(codeValue);
-        
-        if (isQRDuplicate(uniqueKey)) {
-            console.log("⚠️ Duplicate QR code detected, skipping save");
-            qrProcessingIndicator.classList.remove('show');
-            qrStatus.innerHTML = `<span style="color: var(--warning);"><i class="fas fa-exclamation-triangle"></i> Duplicate QR code - already processed</span>`;
-            return false;
-        }
-        
-        const qrData = extractQRDataFromCode(codeValue);
-        
-        // FIXED: Use the new tier mapping function for QR system
-        if (qrData.originalTier) {
-            const tierUpper = qrData.originalTier.toUpperCase();
-            // Use processFqtvTierWithAirline for QR system too
-            const formattedTier = processFqtvTierWithAirline(`${qrData.ffpOwner || ''} ${qrData.ffpNumber || ''}/${tierUpper}`, qrData.carrierCode);
-            qrData.ffpTier = formattedTier;
-        }
-        
-        markQRAsProcessed(uniqueKey);
-        
-        qrData.processedAt = getMaldivesDateTimeISO();
-        qrData.processedBy = userDisplay.textContent;
-        qrData.sourceSystem = 'UnifiedCardEntry';
-        qrData.uniqueKey = uniqueKey;
-        
-        if (!qrData.timestamp) {
-            qrData.timestamp = firebase.firestore.FieldValue.serverTimestamp();
-        }
-        
-        console.log("💾 Attempting to save QR data to project:", qrFirebaseConfig.projectId, {
-            flight: qrData.flightNumber,
-            passenger: `${qrData.firstName} ${qrData.lastName}`,
-            carrier: qrData.carrierCode,
-            seat: qrData.seatNumber,
-            secNumber: qrData.secNumber,
-            ffpTier: qrData.ffpTier // Debug log
-        });
-        
-        const docRef = await qrDb.collection('flightEntries').add(qrData);
-        qrData.id = docRef.id;
-        
-        qrEntries.unshift(qrData);
-        qrEntriesLocal.push({
-            ...qrData,
-            synced: true,
-            syncedAt: getMaldivesDateTimeISO()
-        });
-        
-        console.log('✅ QR entry saved to Firebase with ID:', docRef.id);
-        qrProcessingIndicator.classList.remove('show');
-        
-        qrStatus.innerHTML = `<span style="color: var(--qr-green);"><i class="fas fa-check-circle"></i> QR entry saved successfully!</span>`;
-        
-        setTimeout(() => {
-            qrStatus.innerHTML = '';
-        }, 3000);
-        
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Error saving to QR system:', error);
-        qrProcessingIndicator.classList.remove('show');
-        
-        let errorMessage = error.message;
-        if (error.code === 'permission-denied') {
-            errorMessage = 'Permission denied - check Firebase Firestore rules';
-            console.error('🔒 Firestore Rules Issue: Go to Firebase Console → Firestore Database → Rules');
-            console.error('🔒 Project:', qrFirebaseConfig.projectId);
-        } else if (error.message.includes('timeout')) {
-            errorMessage = 'Save timeout - check connection';
-        } else if (error.message.includes('network')) {
-            errorMessage = 'Network error - working offline';
-        }
-        
-        qrStatus.innerHTML = `<span style="color: var(--error);"><i class="fas fa-exclamation-circle"></i> QR save failed: ${errorMessage}</span>`;
-        
-        storeQRDataLocally(codeValue);
-        
-        return false;
-    }
-}
-
-// ----- Store QR Data Locally -----
-function storeQRDataLocally(codeValue) {
-    try {
-        const qrData = extractQRDataFromCode(codeValue);
-        
-        // FIXED: Use the new tier mapping function for local storage too
-        if (qrData.originalTier) {
-            const tierUpper = qrData.originalTier.toUpperCase();
-            const formattedTier = processFqtvTierWithAirline(`${qrData.ffpOwner || ''} ${qrData.ffpNumber || ''}/${tierUpper}`, qrData.carrierCode);
-            qrData.ffpTier = formattedTier;
-        }
-        
-        qrData.localSaveTime = getMaldivesDateTimeISO();
-        qrData.status = 'pending_sync';
-        
-        let localQRData = JSON.parse(localStorage.getItem('localQRData') || '[]');
-        
-        const isDuplicate = localQRData.some(item => 
-            item.uniqueKey === qrData.uniqueKey
-        );
-        
-        if (!isDuplicate) {
-            localQRData.push(qrData);
-            localStorage.setItem('localQRData', JSON.stringify(localQRData));
-            console.log('💾 QR data stored locally for later sync');
-        }
-        
-    } catch (error) {
-        console.error('Error storing QR data locally:', error);
-    }
-}
-
-// ----- Extract QR Data from Code -----
-function extractQRDataFromCode(codeValue) {
-    let data = {
-        firstName: '',
-        lastName: '',
-        carrierCode: '',
-        destination: '',
-        origin: '',
-        flightNumber: '',
-        seatNumber: '',
-        cabinCode: '',
-        secNumber: '',
-        ffpOwner: '',
-        ffpNumber: '',
-        ffpTier: '',
-        originalTier: '',
-        guestCategory: 'Guest',
-        paxType: 'Adult',
-        cabin: 'Economy',
-        flightDate: getCurrentDate(),
-        originalCode: codeValue,
-        uniqueKey: generateUniqueKeyFromCode(codeValue)
-    };
-    
-    codeValue = codeValue.toUpperCase().replace(/\s+/g, ' ').trim();
-    
-    const mlePos = codeValue.indexOf('MLE');
-    
-    if (mlePos !== -1) {
-        const textBeforeMLE = codeValue.substring(0, mlePos);
-        let processedText = '';
-        
-        if (textBeforeMLE.length >= 8) {
-            processedText = textBeforeMLE.substring(2, textBeforeMLE.length - 7);
-        } else if (textBeforeMLE.length > 2) {
-            processedText = textBeforeMLE.substring(2);
-        }
-        
-        if (processedText.includes('/')) {
-            const nameParts = processedText.split('/');
-            if (nameParts.length >= 2) {
-                data.lastName = nameParts[0].trim();
-                data.firstName = nameParts[1].trim();
-            } else if (nameParts.length === 1) {
-                data.lastName = nameParts[0].trim();
-            }
-        } else {
-            data.lastName = processedText.trim();
-        }
-        
-        let wordStart = mlePos;
-        let wordEnd = mlePos + 3;
-        
-        while (wordStart > 0 && /[A-Z0-9]/.test(codeValue[wordStart - 1])) {
-            wordStart--;
-        }
-        
-        while (wordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[wordEnd])) {
-            wordEnd++;
-        }
-        
-        const mleWord = codeValue.substring(wordStart, wordEnd);
-        
-        data.carrierCode = mleWord.length >= 2 ? mleWord.substring(mleWord.length - 2) : mleWord;
-        
-        if (mleWord.length >= 5) {
-            data.destination = mleWord.substring(3, mleWord.length - 2);
-        }
-        
-        if (mleWord.length >= 3) {
-            data.origin = mleWord.substring(0, 3);
-        }
-        
-        let nextWordStart = wordEnd;
-        
-        while (nextWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[nextWordStart])) {
-            nextWordStart++;
-        }
-        
-        let nextWordEnd = nextWordStart;
-        while (nextWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[nextWordEnd])) {
-            nextWordEnd++;
-        }
-        
-        if (nextWordStart < codeValue.length) {
-            data.flightNumber = codeValue.substring(nextWordStart, nextWordEnd);
-        }
-        
-        let seatWordStart = nextWordEnd;
-        
-        while (seatWordStart < codeValue.length && !/[A-Z0-9]/.test(codeValue[seatWordStart])) {
-            seatWordStart++;
-        }
-        
-        let seatWordEnd = seatWordStart;
-        while (seatWordEnd < codeValue.length && /[A-Z0-9]/.test(codeValue[seatWordEnd])) {
-            seatWordEnd++;
-        }
-        
-        if (seatWordStart < codeValue.length) {
-            const seatWord = codeValue.substring(seatWordStart, seatWordEnd);
-            
-            console.log("Seat word:", seatWord);
-            
-            if (seatWord.length >= 9) {
-                const rowPart = seatWord.substring(5, seatWord.length - 5);
-                const seatLetter = seatWord.substring(seatWord.length - 5, seatWord.length - 4);
-                data.seatNumber = rowPart + seatLetter;
-                console.log("Seat number extracted:", data.seatNumber);
-            }
-            
-            if (seatWord.length >= 4) {
-                data.cabinCode = seatWord.substring(3, 4);
-            }
-            
-            if (seatWord.length >= 4) {
-                const last4Chars = seatWord.substring(seatWord.length - 4);
-                if (/^\d{4}$/.test(last4Chars)) {
-                    data.secNumber = last4Chars.substring(1);
-                } else {
-                    let digitsEnd = seatWord.length;
-                    let digitsStart = seatWord.length - 1;
-                    
-                    while (digitsStart >= 0 && /\d/.test(seatWord[digitsStart])) {
-                        digitsStart--;
-                    }
-                    
-                    digitsStart++;
-                    
-                    if (digitsStart < digitsEnd) {
-                        const secDigits = seatWord.substring(digitsStart, digitsEnd);
-                        if (secDigits.length >= 4) {
-                            data.secNumber = secDigits.substring(1);
-                        } else {
-                            data.secNumber = secDigits;
-                        }
-                    }
-                }
-                console.log("SEC number extracted:", data.secNumber);
-            }
-        }
-        
-        const words = codeValue.split(' ').filter(word => word.trim() !== '');
-        let ffpOwner = '';
-        let ffpNumber = '';
-        let ffpTier = '';
-        let originalTier = '';
-        
-        if (words.length >= 2) {
-            const lastWord = words[words.length - 1];
-            const secondLastWord = words[words.length - 2];
-            
-            if (secondLastWord.length < 4) {
-                ffpOwner = '';
-                ffpNumber = '';
-                ffpTier = '';
-                originalTier = '';
-            } else {
-                ffpNumber = secondLastWord;
-                
-                if (words.length >= 3) {
-                    const thirdLastWord = words[words.length - 3];
-                    if (thirdLastWord.length === 2 && /^[A-Z]{2}$/.test(thirdLastWord)) {
-                        ffpOwner = thirdLastWord;
-                    }
-                }
-                
-                if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
-                    originalTier = lastWord.toUpperCase();
-                    // Map tier code to letter (P/G/S)
-                    if (originalTier === 'N1') {
-                        ffpTier = 'P';
-                    } else if (originalTier === 'N2') {
-                        ffpTier = 'G';
-                    } else if (originalTier === 'N3') {
-                        ffpTier = 'S';
-                    } else if (originalTier === 'N0') {
-                        ffpTier = 'N0';
-                    } else {
-                        ffpTier = originalTier;
-                    }
-                }
-            }
-        }
-        
-        data.ffpOwner = ffpOwner;
-        data.ffpNumber = ffpNumber;
-        data.ffpTier = ffpTier;
-        data.originalTier = originalTier;
-        
-        switch(data.cabinCode) {
-            case 'J':
-                data.cabin = 'Business';
-                break;
-            case 'Y':
-                data.cabin = 'Economy';
-                break;
-            case 'F':
-                data.cabin = 'First';
-                break;
-            default:
-                data.cabin = 'Economy';
-        }
-        
-        const cabinCodeUpper = (data.cabinCode || '').toUpperCase();
-        const cabinNameLower = (data.cabin || '').toLowerCase();
-        const isEconomy = (cabinCodeUpper === 'Y' || cabinNameLower.includes('economy'));
-        
-        const ffpTierUpper = (data.ffpTier || '').toUpperCase();
-        const isN0Tier = ffpTierUpper === 'N0' || ffpTierUpper.includes('N0');
-        const isTierEmpty = !data.ffpTier || data.ffpTier.trim() === '';
-        const isFFPNumberEmpty = !data.ffpNumber || data.ffpNumber.trim() === '';
-        
-        if (isEconomy && (isN0Tier || isTierEmpty || isFFPNumberEmpty)) {
-            data.guestCategory = 'Guest';
-        } else if (isEconomy && data.ffpNumber && data.ffpNumber.trim() !== '') {
-            data.guestCategory = 'Primary';
-        } else {
-            data.guestCategory = 'Primary';
-        }
-        
-        const carrierUpper = (data.carrierCode || '').toUpperCase();
-        const tierUpper = (data.ffpTier || '').toUpperCase();
-        const originalTierUpper = (data.originalTier || '').toUpperCase();
-        
-        if (carrierUpper === 'QR') {
-            const isExactlyN0 = tierUpper === 'N0' || originalTierUpper === 'N0';
-            const isEmptyTier = (tierUpper === '' || tierUpper === null || tierUpper === undefined) && 
-                              (originalTierUpper === '' || originalTierUpper === null || originalTierUpper === undefined);
-            
-            if (isExactlyN0 || isEmptyTier) {
-                data.ffpOwner = '';
-                data.ffpNumber = '';
-                data.ffpTier = '';
-            }
-        }
-    }
-    
-    return data;
-}
-
-// ----- User Authentication -----
-const userData = JSON.parse(localStorage.getItem("loggedInUser"));
-
-if (userData) {
-    userDisplay.textContent = userData.name || userData.username;
-} else {
-    window.location.href = "login.html";
-}
-
-// ----- Initialize Shift Firebase -----
-function initializeShiftFirebase() {
-    try {
-        console.log("Initializing Shift Firebase...");
-        
-        if (typeof shiftFirebaseConfig === 'undefined') {
-            console.error("❌ Shift Firebase config not found in fireshift.js");
-            showAlert("Shift system configuration not found", true);
-            return false;
-        }
-        
-        console.log("Using Firebase config for project:", shiftFirebaseConfig.projectId);
-        
-        let app;
-        try {
-            app = firebase.app('shiftSystem');
-            console.log("✅ Using existing Shift Firebase app");
-        } catch (e) {
-            app = firebase.initializeApp(shiftFirebaseConfig, 'shiftSystem');
-            console.log("✅ Created new Shift Firebase app");
-        }
-        
-        shiftDb = firebase.firestore(app);
-        shiftCacheInitialized = true;
-        console.log("✅ Shift Firestore initialized successfully");
-        
-        return true;
-        
-    } catch (error) {
-        console.error("❌ Error initializing shift Firebase:", error);
-        showAlert("Failed to initialize shift system", true);
-        return false;
-    }
-}
-
-// ----- Check for Open Shift -----
-function checkForOpenShift(shiftData) {
-    console.log("🔍 Checking for open shift in data...");
-    
-    let result = {
-        success: false,
-        isActive: false,
-        shiftName: "No Shift Open",
-        shiftType: "",
-        openTime: "",
-        details: {}
-    };
-    
-    if (!shiftData) {
-        return result;
-    }
-    
-    if (shiftData.morning && shiftData.morning.status === 'open') {
-        result.success = true;
-        result.isActive = true;
-        result.shiftName = "Morning Shift";
-        result.shiftType = "morning";
-        result.openTime = shiftData.morning.open || "";
-        result.details = shiftData.morning;
-        console.log("✓ Morning shift is OPEN");
-        return result;
-    }
-    
-    if (shiftData.evening && shiftData.evening.status === 'open') {
-        result.success = true;
-        result.isActive = true;
-        result.shiftName = "Evening Shift";
-        result.shiftType = "evening";
-        result.openTime = shiftData.evening.open || "";
-        result.details = shiftData.evening;
-        console.log("✓ Evening shift is OPEN");
-        return result;
-    }
-    
-    if (shiftData.morning || shiftData.evening) {
-        result.success = true;
-        result.shiftName = "Shift Not Open";
-        console.log("⚠️ Shift exists but not open");
-    }
-    
-    return result;
-}
-
-// ----- Fetch Current Open Shift -----
-async function fetchCurrentOpenShift() {
-    console.log("🌐 Fetching current open shift...");
-    
-    try {
-        refreshShiftBtn.disabled = true;
-        refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        
-        if (!shiftCacheInitialized) {
-            if (!initializeShiftFirebase()) {
-                showNoShiftMessage();
-                refreshShiftBtn.disabled = false;
-                refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-                return;
-            }
-        }
-        
-        const now = Date.now();
-        if (shiftCache.data && (now - shiftCache.timestamp < shiftCache.ttl)) {
-            console.log("📊 Using cached shift data");
-            const shiftCheck = checkForOpenShift(shiftCache.data);
-            if (shiftCheck.isActive) {
-                updateShiftUI(shiftCheck, shiftCache.dateKey, shiftCache.dateKey !== getCurrentDate());
-                refreshShiftBtn.disabled = false;
-                refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-                return;
-            }
-        }
-        
-        const maldivesNow = getMaldivesTime();
-        const todayDateForYYYYMMDD = formatDateToYYYYMMDD(maldivesNow);
-        const todayDateForDocId = formatDateForDocumentId(maldivesNow);
-        const todayDocId = `shift_${todayDateForDocId}`;
-        
-        console.log("📅 Today's date:", todayDateForYYYYMMDD);
-        console.log("📄 Document ID:", todayDocId);
-        
-        let shiftData = null;
-        let foundDate = todayDateForYYYYMMDD;
-        let shiftCheck = null;
-        let isFromPreviousDay = false;
-        
-        try {
-            const todayShiftDoc = await shiftDb.collection("shifts").doc(todayDocId).get();
-            
-            if (todayShiftDoc.exists) {
-                shiftData = todayShiftDoc.data();
-                console.log("✅ Found today's shift document");
-                console.log("Shift data:", shiftData);
-                
-                shiftCheck = checkForOpenShift(shiftData);
-                
-                if (shiftCheck.isActive) {
-                    console.log("🎉 Active shift found for today");
-                } else {
-                    console.log("⚠️ No active shift today, checking previous day...");
-                    const previousResult = await checkPreviousDayForOpenShift();
-                    if (previousResult.success && previousResult.shiftCheck.isActive) {
-                        shiftData = previousResult.shiftData;
-                        foundDate = previousResult.foundDate;
-                        shiftCheck = previousResult.shiftCheck;
-                        isFromPreviousDay = true;
-                        console.log(`✅ Found open shift from ${foundDate} (previous day)`);
-                    }
-                }
-            } else {
-                console.log("⚠️ No shift document for today, checking previous day...");
-                const previousResult = await checkPreviousDayForOpenShift();
-                if (previousResult.success && previousResult.shiftCheck.isActive) {
-                    shiftData = previousResult.shiftData;
-                    foundDate = previousResult.foundDate;
-                    shiftCheck = previousResult.shiftCheck;
-                    isFromPreviousDay = true;
-                    console.log(`✅ Found open shift from ${foundDate} (previous day)`);
-                }
-            }
-        } catch (error) {
-            console.error("❌ Error fetching shift document:", error);
-            showAlert("Error fetching shift data", true);
-            refreshShiftBtn.disabled = false;
-            refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-            return;
-        }
-        
-        if (!shiftCheck || !shiftCheck.isActive) {
-            console.log("❌ No active shift found anywhere");
-            showNoShiftMessage();
-            showAlert("No active shift found. Please open a shift in Shift Management.", true);
-            refreshShiftBtn.disabled = false;
-            refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-            return;
-        }
-        
-        shiftCache.data = shiftData;
-        shiftCache.timestamp = now;
-        shiftCache.dateKey = foundDate;
-        shiftCache.shiftType = shiftCheck.shiftType;
-        shiftCache.openTime = shiftCheck.openTime;
-        
-        updateShiftUI(shiftCheck, foundDate, isFromPreviousDay);
-        
-        console.log("✅ Shift loaded successfully");
-        
-    } catch (error) {
-        console.error("❌ Error fetching shift data:", error);
-        showNoShiftMessage();
-        showAlert("Error loading shift information: " + error.message, true);
-    } finally {
-        refreshShiftBtn.disabled = false;
-        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-    }
-}
-
-// ----- Check Previous Day for Open Shift -----
-async function checkPreviousDayForOpenShift() {
-    try {
-        const todayMaldives = getMaldivesTime();
-        const yesterday = new Date(todayMaldives);
-        yesterday.setDate(todayMaldives.getDate() - 1);
-        
-        const yesterdayForDocId = formatDateForDocumentId(yesterday);
-        const yesterdayDocId = `shift_${yesterdayForDocId}`;
-        const yesterdayDate = formatDateToYYYYMMDD(yesterday);
-        
-        console.log(`🔍 Checking previous day: ${yesterdayDocId} (${yesterdayDate})`);
-        
-        const yesterdayDoc = await shiftDb.collection("shifts").doc(yesterdayDocId).get();
-        
-        if (yesterdayDoc.exists) {
-            const shiftData = yesterdayDoc.data();
-            console.log(`✅ Found shift document for previous day`);
-            
-            const shiftCheck = checkForOpenShift(shiftData);
-            
-            if (shiftCheck.isActive) {
-                return {
-                    success: true,
-                    shiftData: shiftData,
-                    foundDate: yesterdayDate,
-                    foundDateForDocId: yesterdayForDocId,
-                    shiftCheck: shiftCheck,
-                    isFromPreviousDay: true
-                };
-            } else {
-                console.log("⚠️ Previous day shift exists but not open");
-            }
-        } else {
-            console.log("⚠️ No shift document for previous day");
-        }
-        
-        return {
-            success: false,
-            message: "No open shift found in previous day"
-        };
-        
-    } catch (error) {
-        console.error("❌ Error checking previous day:", error);
-        return {
-            success: false,
-            message: "Error: " + error.message
-        };
-    }
-}
-
-// ----- Update Shift UI -----
-function updateShiftUI(shiftCheck, foundDate, isFromPreviousDay = false) {
-    currentShiftType = shiftCheck.shiftType;
-    currentShiftDate = foundDate;
-    currentShiftStatus = 'open';
-    
-    const displayDate = formatDateForDisplay(foundDate);
-    
-    let dateIndicator = "";
-    if (isFromPreviousDay) {
-        const foundDateObj = new Date(foundDate);
-        const todayDateStr = getCurrentDate();
-        const todayDateObj = new Date(todayDateStr);
-        const daysDiff = Math.floor((todayDateObj - foundDateObj) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff === 1) {
-            dateIndicator = " (Yesterday)";
-        } else if (daysDiff > 1) {
-            dateIndicator = ` (${daysDiff} days ago)`;
-        }
-    }
-    
-    shiftDisplay.textContent = shiftCheck.shiftName;
-    dateDisplay.textContent = displayDate + dateIndicator;
-    
-    passengerEntryCard.classList.remove("disabled");
-    
-    saveCurrentShiftToLocalStorage(shiftCheck.shiftName, 'open', foundDate, isFromPreviousDay);
-    
-    updateExistingEntriesDate();
-    
-    showAlert(`${shiftCheck.shiftName} is OPEN - Date: ${displayDate}`, false);
-    
-    console.log("✅ Shift UI updated:", {
-        shift: shiftCheck.shiftName,
-        date: foundDate,
-        isFromPreviousDay: isFromPreviousDay
-    });
-}
-
-// ----- Save Shift to LocalStorage -----
-function saveCurrentShiftToLocalStorage(shiftName, shiftStatus, foundDate, isFromPreviousDay = false) {
-    const shiftInfo = {
-        shiftName: shiftName,
-        shiftType: currentShiftType,
-        shiftDate: foundDate,
-        shiftStatus: shiftStatus,
-        isFromPreviousDay: isFromPreviousDay,
-        lastUpdated: getMaldivesDateTimeISO(),
-        fetchedAt: getCurrentTime()
-    };
-    
-    localStorage.setItem('currentShiftInfo', JSON.stringify(shiftInfo));
-    console.log("💾 Shift saved to localStorage:", shiftInfo);
-}
-
-// ----- Load Shift from LocalStorage -----
-function loadCurrentShiftFromLocalStorage() {
-    try {
-        const savedShift = localStorage.getItem('currentShiftInfo');
-        if (savedShift) {
-            const shiftInfo = JSON.parse(savedShift);
-            
-            const lastUpdated = new Date(shiftInfo.lastUpdated);
-            const now = getMaldivesTime();
-            const minutesDiff = (now - lastUpdated) / (1000 * 60);
-            
-            if (minutesDiff < 30 && shiftInfo.shiftStatus === 'open') { // Increased from 10 to 30 minutes
-                console.log("📂 Loading shift from localStorage (fresh cache)");
-                
-                currentShiftType = shiftInfo.shiftType;
-                currentShiftDate = shiftInfo.shiftDate;
-                currentShiftStatus = shiftInfo.shiftStatus;
-                
-                let displayDate = formatDateForDisplay(shiftInfo.shiftDate);
-                if (shiftInfo.isFromPreviousDay) {
-                    const shiftDateObj = new Date(shiftInfo.shiftDate);
-                    const todayDateStr = getCurrentDate();
-                    const todayDateObj = new Date(todayDateStr);
-                    const daysDiff = Math.floor((todayDateObj - shiftDateObj) / (1000 * 60 * 60 * 24));
-                    
-                    if (daysDiff === 1) {
-                        displayDate += " (Yesterday)";
-                    } else if (daysDiff > 1) {
-                        displayDate += ` (${daysDiff} days ago)`;
-                    }
-                }
-                
-                shiftDisplay.textContent = shiftInfo.shiftName;
-                dateDisplay.textContent = displayDate;
-                passengerEntryCard.classList.remove("disabled");
-                
-                console.log("✅ Shift loaded from cache:", shiftInfo.shiftName);
-                return true;
-            } else {
-                console.log("🔄 LocalStorage cache expired, fetching fresh data");
-                localStorage.removeItem('currentShiftInfo');
-            }
-        }
-    } catch (error) {
-        console.error("❌ Error loading shift from localStorage:", error);
-        localStorage.removeItem('currentShiftInfo');
-    }
-    return false;
-}
-
-// ----- Show No Shift Message -----
-function showNoShiftMessage() {
-    shiftDisplay.textContent = "No Shift";
-    dateDisplay.textContent = "-";
-    passengerEntryCard.classList.add("disabled");
-    currentShiftType = null;
-    currentShiftDate = null;
-    currentShiftStatus = 'not_started';
-    
-    console.log("⚠️ No active shift - system disabled");
-}
-
-// ----- Update Existing Entries Date -----
-function updateExistingEntriesDate() {
-    if (!currentShiftType || !currentShiftDate) return;
-    
-    let data = JSON.parse(localStorage.getItem('codesData') || '[]');
-    
-    let updated = false;
-    data = data.map(entry => {
-        if (!entry.approved && entry.date !== currentShiftDate) {
-            entry.date = currentShiftDate;
-            entry.shift = currentShiftType;
-            updated = true;
-        }
-        return entry;
-    });
-    
-    if (updated) {
-        localStorage.setItem('codesData', JSON.stringify(data));
-        renderEntries();
-        console.log("📝 Updated existing entries to current shift date");
-    }
-}
-
-// ----- Refresh Shift Data -----
-async function refreshShiftData() {
-    console.log("🔄 Manual shift refresh requested");
-    
-    try {
-        refreshShiftBtn.disabled = true;
-        refreshShiftBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
-        
-        shiftCache.data = null;
-        shiftCache.timestamp = 0;
-        localStorage.removeItem('currentShiftInfo');
-        
-        await fetchCurrentOpenShift();
-        
-        console.log("✅ Shift data refreshed");
-        
-    } catch (error) {
-        console.error("❌ Error refreshing shift:", error);
-        showAlert("Error refreshing shift data", true);
-    } finally {
-        refreshShiftBtn.disabled = false;
-        refreshShiftBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
-    }
-}
-
-// ----- FIXED: Approve Entry with new FQTV tier mapping -----
-async function approveEntry(index) {
-    if (!currentShiftType || currentShiftStatus !== 'open') {
-        showAlert('No active shift or shift not open!', true);
-        return;
-    }
-    
-    if (isApproving) {
-        return;
-    }
-    
-    isApproving = true;
-    
-    try {
-        let data = JSON.parse(localStorage.getItem('codesData')||'[]');
-        const entry = data[index];
-        
-        if (!entry) {
-            isApproving = false;
-            return;
-        }
-
-        // Auto-correct seat for restricted airlines
-        let correctedSeat = entry.seat;
-        if (isPaxRestrictedAirline(entry.flight)) {
-            correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, correctedSeat);
-            if (correctedSeat !== entry.seat) {
-                entry.seat = correctedSeat;
-                localStorage.setItem('codesData', JSON.stringify(data));
-            }
-        }
-
-        // Validate seat-pax match after correction
-        const seatPaxValidation = validateSeatPaxMatch(correctedSeat, entry.numPax);
-        if (!seatPaxValidation.isValid) {
-            showAlert(`Cannot approve: ${seatPaxValidation.message}`, true);
-            isApproving = false;
-            return;
-        }
-
-        // Validate pax count before approval
-        const paxValidation = validatePaxCount(entry.flight, correctedSeat, entry.numPax);
-        if (!paxValidation.isValid) {
-            showAlert(`Cannot approve: ${paxValidation.message}`, true);
-            isApproving = false;
-            return;
-        }
-
-        if (isFqtvRequired(entry.class, entry.fqtv)) {
-            showAlert(`Cannot approve: Economy Class passenger requires FQTV card or primary guest seat`, true);
-            isApproving = false;
-            return;
-        }
-
-        const flightUpper = entry.flight.toUpperCase();
-        const nameUpper = entry.name.toUpperCase();
-        const seatUpper = correctedSeat.toUpperCase();
-        
-        const duplicateCheck = checkDuplicateInCache(entry.flight, correctedSeat, currentShiftDate, entry.name);
-        if (duplicateCheck.isDuplicate) {
-            showAlert(duplicateCheck.message, true);
-            isApproving = false;
-            
-            data.splice(index, 1);
-            localStorage.setItem('codesData', JSON.stringify(data));
-            renderEntries();
-            return;
-        }
-        
-        // FIXED: Use the new formatFqtvWithTier function
-        let processedFqtv = '';
-        if (entry.fqtv && entry.fqtv.trim() !== '') {
-            processedFqtv = formatFqtvWithTier(entry.fqtv, entry.flight);
-        }
-
-        const approvedEntry = {
-            airline: airlines[entry.airline] || entry.airline,
-            approved: true,
-            checkinTime: "",
-            date: currentShiftDate,
-            flightNo: flightUpper,
-            fqtv: processedFqtv,
-            name: entry.name,
-            numPax: Number(entry.numPax) || 0,
-            remarks: entry.remarks || "-",
-            seatNo: seatUpper,
-            class: entry.class || "-",
-            pnr: entry.pnr,
-            serial: entry.serial || "-",
-            shift: currentShiftType,
-            timeAdded: getCurrentTime(),
-            approvedBy: userData ? userData.name : 'Unknown',
-            approvedAt: getMaldivesDateTimeISO(),
-            localId: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            synced: false,
-            syncedAt: null,
-            originalEntry: entry
-        };
-
-        let docName;
-        const timestamp = Date.now();
-        const randomSuffix = Math.random().toString(36).substring(2, 8);
-        
-        if (flightUpper.startsWith('SQ')) {
-            const cleanName = nameUpper.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 30);
-            docName = `${approvedEntry.date}_${flightUpper}_${cleanName}_${timestamp}_${randomSuffix}`;
-        } else {
-            docName = `${approvedEntry.date}_${flightUpper}_${seatUpper}_${timestamp}`;
-        }
-        
-        approvedEntry.docName = docName;
-        
-        // Save to localStorage first
-        saveToApprovedCache(entry.flight, correctedSeat, approvedEntry.date, entry.name, docName);
-        
-        let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-        approvedLocalData.push(approvedEntry);
-        localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-        
-        data.splice(index, 1);
-        localStorage.setItem('codesData', JSON.stringify(data));
-        
-        renderEntries();
-        
-        showAlert(`Entry approved and saved to local storage!`, false);
-        
-        // Then save to Firebase in background
-        if (window.passengerDb) {
-            addToBackgroundSaveQueue(approvedEntry);
-        } else {
-            showAlert("Approved locally, will sync to server when connection available", true);
-        }
-        
-    } catch (e) {
-        console.error('Error in approval:', e);
-        showAlert('Error: ' + e.message, true);
-    } finally {
-        isApproving = false;
-    }
-}
-
-// ----- Background Save Queue Management -----
-function addToBackgroundSaveQueue(approvedEntry) {
-    backgroundSaveQueue.push(approvedEntry);
-    
-    if (!isBackgroundSaving) {
-        processBackgroundSaveQueue();
-    }
-}
-
-async function processBackgroundSaveQueue() {
-    if (isBackgroundSaving || backgroundSaveQueue.length === 0) return;
-    
-    isBackgroundSaving = true;
-    
-    while (backgroundSaveQueue.length > 0) {
-        const approvedEntry = backgroundSaveQueue[0];
-        
-        try {
-            // Remove the synced field before saving to Firebase
-            const firebaseEntry = { ...approvedEntry };
-            delete firebaseEntry.synced;
-            delete firebaseEntry.syncedAt;
-            delete firebaseEntry.localId;
-            delete firebaseEntry.originalEntry;
-            
-            await window.passengerDb.collection('passengers').doc(approvedEntry.docName).set(firebaseEntry);
-            console.log(`✅ Firebase save completed: ${approvedEntry.docName}`);
-            
-            // Mark as synced in localStorage
-            markAsSyncedInLocalStorage(approvedEntry.localId);
-            backgroundSaveQueue.shift();
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-            console.error('❌ Firebase save failed:', error);
-            const failedEntry = backgroundSaveQueue.shift();
-            backgroundSaveQueue.push(failedEntry);
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    }
-    
-    isBackgroundSaving = false;
-}
-
-function markAsSyncedInLocalStorage(localId) {
-    try {
-        let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-        
-        approvedLocalData = approvedLocalData.map(item => {
-            if (item.localId === localId) {
-                return {
-                    ...item,
-                    synced: true,
-                    syncedAt: getMaldivesDateTimeISO()
-                };
-            }
-            return item;
-        });
-        
-        localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-        console.log(`✅ Marked entry ${localId} as synced in localStorage`);
-    } catch (error) {
-        console.error('Error marking as synced:', error);
-    }
-}
-
-// ----- Load Approved Entries Cache -----
-function loadApprovedEntriesCache() {
-    try {
-        const cacheData = localStorage.getItem('approvedEntriesCache');
-        if (cacheData) {
-            approvedEntriesCache = JSON.parse(cacheData);
-            console.log(`✅ Loaded ${Object.keys(approvedEntriesCache).length} approved entries from cache`);
-        }
-    } catch (error) {
-        console.error('❌ Error loading approved entries cache:', error);
-        approvedEntriesCache = {};
-    }
-}
-
-// ----- Save Approved Entry to Cache -----
-function saveToApprovedCache(flight, seat, date, name = null, docId = null) {
-    const flightUpper = flight.toUpperCase();
-    const nameUpper = name ? name.toUpperCase() : '';
-    const seatUpper = seat ? seat.toUpperCase() : '';
-    const timestamp = Date.now();
-    
-    if (flightUpper.startsWith('SQ')) {
-        if (nameUpper) {
-            const uniqueKey = `${date}_SQ_${nameUpper}_${timestamp}`;
-            approvedEntriesCache[uniqueKey] = {
-                date: date,
-                flight: flightUpper,
-                name: nameUpper,
-                seat: seatUpper || '',
-                cachedAt: getMaldivesDateTimeISO(),
-                docId: docId,
-                timestamp: timestamp
-            };
-        }
-    } else {
-        const seatKey = `${date}_${flightUpper}_${seatUpper}`;
-        approvedEntriesCache[seatKey] = {
-            date: date,
-            flight: flightUpper,
-            seat: seatUpper,
-            cachedAt: getMaldivesDateTimeISO(),
-            docId: docId
-        };
-    }
-    
-    localStorage.setItem('approvedEntriesCache', JSON.stringify(approvedEntriesCache));
-}
-
-// ----- Check Duplicate in Cache -----
-function checkDuplicateInCache(flight, seat, date, name = null) {
-    const flightUpper = flight.toUpperCase();
-    const nameUpper = name ? name.toUpperCase() : '';
-    const seatUpper = seat ? seat.toUpperCase() : '';
-    
-    if (flightUpper.startsWith('SQ')) {
-        if (nameUpper) {
-            for (const key in approvedEntriesCache) {
-                const entry = approvedEntriesCache[key];
-                
-                if (entry.date !== date) continue;
-                if (entry.flight !== flightUpper) continue;
-                if (entry.name !== nameUpper) continue;
-                
-                return { 
-                    isDuplicate: true, 
-                    message: `${name} is already approved for flight ${flight} today`
-                };
-            }
-        }
-        return { isDuplicate: false };
-    }
-    
-    const seatKey = `${date}_${flightUpper}_${seatUpper}`;
-    if (approvedEntriesCache[seatKey]) {
-        return { 
-            isDuplicate: true, 
-            message: `Seat ${seat} is already approved for flight ${flight}`
-        };
-    }
-    
-    return { isDuplicate: false };
-}
-
-// ----- Clear input fields -----
-function clearInputFields() {
-    nameInput.value = '';
-    pnrInput.value = '';
-    flightInput.value = '';
-    airlineSelect.value = '';
-    seatInput.value = '';
-    classInput.value = '';
-    numPaxInput.value = '1';
-    fqtvInput.value = '';
-    serialInput.value = '';
-    remarksInput.value = '';
-    qrStatus.innerHTML = '';
-    seatWarning.style.display = 'none';
-    
-    // Reset last values
-    lastSeatValue = '';
-    lastPaxValue = '1';
-    
-    clearNotification.classList.add('show');
-    setTimeout(() => {
-        clearNotification.classList.remove('show');
-    }, 3000);
-}
-
-// ----- Check if FQTV is required -----
-function isFqtvRequired(classValue, fqtvValue) {
-    return classValue && classValue.toUpperCase() === 'Y' && 
-          (!fqtvValue || fqtvValue.trim() === '');
-}
-
-// ----- Duplicate Entry Check -----
-function isDuplicateEntry(entry) {
-    const data = JSON.parse(localStorage.getItem('codesData') || '[]');
-    const flightUpper = entry.flight.toUpperCase();
-    const nameUpper = entry.name.toUpperCase();
-    const seatUpper = entry.seat.toUpperCase();
-    
-    if (flightUpper.startsWith('SQ')) {
-        return data.some(existingEntry => 
-            existingEntry.date === currentShiftDate && 
-            existingEntry.flight.toUpperCase() === flightUpper && 
-            existingEntry.name.toUpperCase() === nameUpper &&
-            !existingEntry.approved
-        );
-    }
-    
-    return data.some(existingEntry => 
-        existingEntry.date === currentShiftDate && 
-        existingEntry.flight.toUpperCase() === flightUpper && 
-        existingEntry.name.toUpperCase() === nameUpper &&
-        existingEntry.seat.toUpperCase() === seatUpper &&
-        !existingEntry.approved
-    );
-}
-
-// ----- Save Entry -----
-async function saveEntry(entry){
-    if (!currentShiftType || currentShiftStatus !== 'open') {
-        showAlert('No active shift or shift not open!', true);
-        return;
-    }
-    
-    entry.date = currentShiftDate;
-    entry.shift = currentShiftType;
-    
-    // Auto-correct seat for restricted airlines
-    if (isPaxRestrictedAirline(entry.flight)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
-        if (correctedSeat !== entry.seat) {
-            entry.seat = correctedSeat;
-            seatInput.value = correctedSeat;
-        }
-    }
-    
-    // Validate seat-pax match
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-    if (!seatPaxValidation.isValid) {
-        showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
-        // Auto-correct pax
-        entry.numPax = seatPaxValidation.calculatedPax;
-        numPaxInput.value = seatPaxValidation.calculatedPax;
-        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-    }
-    
-    // Check for restricted airlines
-    if (isPaxRestrictedAirline(entry.flight)) {
-        if (entry.numPax !== 1) {
-            showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
-            entry.numPax = 1;
-            numPaxInput.value = '1';
-        }
-    }
-    
-    // Validate pax count
-    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
-    if (!paxValidation.isValid) {
-        showAlert(`Cannot save: ${paxValidation.message}`, true);
-        return;
-    }
-    
-    if (isDuplicateEntry(entry)) {
-        console.log('Duplicate passenger detected, skipping save');
-        showAlert(`${entry.name} is already entered for flight ${entry.flight}`, true);
-        
-        codeInput.value = '';
-        codeInput.focus();
-        setTimeout(clearInputFields, 2000);
-        return;
-    }
-    
-    const flightUpper = entry.flight.toUpperCase();
-    const isQRFlight = flightUpper.startsWith('QR');
-    
-    let qrSaved = false;
-    if (isQRFlight) {
-        try {
-            qrSaved = await saveToQRSystem(entry.code);
-            if (qrSaved) {
-                console.log('✅ QR data saved successfully');
-            }
-        } catch (error) {
-            console.error('❌ Error saving QR data:', error);
-        }
-    }
-    
-    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
-    data.push(entry);
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    if (!renderTimeout) {
-        renderTimeout = setTimeout(() => {
-            renderEntries();
-            renderTimeout = null;
-        }, 50);
-    }
-
-    if (isQRFlight && qrSaved) {
-        showAlert(`Entry saved! ${entry.name} - QR data saved to both systems`, false);
-    } else if (isQRFlight && !qrSaved) {
-        showAlert(`Entry saved! ${entry.name} - QR system save failed`, true);
-    } else {
-        showAlert(`Entry saved! ${entry.name}`);
-    }
-
-    codeInput.value = '';
-    codeInput.focus();
-    setTimeout(clearInputFields, 2000);
-}
-
-// ----- Optimized Render Function -----
-async function renderEntries() {
-    if (isRendering) {
-        clearTimeout(renderTimeout);
-        renderTimeout = setTimeout(renderEntries, 100);
-        return;
-    }
-    
-    isRendering = true;
-    
-    try {
-        const data = JSON.parse(localStorage.getItem('codesData') || '[]').filter(e => !e.approved);
-        const dataString = JSON.stringify(data);
-        
-        if (dataString === lastRenderData && entriesList.children.length > 0) {
-            isRendering = false;
-            return;
-        }
-        
-        lastRenderData = dataString;
-        entriesCount.textContent = `${data.length} entries`;
-        
-        entriesList.innerHTML = '';
-        
-        const fragment = document.createDocumentFragment();
-        
-        for (const [i, e] of data.entries()) {
-            const tr = document.createElement('tr');
-            
-            const isFqtvNeeded = isFqtvRequired(e.class, e.fqtv);
-            const isQRFlight = e.flight.toUpperCase().startsWith('QR');
-            const isDelayEntry = e.isDelayCharge || false;
-            const isSQFlight = e.flight.toUpperCase().startsWith('SQ');
-            
-            // Check for seat-pax mismatch
-            const seatPaxValidation = validateSeatPaxMatch(e.seat, e.numPax);
-            if (!seatPaxValidation.isValid) {
-                tr.classList.add('seat-pax-mismatch');
-            }
-            
-            if (isFqtvNeeded) {
-                tr.classList.add('fqtv-required');
-            }
-            
-            if (isDelayEntry) {
-                tr.classList.add('delay-entry');
-            }
-            
-            if (isSQFlight) {
-                tr.classList.add('sq-flight');
-            }
-            
-            let fqtvDisplay = e.fqtv || '';
-            if (isFqtvNeeded && !fqtvDisplay) {
-                fqtvDisplay = '<span class="fqtv-warning">FQTV REQUIRED </span>';
-            }
-            
-            // REMOVED: FQTV Zoom button - only approve and delete buttons
-            const approveBtn = document.createElement('button');
-            approveBtn.className = 'action-btn';
-            approveBtn.innerHTML = '<i class="fas fa-check-circle"></i> Approve';
-            approveBtn.onclick = (function(index) {
-                return function(event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    approveEntry(index);
-                };
-            })(i);
-            
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'action-btn';
-            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
-            deleteBtn.onclick = (function(index) {
-                return function(event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    deleteEntry(index);
-                };
-            })(i);
-            
-            const actionsCell = document.createElement('td');
-            actionsCell.appendChild(approveBtn);
-            actionsCell.appendChild(deleteBtn); // Only approve and delete buttons
-            
-            // Don't add QR or DELAY to flight number
-            let flightDisplay = escapeHtml(e.flight);
-            
-            tr.innerHTML = `
-                <td class="editable-cell" contenteditable="true" data-field="name">${escapeHtml(e.name)}</td>
-                <td class="editable-cell" contenteditable="true" data-field="flight">${flightDisplay}</td>
-                <td class="editable-cell" contenteditable="true" data-field="seat">${escapeHtml(e.seat)}</td>
-                <td class="editable-cell" contenteditable="true" data-field="class">${escapeHtml(e.class || '')}</td>
-                <td class="editable-cell fqtv-field-zoom" contenteditable="true" data-field="fqtv" style="position: relative;">
-                    ${isFqtvNeeded && !e.fqtv ? '<span class="fqtv-warning">FQTV REQUIRED </span>' : escapeHtml(e.fqtv || '')}
-                </td>
-                <td class="editable-cell" contenteditable="true" data-field="numPax">${e.numPax}</td>
-                <td class="editable-cell" contenteditable="true" data-field="serial">${escapeHtml(e.serial)}</td>
-                <td class="editable-cell" contenteditable="true" data-field="remarks">${escapeHtml(e.remarks)}</td>
-                <td class="editable-cell" contenteditable="true" data-field="pnr">${escapeHtml(e.pnr)}</td>
-                <td>${formatDateForDisplay(e.date)}</td>
-                <td>${e.shift || currentShiftType || '-'}</td>
-            `;
-            
-            tr.appendChild(actionsCell);
-            fragment.appendChild(tr);
-        }
-        
-        entriesList.appendChild(fragment);
-        addAutoSaveListeners();
-        addSQFlightClickListeners();
-        addFqtvZoomListeners();
-        
-    } catch (error) {
-        console.error('Error rendering entries:', error);
-    } finally {
-        isRendering = false;
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function addAutoSaveListeners() {
-    const editableCells = document.querySelectorAll('.editable-cell');
-    editableCells.forEach(cell => {
-        // Remove existing blur listeners
-        cell.removeEventListener('blur', handleCellBlur);
-        
-        // Add new blur listener
-        cell.addEventListener('blur', handleCellBlur);
-    });
-}
-
-function handleCellBlur() {
-    const cell = this;
-    const field = cell.getAttribute('data-field');
-    const row = cell.closest('tr');
-    const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-    
-    // Don't auto-save FQTV field on blur (we use the zoom modal for that)
-    if (field === 'fqtv') {
-        return;
-    }
-    
-    // For other fields, save normally
-    saveEditedEntry(rowIndex);
-    
-    // If seat or flight was changed, show validation message
-    const cellIndex = Array.from(row.cells).indexOf(cell);
-    if (cellIndex === 1 || cellIndex === 2 || cellIndex === 5) { // flight, seat, or pax
-        const data = JSON.parse(localStorage.getItem('codesData')||'[]');
-        const entry = data[rowIndex];
-        
-        if (entry) {
-            // Auto-correct seat for restricted airlines
-            if (cellIndex === 2 && isPaxRestrictedAirline(entry.flight)) {
-                const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
-                if (correctedSeat !== entry.seat) {
-                    entry.seat = correctedSeat;
-                    row.cells[2].textContent = correctedSeat;
-                    localStorage.setItem('codesData', JSON.stringify(data));
-                }
-            }
-            
-            // Re-check seat-pax match
-            const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-            if (!seatPaxValidation.isValid) {
-                showAlert(seatPaxValidation.message, true);
-                // Update row styling
-                row.classList.add('seat-pax-mismatch');
-            } else {
-                row.classList.remove('seat-pax-mismatch');
-            }
-            
-            // Also check restricted airlines
-            if (isPaxRestrictedAirline(entry.flight) && entry.numPax !== 1) {
-                showAlert(`Flight ${entry.flight} allows only 1 passenger. Pax changed to 1.`, false, true);
-                entry.numPax = 1;
-                row.cells[5].textContent = '1';
-                localStorage.setItem('codesData', JSON.stringify(data));
-            }
-        }
-    }
-}
-
-function addFqtvZoomListeners() {
-    const fqtvCells = document.querySelectorAll('.editable-cell.fqtv-field-zoom');
-    fqtvCells.forEach((cell, index) => {
-        // Remove existing listeners
-        cell.removeEventListener('click', handleFqtvCellClick);
-        // Add new listener
-        cell.addEventListener('click', handleFqtvCellClick);
-    });
-}
-
-function addSQFlightClickListeners() {
-    const sqFlights = document.querySelectorAll('.sq-flight td:first-child');
-    sqFlights.forEach((cell, index) => {
-        // Remove existing listeners
-        cell.removeEventListener('click', handleSQNameClick);
-        // Add new listener
-        cell.addEventListener('click', handleSQNameClick);
-    });
-}
-
-function handleSQNameClick(event) {
-    const cell = event.target;
-    const row = cell.closest('tr');
-    const rowIndex = Array.from(row.parentNode.children).indexOf(row);
-    
-    if (rowIndex >= 0) {
-        const data = JSON.parse(localStorage.getItem('codesData') || '[]');
-        const entry = data[rowIndex];
-        
-        if (entry && entry.flight.toUpperCase().startsWith('SQ')) {
-            openNumericKeyboard(rowIndex, cell.textContent);
-        }
-    }
-}
-
-function openNumericKeyboard(rowIndex, currentValue) {
-    currentEditingRowIndex = rowIndex;
-    currentEditingField = 'name';
-    
-    // Try to extract numeric value from current name
-    const numericMatch = currentValue.match(/\d+/);
-    if (numericMatch) {
-        currentNumericValue = numericMatch[0];
-    } else {
-        currentNumericValue = '0';
-    }
-    
-    numericDisplay.textContent = currentNumericValue;
-    numericKeyboardModal.classList.add('show');
-    
-    // Focus the modal
-    setTimeout(() => {
-        numericDisplay.focus();
-    }, 100);
-}
-
-function saveEditedEntry(rowIndex) {
-    const data = JSON.parse(localStorage.getItem('codesData')||'[]');
-    const entry = data[rowIndex];
-    
-    if (!entry) return;
-    
-    const rows = entriesList.querySelectorAll('tr');
-    const targetRow = rows[rowIndex];
-    
-    if (!targetRow) return;
-    
-    // Get updated values
-    const updatedName = targetRow.cells[0].textContent.trim();
-    const updatedFlight = targetRow.cells[1].textContent.trim();
-    const updatedSeat = targetRow.cells[2].textContent.trim();
-    const updatedClass = targetRow.cells[3].textContent.trim();
-    
-    let fqtvValue = targetRow.cells[4].textContent.trim();
-    fqtvValue = fqtvValue.replace('FQTV REQUIRED', '').trim();
-    const updatedFqtv = fqtvValue;
-    
-    const updatedNumPax = Number(targetRow.cells[5].textContent.trim()) || 0;
-    const updatedSerial = targetRow.cells[6].textContent.trim();
-    const updatedRemarks = targetRow.cells[7].textContent.trim();
-    const updatedPnr = targetRow.cells[8].textContent.trim();
-    
-    // Check if seat or flight was changed
-    const seatChanged = entry.seat !== updatedSeat;
-    const flightChanged = entry.flight !== updatedFlight;
-    
-    // Update entry
-    entry.name = updatedName;
-    entry.flight = updatedFlight;
-    
-    // Auto-correct seat for restricted airlines
-    if (isPaxRestrictedAirline(updatedFlight)) {
-        entry.seat = autoCorrectSeatForRestrictedAirline(updatedFlight, updatedSeat);
-        targetRow.cells[2].textContent = entry.seat;
-    } else {
-        entry.seat = updatedSeat;
-    }
-    
-    entry.class = updatedClass;
-    entry.fqtv = updatedFqtv;
-    entry.serial = updatedSerial;
-    entry.remarks = updatedRemarks;
-    entry.pnr = updatedPnr;
-    
-    // Handle seat-pax validation
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, updatedNumPax);
-    if (!seatPaxValidation.isValid) {
-        // Auto-correct pax based on seat
-        entry.numPax = seatPaxValidation.calculatedPax;
-        targetRow.cells[5].textContent = seatPaxValidation.calculatedPax;
-        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-    } else {
-        entry.numPax = updatedNumPax;
-    }
-    
-    // Handle restricted airlines
-    if (isPaxRestrictedAirline(updatedFlight) && entry.numPax !== 1) {
-        entry.numPax = 1;
-        targetRow.cells[5].textContent = '1';
-        showAlert(`Flight ${updatedFlight} (${updatedFlight.substring(0, 2)}) allows only 1 passenger. Pax changed to 1.`, false, true);
-    }
-    
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    console.log("Entry saved:", {
-        name: entry.name,
-        flight: entry.flight,
-        seat: entry.seat,
-        pax: entry.numPax,
-        restricted: isPaxRestrictedAirline(entry.flight),
-        seatPaxMatch: seatPaxValidation.isValid
-    });
-}
-
-// ----- Numeric Keyboard Functions -----
-function initializeNumericKeyboard() {
-    // Add event listeners to numeric keys
-    document.querySelectorAll('.numeric-key[data-value]').forEach(key => {
-        key.addEventListener('click', () => {
-            const value = key.getAttribute('data-value');
-            handleNumericInput(value);
-        });
-    });
-    
-    // Backspace key
-    backspaceKey.addEventListener('click', () => {
-        handleBackspace();
-    });
-    
-    // Clear key
-    clearKey.addEventListener('click', () => {
-        handleClear();
-    });
-    
-    // Apply button
-    applyNumericBtn.addEventListener('click', () => {
-        applyNumericValue();
-    });
-    
-    // Close button
-    closeNumericBtn.addEventListener('click', () => {
-        closeNumericKeyboard();
-    });
-    
-    // Close modal button
-    closeNumericKeyboardBtn.addEventListener('click', () => {
-        closeNumericKeyboard();
-    });
-    
-    // Close modal when clicking outside
-    numericKeyboardModal.addEventListener('click', (e) => {
-        if (e.target === numericKeyboardModal) {
-            closeNumericKeyboard();
-        }
-    });
-    
-    // Keyboard support
-    document.addEventListener('keydown', (e) => {
-        if (numericKeyboardModal.classList.contains('show')) {
-            if (e.key >= '0' && e.key <= '9') {
-                handleNumericInput(e.key);
-            } else if (e.key === 'Backspace') {
-                handleBackspace();
-                e.preventDefault();
-            } else if (e.key === 'Enter') {
-                applyNumericValue();
-                e.preventDefault();
-            } else if (e.key === 'Escape') {
-                closeNumericKeyboard();
-                e.preventDefault();
-            }
-        }
-    });
-}
-
-function handleNumericInput(value) {
-    if (currentNumericValue === '0') {
-        currentNumericValue = value;
-    } else {
-        currentNumericValue += value;
-    }
-    numericDisplay.textContent = currentNumericValue;
-}
-
-function handleBackspace() {
-    if (currentNumericValue.length > 1) {
-        currentNumericValue = currentNumericValue.slice(0, -1);
-    } else {
-        currentNumericValue = '0';
-    }
-    numericDisplay.textContent = currentNumericValue;
-}
-
-function handleClear() {
-    currentNumericValue = '0';
-    numericDisplay.textContent = currentNumericValue;
-}
-
-function applyNumericValue() {
-    if (currentEditingRowIndex >= 0 && currentEditingField) {
-        const data = JSON.parse(localStorage.getItem('codesData')||'[]');
-        const entry = data[currentEditingRowIndex];
-        
-        if (entry) {
-            if (currentEditingField === 'name') {
-                // For SQ flights, we want to replace the name with just the number
-                entry.name = currentNumericValue;
-                
-                // Update the table cell
-                const rows = entriesList.querySelectorAll('tr');
-                if (rows[currentEditingRowIndex]) {
-                    rows[currentEditingRowIndex].cells[0].textContent = currentNumericValue;
-                }
-                
-                localStorage.setItem('codesData', JSON.stringify(data));
-                showAlert(`Name updated to number: ${currentNumericValue}`, false);
-            }
-        }
-    }
-    
-    closeNumericKeyboard();
-}
-
-function closeNumericKeyboard() {
-    numericKeyboardModal.classList.remove('show');
-    currentEditingRowIndex = -1;
-    currentEditingField = '';
-    currentNumericValue = '0';
-}
-
-// ----- Delete Entry -----
-function deleteEntry(index) {
-    if (isApproving) {
-        return;
-    }
-    
-    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
-    
-    if (index >= 0 && index < data.length) {
-        data.splice(index, 1);
-        localStorage.setItem('codesData', JSON.stringify(data));
-        renderEntries();
-        showAlert('Entry deleted successfully!');
-    }
-}
-
-// ----- Barcode Scanner Detection -----
-function handleScannerInput() {
-    if (isProcessing) return;
-    
-    const currentValue = codeInput.value;
-    
-    if (currentValue.length > lastValue.length + 5) {
-        isScannerActive = true;
-        scannerIndicator.classList.add('show');
-        
-        clearTimeout(scannerTimer);
-        scannerTimer = setTimeout(() => {
-            processScannerInput();
-        }, 100);
-    } 
-    else if (currentValue !== lastValue) {
-        if (isScannerActive) {
-            isScannerActive = false;
-            scannerIndicator.classList.remove('show');
-        }
-        
-        clearTimeout(scannerTimer);
-        scannerTimer = setTimeout(() => {
-            processManualInput();
-        }, 800);
-    }
-    
-    lastValue = currentValue;
-}
-
-function processScannerInput() {
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    scannerIndicator.classList.remove('show');
-    isScannerActive = false;
-    
-    parseCode();
-    const entry = {
-        date: currentShiftDate,
-        user: userDisplay.textContent,
-        shift: currentShiftType,
-        code: codeInput.value,
-        name: nameInput.value,
-        pnr: pnrInput.value,
-        flight: flightInput.value,
-        airline: airlineSelect.value,
-        seat: seatInput.value,
-        class: classInput.value,
-        serial: serialInput.value,
-        remarks: remarksInput.value,
-        fqtv: fqtvInput.value,
-        numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
-        approved: false
-    };
-    saveEntry(entry);
-    
-    setTimeout(() => {
-        isProcessing = false;
-    }, 1000);
-}
-
-function processManualInput() {
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    parseCode();
-    const entry = {
-        date: currentShiftDate,
-        user: userDisplay.textContent,
-        shift: currentShiftType,
-        code: codeInput.value,
-        name: nameInput.value,
-        pnr: pnrInput.value,
-        flight: flightInput.value,
-        airline: airlineSelect.value,
-        seat: seatInput.value,
-        class: classInput.value,
-        serial: serialInput.value,
-        remarks: remarksInput.value,
-        fqtv: fqtvInput.value,
-        numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
-        approved: false
-    };
-    saveEntry(entry);
-    
-    setTimeout(() => {
-        isProcessing = false;
-    }, 1000);
-}
-
-function handleFieldExit() {
-    if (isProcessing) return;
-    
-    const code = codeInput.value.trim();
-    if (code) {
-        parseCode();
-        if (nameInput.value && flightInput.value) {
-            isProcessing = true;
-            const entry = {
-                date: currentShiftDate,
-                user: userDisplay.textContent,
-                shift: currentShiftType,
-                code: codeInput.value,
-                name: nameInput.value,
-                pnr: pnrInput.value,
-                flight: flightInput.value,
-                airline: airlineSelect.value,
-                seat: seatInput.value,
-                class: classInput.value,
-                serial: serialInput.value,
-                remarks: remarksInput.value,
-                fqtv: fqtvInput.value,
-                numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
-                approved: false
-            };
-            saveEntry(entry);
-            
-            setTimeout(() => {
-                isProcessing = false;
-            }, 1000);
-        }
-    }
-}
-
-// ----- DELAY CHARGE FUNCTIONS -----
-
-// ----- Calculate Delay Charge -----
-function calculateDelayCharge(entryTime, exitTime, stdTime, numPax) {
-    const [entryHour, entryMin] = entryTime.split(':').map(Number);
-    const [exitHour, exitMin] = exitTime.split(':').map(Number);
-    const [stdHour, stdMin] = stdTime.split(':').map(Number);
-    
-    const entryTotalMinutes = entryHour * 60 + entryMin;
-    const exitTotalMinutes = exitHour * 60 + exitMin;
-    const stdTotalMinutes = stdHour * 60 + stdMin;
-    
-    let totalStayMinutes = exitTotalMinutes - entryTotalMinutes;
-    
-    if (totalStayMinutes < 0) {
-        totalStayMinutes += 24 * 60;
-    }
-    
-    const totalStayHours = Math.floor(totalStayMinutes / 60);
-    const remainingMinutes = totalStayMinutes % 60;
-    
-    let lateDepartureMinutes = 0;
-    if (exitTotalMinutes > stdTotalMinutes) {
-        lateDepartureMinutes = exitTotalMinutes - stdTotalMinutes;
-    }
-    
-    let chargeableHours = 0;
-    if (totalStayMinutes > FREE_HOURS * 60) {
-        const exceedMinutes = totalStayMinutes - (FREE_HOURS * 60);
-        chargeableHours = Math.floor(exceedMinutes / 60);
-    }
-    
-    const totalCharge = 0;
-    
-    return {
-        totalStayMinutes,
-        totalStayHours,
-        remainingMinutes,
-        lateDepartureMinutes,
-        chargeableHours,
-        totalCharge,
-        chargePerPax: 0
-    };
-}
-
-// ----- Show Delay Charge Modal -----
-function showDelayChargeModal() {
-    if (!currentShiftType || currentShiftStatus !== 'open') {
-        showAlert('No active shift or shift not open!', true);
-        return;
-    }
-    
-    delayFlightInput.value = '';
-    entryTimeInput.value = '00:00';
-    exitTimeInput.value = '00:00';
-    stdTimeInput.value = '00:00';
-    delayPaxInput.value = '1';
-    delayCalcResult.style.display = 'none';
-    
-    const currentTime = getCurrentTime();
-    entryTimeInput.value = currentTime;
-    exitTimeInput.value = currentTime;
-    
-    delayChargeModal.classList.add('show');
-    
-    setTimeout(() => {
-        delayFlightInput.focus();
-    }, 100);
-}
-
-// ----- Calculate Delay Button Handler -----
-function handleCalculateDelay() {
-    const flightNo = delayFlightInput.value.trim();
-    const entryTime = entryTimeInput.value;
-    const exitTime = exitTimeInput.value;
-    const stdTime = stdTimeInput.value;
-    const numPax = parseInt(delayPaxInput.value) || 1;
-    
-    if (!flightNo) {
-        showAlert('Please enter flight number', true);
-        delayFlightInput.focus();
-        return;
-    }
-    
-    if (!entryTime || !exitTime || !stdTime) {
-        showAlert('Please enter all time fields', true);
-        return;
-    }
-    
-    if (entryTime === '00:00' || exitTime === '00:00' || stdTime === '00:00') {
-        showAlert('Please set proper time values', true);
-        return;
-    }
-    
-    const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
-    
-    delayCalcResult.style.display = 'block';
-    
-    if (calculation.chargeableHours > 0) {
-        delayCalcDetails.innerHTML = `
-            <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
-            <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
-            <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
-            <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h (complete hours only)</p>
-            <p><strong>Number of Pax:</strong> ${numPax}</p>
-            <p><strong>Remarks to be saved:</strong> <em>"Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)"</em></p>
-            <p><strong>Total Charge:</strong> <span class="delay-amount">$${calculation.totalCharge.toFixed(2)}</span></p>
-        `;
-    } else {
-        delayCalcDetails.innerHTML = `
-            <p><strong>Flight:</strong> ${flightNo.toUpperCase()}</p>
-            <p><strong>Total Stay:</strong> ${calculation.totalStayHours}h ${calculation.remainingMinutes}m</p>
-            <p><strong>Free Hours:</strong> ${FREE_HOURS}h</p>
-            <p><strong>Chargeable Hours:</strong> ${calculation.chargeableHours}h</p>
-            <p><strong>Status:</strong> <span class="no-charge">No Charge - Within ${FREE_HOURS}h free period</span></p>
-        `;
-    }
-}
-
-// ----- Save Delay Charge Entry -----
-async function saveDelayChargeEntry() {
-    const flightNo = delayFlightInput.value.trim().toUpperCase();
-    const entryTime = entryTimeInput.value;
-    const exitTime = exitTimeInput.value;
-    const stdTime = stdTimeInput.value;
-    const numPax = parseInt(delayPaxInput.value) || 1;
-    
-    // Validate inputs
-    if (!flightNo) {
-        showAlert('Please enter flight number', true);
-        delayFlightInput.focus();
-        return;
-    }
-    
-    if (!entryTime || !exitTime || !stdTime) {
-        showAlert('Please enter all time fields', true);
-        return;
-    }
-    
-    if (entryTime === '00:00' || exitTime === '00:00' || stdTime === '00:00') {
-        showAlert('Please set proper time values', true);
-        return;
-    }
-    
-    // Calculate delay charge
-    const calculation = calculateDelayCharge(entryTime, exitTime, stdTime, numPax);
-    
-    // Generate remarks as requested: "Delay charges for X pax for Y hour(s)"
-    let remarks = `Delay charges for ${numPax} pax for ${calculation.chargeableHours} hour(s)`;
-    
-    // Create delay charge entry with corrections:
-    const delayEntry = {
-        date: currentShiftDate,
-        user: userDisplay.textContent,
-        shift: currentShiftType,
-        code: 'DELAY_CHARGE',
-        name: 'DELAY CHARGE',
-        pnr: 'DELAY',
-        flight: flightNo, // JUST THE FLIGHT NUMBER, NO "DELAY" TEXT
-        airline: flightNo.substring(0, 2),
-        seat: '', // EMPTY SEAT
-        class: 'J', // CLASS SET TO "J"
-        serial: '', // EMPTY SERIAL
-        remarks: remarks,
-        fqtv: '',
-        numPax: 0, // SET TO 0 AS REQUESTED - FIXED
-        approved: false,
-        isDelayCharge: true,
-        delayDetails: {
-            entryTime: entryTime,
-            exitTime: exitTime,
-            stdTime: stdTime,
-            totalStayMinutes: calculation.totalStayMinutes,
-            totalStayHours: calculation.totalStayHours,
-            remainingMinutes: calculation.remainingMinutes,
-            chargeableHours: calculation.chargeableHours,
-            totalCharge: calculation.totalCharge,
-            calculatedAt: getMaldivesDateTimeISO()
-        }
-    };
-    
-    // Save the entry
-    let data = JSON.parse(localStorage.getItem('codesData')||'[]');
-    data.push(delayEntry);
-    localStorage.setItem('codesData', JSON.stringify(data));
-    
-    // Close modal
-    delayChargeModal.classList.remove('show');
-    
-    // Show success message
-    showAlert(`Delay charge entry saved for flight ${flightNo}`, false);
-    
-    // Render entries
-    renderEntries();
-    
-    // Reset form
-    delayFlightInput.value = '';
-    entryTimeInput.value = '00:00';
-    exitTimeInput.value = '00:00';
-    stdTimeInput.value = '00:00';
-    delayPaxInput.value = '1';
-    delayCalcResult.style.display = 'none';
-}
-
-// ----- LOCAL STORAGE MANAGEMENT FUNCTIONS -----
-
-// Show Local Storage Modal
-function showLocalStorageModal() {
-    loadStorageData();
-    localStorageModal.classList.add('show');
-}
-
-// Load and display storage data
-function loadStorageData() {
-    const allKeys = Object.keys(localStorage);
-    const storageStats = document.getElementById('storageStats');
-    const storageTabs = document.getElementById('storageTabs');
-    const allStoragePanel = document.getElementById('allStoragePanel');
-    
-    let totalSize = 0;
-    allKeys.forEach(key => {
-        const value = localStorage.getItem(key);
-        totalSize += (key.length + value.length) * 2;
-    });
-    
-    storageStats.innerHTML = `
-        <div class="storage-stat-item">
-            <div class="storage-stat-value">${allKeys.length}</div>
-            <div class="storage-stat-label">Total Items</div>
-        </div>
-        <div class="storage-stat-item">
-            <div class="storage-stat-value">${(totalSize / 1024).toFixed(2)} KB</div>
-            <div class="storage-stat-label">Total Size</div>
-        </div>
-        <div class="storage-stat-item">
-            <div class="storage-stat-value">${(localStorage.length / 5000 * 100).toFixed(1)}%</div>
-            <div class="storage-stat-label">Capacity Used</div>
-        </div>
-    `;
-    
-    storageTabs.innerHTML = '';
-    
-    const allTab = document.createElement('button');
-    allTab.className = 'storage-tab active';
-    allTab.textContent = 'All Items';
-    allTab.onclick = () => showStorageTab('all', allTab);
-    storageTabs.appendChild(allTab);
-    
-    const categories = {
-        'codesData': 'Pending Entries',
-        'approvedLocalData': 'Approved Entries (Local)',
-        'qrProcessedCodes': 'QR Processed Codes',
-        'localQRData': 'Local QR Data',
-        'approvedEntriesCache': 'Approved Cache',
-        'currentShiftInfo': 'Shift Info',
-        'loggedInUser': 'User Data'
-    };
-    
-    Object.keys(categories).forEach(categoryKey => {
-        if (localStorage.getItem(categoryKey)) {
-            const tab = document.createElement('button');
-            tab.className = 'storage-tab';
-            tab.textContent = categories[categoryKey];
-            tab.dataset.key = categoryKey;
-            tab.onclick = () => showStorageTab(categoryKey, tab);
-            storageTabs.appendChild(tab);
-        }
-    });
-    
-    const otherKeys = allKeys.filter(key => !Object.keys(categories).includes(key));
-    if (otherKeys.length > 0) {
-        const otherTab = document.createElement('button');
-        otherTab.className = 'storage-tab';
-        otherTab.textContent = `Other (${otherKeys.length})`;
-        otherTab.dataset.key = 'other';
-        otherTab.onclick = () => showStorageTab('other', otherTab);
-        storageTabs.appendChild(otherTab);
-    }
-    
-    displayStorageItems('all', allKeys, allStoragePanel);
-    
-    showStorageTab('all', allTab);
-}
-
-// Display storage items in a panel
-function displayStorageItems(category, keys, panel) {
-    panel.innerHTML = '';
-    
-    if (keys.length === 0) {
-        panel.innerHTML = '<div class="empty-storage">No data found in this category</div>';
-        return;
-    }
-    
-    if (category === 'approvedLocalData') {
-        displayApprovedEntries(panel);
-        return;
-    }
-    
-    keys.forEach(key => {
-        try {
-            const value = localStorage.getItem(key);
-            const itemSize = (key.length + value.length) * 2;
-            let parsedValue;
-            let isJson = false;
-            
-            try {
-                parsedValue = JSON.parse(value);
-                isJson = true;
-            } catch (e) {
-                parsedValue = value;
-            }
-            
-            const valueStr = isJson ? JSON.stringify(parsedValue, null, 2) : value;
-            
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'storage-data-item';
-            itemDiv.innerHTML = `
-                <div class="storage-data-header">
-                    <span class="storage-key">${key}</span>
-                    <span class="storage-size">${(itemSize / 1024).toFixed(2)} KB</span>
-                </div>
-                <div class="storage-value">${isJson ? 'JSON Data - ' : ''}${valueStr.length > 500 ? valueStr.substring(0, 500) + '...' : valueStr}</div>
-                <div style="margin-top: 8px; display: flex; gap: 5px;">
-                    ${isJson ? `<button class="view-json-btn" onclick="viewJson('${key}', ${JSON.stringify(parsedValue)})">View JSON</button>` : ''}
-                    <button class="action-btn" onclick="deleteStorageItem('${key}')" style="padding: 3px 8px; font-size: 11px;">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                    <button class="action-btn" onclick="copyStorageItem('${key}')" style="padding: 3px 8px; font-size: 11px;">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
-                </div>
-            `;
-            
-            panel.appendChild(itemDiv);
-        } catch (error) {
-            console.error(`Error processing key ${key}:`, error);
-        }
-    });
-}
-
-// Display approved entries in a table
-function displayApprovedEntries(panel) {
-    try {
-        const approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-        
-        if (approvedLocalData.length === 0) {
-            panel.innerHTML = '<div class="empty-storage">No approved entries found in local storage</div>';
-            return;
-        }
-        
-        const table = document.createElement('table');
-        table.className = 'approved-entries-table';
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Flight</th>
-                    <th>Seat</th>
-                    <th>Class</th>
-                    <th>FQTV</th>
-                    <th>Pax</th>
-                    <th>Serial</th>
-                    <th>PNR</th>
-                    <th>Date</th>
-                    <th>Shift</th>
-                    <th>Synced</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${approvedLocalData.map((entry, index) => `
-                    <tr>
-                        <td>${escapeHtml(entry.name)}</td>
-                        <td>${escapeHtml(entry.flightNo)}</td>
-                        <td>${escapeHtml(entry.seatNo)}</td>
-                        <td>${escapeHtml(entry.class)}</td>
-                        <td>${escapeHtml(entry.fqtv || '')}</td>
-                        <td>${entry.numPax}</td>
-                        <td>${escapeHtml(entry.serial)}</td>
-                        <td>${escapeHtml(entry.pnr || '')}</td>
-                        <td>${formatDateForDisplay(entry.date)}</td>
-                        <td>${entry.shift}</td>
-                        <td>${entry.synced ? '<span style="color: var(--success);"><i class="fas fa-check-circle"></i> Yes</span>' : '<span style="color: var(--warning);"><i class="fas fa-clock"></i> Pending</span>'}</td>
-                        <td>
-                            <button class="action-btn" onclick="deleteApprovedEntry(${index})" style="padding: 3px 8px; font-size: 11px;">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                            ${!entry.synced ? `
-                                <button class="action-btn" onclick="syncApprovedEntry(${index})" style="padding: 3px 8px; font-size: 11px; background: var(--info);">
-                                    <i class="fas fa-sync-alt"></i> Sync Now
-                                </button>
-                            ` : ''}
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        `;
-        
-        panel.appendChild(table);
-        
-    } catch (error) {
-        console.error('Error displaying approved entries:', error);
-        panel.innerHTML = `<div class="empty-storage">Error loading approved entries: ${error.message}</div>`;
-    }
-}
-
-// Delete approved entry
-function deleteApprovedEntry(index) {
-    if (confirm('Are you sure you want to delete this approved entry from local storage?\n\nThis will remove it from the local storage but won\'t affect Firebase if already synced.')) {
-        try {
-            const approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-            const deletedEntry = approvedLocalData.splice(index, 1)[0];
-            localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-            
-            // Also remove from cache
-            if (deletedEntry.flightNo && deletedEntry.seatNo && deletedEntry.date) {
-                const flightUpper = deletedEntry.flightNo.toUpperCase();
-                const seatUpper = deletedEntry.seatNo.toUpperCase();
-                const seatKey = `${deletedEntry.date}_${flightUpper}_${seatUpper}`;
-                delete approvedEntriesCache[seatKey];
-                localStorage.setItem('approvedEntriesCache', JSON.stringify(approvedEntriesCache));
-            }
-            
-            showAlert('Approved entry deleted from local storage', false);
-            loadStorageData();
-            
-        } catch (error) {
-            console.error('Error deleting approved entry:', error);
-            showAlert('Error deleting approved entry: ' + error.message, true);
-        }
-    }
-}
-
-// Sync approved entry manually
-function syncApprovedEntry(index) {
-    try {
-        const approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
-        const entry = approvedLocalData[index];
-        
-        if (!entry) {
-            showAlert('Entry not found', true);
-            return;
-        }
-        
-        if (entry.synced) {
-            showAlert('Entry is already synced', true);
-            return;
-        }
-        
-        if (!window.passengerDb) {
-            showAlert('Firebase connection not available', true);
-            return;
-        }
-        
-        showAlert('Syncing entry to Firebase...', false, false, true);
-        
-        // Remove local-only fields before saving to Firebase
-        const firebaseEntry = { ...entry };
-        delete firebaseEntry.synced;
-        delete firebaseEntry.syncedAt;
-        delete firebaseEntry.localId;
-        delete firebaseEntry.originalEntry;
-        
-        window.passengerDb.collection('passengers').doc(entry.docName).set(firebaseEntry)
-            .then(() => {
-                // Mark as synced in localStorage
-                entry.synced = true;
-                entry.syncedAt = getMaldivesDateTimeISO();
-                localStorage.setItem('approvedLocalData', JSON.stringify(approvedLocalData));
-                
-                showAlert('Entry synced successfully to Firebase!', false);
-                loadStorageData();
-            })
-            .catch(error => {
-                console.error('Error syncing entry:', error);
-                showAlert('Error syncing to Firebase: ' + error.message, true);
-            });
-        
-    } catch (error) {
-        console.error('Error syncing approved entry:', error);
-        showAlert('Error syncing entry: ' + error.message, true);
-    }
-}
-
-// Show specific storage tab
-function showStorageTab(category, tabElement) {
-    document.querySelectorAll('.storage-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    tabElement.classList.add('active');
-    
-    let panel = document.getElementById(`${category}Panel`);
-    if (!panel) {
-        panel = document.createElement('div');
-        panel.id = `${category}Panel`;
-        panel.className = 'storage-panel';
-        document.querySelector('.storage-tab-content').appendChild(panel);
-    }
-    
-    document.querySelectorAll('.storage-panel').forEach(p => {
-        p.classList.remove('active');
-    });
-    
-    panel.classList.add('active');
-    
-    const allKeys = Object.keys(localStorage);
-    let filteredKeys = [];
-    
-    if (category === 'all') {
-        filteredKeys = allKeys;
-    } else if (category === 'other') {
-        const categories = [
-            'codesData', 'approvedLocalData', 'qrProcessedCodes', 
-            'localQRData', 'approvedEntriesCache', 'currentShiftInfo', 
-            'loggedInUser'
-        ];
-        filteredKeys = allKeys.filter(key => !categories.includes(key));
-    } else {
-        filteredKeys = allKeys.filter(key => key === category);
-    }
-    
-    displayStorageItems(category, filteredKeys, panel);
-}
-
-// View JSON in modal
-function viewJson(key, data) {
-    jsonViewerTitle.textContent = `JSON Data: ${key}`;
-    jsonViewerBody.textContent = JSON.stringify(data, null, 2);
-    
-    jsonViewerModal.classList.add('show');
-}
-
-// Copy storage item to clipboard
-function copyStorageItem(key) {
-    try {
-        const value = localStorage.getItem(key);
-        navigator.clipboard.writeText(value).then(() => {
-            showAlert(`Copied "${key}" to clipboard`, false, false, true);
-        }).catch(err => {
-            showAlert(`Failed to copy: ${err}`, true);
-        });
-    } catch (error) {
-        showAlert(`Error copying: ${error.message}`, true);
-    }
-}
-
-// Delete a specific storage item
-function deleteStorageItem(key) {
-    if (confirm(`Are you sure you want to delete "${key}" from local storage?\n\nThis action cannot be undone.`)) {
-        localStorage.removeItem(key);
-        showAlert(`Deleted "${key}" from local storage`, false);
-        loadStorageData();
-    }
-}
-
-// Clear all local storage
-function clearAllLocalStorage() {
-    if (confirm('⚠️ WARNING: Are you absolutely sure you want to clear ALL local storage?\n\nThis will delete:\n• All pending passenger entries\n• All approved entries (including unsynced)\n• QR processed codes\n• Shift information\n• User session\n\nThis action cannot be undone!')) {
-        localStorage.clear();
-        showAlert('All local storage cleared successfully', false);
-        
-        window.location.reload();
-    }
-}
-
-// ----- Event Listeners -----
-manualSaveBtn.addEventListener('click', async function() {
-    if (isProcessing) return;
-    isProcessing = true;
-    
-    parseCode();
-    const entry = {
-        date: currentShiftDate,
-        user: userDisplay.textContent,
-        shift: currentShiftType,
-        code: codeInput.value,
-        name: nameInput.value,
-        pnr: pnrInput.value,
-        flight: flightInput.value,
-        airline: airlineSelect.value,
-        seat: seatInput.value,
-        class: classInput.value,
-        serial: serialInput.value,
-        remarks: remarksInput.value,
-        fqtv: fqtvInput.value,
-        numPax: parseInt(numPaxInput.value) || 0, // FIXED: Use parseInt and allow 0
-        approved: false
-    };
-    
-    // Auto-correct seat for restricted airlines
-    if (isPaxRestrictedAirline(entry.flight)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
-        if (correctedSeat !== entry.seat) {
-            entry.seat = correctedSeat;
-            seatInput.value = correctedSeat;
-        }
-    }
-    
-    // Validate seat-pax match
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
-    if (!seatPaxValidation.isValid) {
-        showAlert(`Cannot save: ${seatPaxValidation.message}`, true);
-        entry.numPax = seatPaxValidation.calculatedPax;
-        numPaxInput.value = seatPaxValidation.calculatedPax;
-        showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
-    }
-    
-    // Check for restricted airlines
-    if (isPaxRestrictedAirline(entry.flight)) {
-        if (entry.numPax !== 1) {
-            showAlert(`Flight ${entry.flight} (${entry.flight.substring(0, 2)}) allows only 1 passenger per seat. Pax changed to 1.`, false, true);
-            entry.numPax = 1;
-            numPaxInput.value = '1';
-        }
-    }
-    
-    await saveEntry(entry);
-    
-    setTimeout(() => {
-        isProcessing = false;
-    }, 1000);
-});
-
-// Zoom modal listeners
-closeZoomBtn.addEventListener('click', closeZoomModal);
-zoomCancelBtn.addEventListener('click', closeZoomModal);
-
-// FQTV zoom modal listeners
+// ----- FQTV zoom modal event listeners -----
 closeFqtvZoomBtn.addEventListener('click', closeFqtvZoomModal);
 fqtvZoomCancelBtn.addEventListener('click', closeFqtvZoomModal);
 
-// Seat input listeners for real-time validation and auto-correction
-seatInput.addEventListener('input', function() {
-    const currentSeat = this.value.trim();
-    const flightValue = flightInput.value.trim();
-    
-    if (currentSeat !== lastSeatValue) {
-        // Auto-correct seat for restricted airlines
-        if (flightValue && isPaxRestrictedAirline(flightValue)) {
-            const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, currentSeat);
-            if (correctedSeat !== currentSeat) {
-                this.value = correctedSeat;
-            }
-        }
-        
-        checkSeatPaxMatch();
-        lastSeatValue = this.value.trim();
-        
-        // Auto-correct pax based on seat (only for non-restricted airlines)
-        if (this.value.trim()) {
-            if (!isPaxRestrictedAirline(flightValue)) {
-                autoCorrectPaxFromSeat(this, numPaxInput);
-            } else {
-                // For restricted airlines, always set pax to 1
-                numPaxInput.value = '1';
-            }
-        }
-    }
-});
-
-// Pax input listener (FIXED: Only alert on changes)
-numPaxInput.addEventListener('input', function() {
-    const currentPax = this.value;
-    if (currentPax !== lastPaxValue) {
-        checkSeatPaxMatch();
-        lastPaxValue = currentPax;
-    }
-});
-
-// Flight input listener for auto-seat correction
-flightInput.addEventListener('input', function() {
-    const flightValue = this.value.trim();
-    const seatValue = seatInput.value.trim();
-    
-    // Auto-select airline based on flight code
-    if (this.value.length >= 2) {
-        const iata = this.value.substring(0, 2).toUpperCase();
-        if (airlines[iata]) {
-            airlineSelect.value = iata;
-        }
-    }
-    
-    // Auto-correct seat if airline is restricted
-    if (flightValue && seatValue && isPaxRestrictedAirline(flightValue)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
-        if (correctedSeat !== seatValue) {
-            seatInput.value = correctedSeat;
-            showAlert(`Seat auto-corrected from "${seatValue}" to "${correctedSeat}" for restricted airline ${flightValue.substring(0, 2)}`, false, true);
-        }
-    }
-    
-    checkSeatPaxMatch();
-});
-
-zoomSeatInput.addEventListener('input', function() {
-    const flightValue = zoomFlightInput.value.trim();
-    const seatValue = this.value.trim();
-    
-    // Auto-correct seat for restricted airlines
-    if (flightValue && isPaxRestrictedAirline(flightValue)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
-        if (correctedSeat !== seatValue) {
-            this.value = correctedSeat;
-        }
-    }
-    
-    checkZoomSeatPaxMatch();
-    
-    // Auto-correct pax based on seat
-    if (this.value.trim()) {
-        if (!isPaxRestrictedAirline(flightValue)) {
-            autoCorrectPaxFromSeat(this, zoomPaxInput);
-        } else {
-            // For restricted airlines, always set pax to 1
-            zoomPaxInput.value = '1';
-        }
-    }
-});
-
-zoomFlightInput.addEventListener('input', function() {
-    const flightValue = this.value.trim();
-    const seatValue = zoomSeatInput.value.trim();
-    
-    // Auto-select airline based on flight code
-    if (this.value.length >= 2) {
-        const iata = this.value.substring(0, 2).toUpperCase();
-        if (airlines[iata]) {
-            zoomAirlineSelect.value = iata;
-        }
-    }
-    
-    // Auto-correct seat if airline is restricted
-    if (flightValue && seatValue && isPaxRestrictedAirline(flightValue)) {
-        const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
-        if (correctedSeat !== seatValue) {
-            zoomSeatInput.value = correctedSeat;
-        }
-    }
-    
-    checkZoomSeatPaxMatch();
-});
-
-refreshShiftBtn.addEventListener('click', refreshShiftData);
-
-// Delay charge event listeners
-delayChargeBtn.addEventListener('click', showDelayChargeModal);
-closeModalBtn.addEventListener('click', () => {
-    delayChargeModal.classList.remove('show');
-});
-
-calculateDelayBtn.addEventListener('click', handleCalculateDelay);
-saveDelayBtn.addEventListener('click', saveDelayChargeEntry);
-
-// Local storage event listeners
-storageManagerBtn.addEventListener('click', showLocalStorageModal);
-closeStorageModalBtn.addEventListener('click', () => {
-    localStorageModal.classList.remove('show');
-});
-
-refreshStorageBtn.addEventListener('click', loadStorageData);
-clearAllStorageBtn.addEventListener('click', clearAllLocalStorage);
-
-closeJsonViewerBtn.addEventListener('click', () => {
-    jsonViewerModal.classList.remove('show');
-});
-
-// Close modals when clicking outside
-delayChargeModal.addEventListener('click', (e) => {
-    if (e.target === delayChargeModal) {
-        delayChargeModal.classList.remove('show');
-    }
-});
-
-localStorageModal.addEventListener('click', (e) => {
-    if (e.target === localStorageModal) {
-        localStorageModal.classList.remove('show');
-    }
-});
-
-jsonViewerModal.addEventListener('click', (e) => {
-    if (e.target === jsonViewerModal) {
-        jsonViewerModal.classList.remove('show');
-    }
-});
-
-numericKeyboardModal.addEventListener('click', (e) => {
-    if (e.target === numericKeyboardModal) {
-        closeNumericKeyboard();
-    }
-});
-
-zoomModal.addEventListener('click', (e) => {
-    if (e.target === zoomModal) {
-        closeZoomModal();
-    }
-});
-
+// Close modal when clicking outside
 fqtvZoomModal.addEventListener('click', (e) => {
     if (e.target === fqtvZoomModal) {
         closeFqtvZoomModal();
     }
 });
+
+// ----- Global Variables -----
+let isApproving = false;
+let currentShiftType = null;
+let currentShiftDate = null;
+let renderTimeout = null;
+let isRendering = false;
+let lastRenderData = '';
+let currentShiftStatus = 'not_started';
+let shiftDb = null;
+let backgroundSaveQueue = [];
+let isBackgroundSaving = false;
+let scannerTimer;
+let lastValue = '';
+let isScannerActive = false;
+let isProcessing = false;
+let currentEditingRowIndex = -1;
+let currentEditingField = '';
+
+// ----- CONTINUE WITH THE REST OF YOUR EXISTING CODE -----
+// From this point, you should continue with the rest of your existing JavaScript code
+// including functions like: clearInputFields, isFqtvRequired, isDuplicateEntry,
+// showAlert, renderEntries, etc.
+
+// Make sure to include ALL the remaining code from your original file
 
 // ----- Initialize System -----
 document.addEventListener('DOMContentLoaded', async function() {
