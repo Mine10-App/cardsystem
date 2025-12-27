@@ -2709,7 +2709,10 @@ function parseCode(){
         if(parts[i].includes('MLE')){
             flightTokenIndex=i;
             const mleToken = parts[i];
-            flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
+            // Extract flight number from MLE token
+            if (mleToken.length >= 5) {
+                flightNo = mleToken.substring(mleToken.length - 2) + (parts[i+1]||'').slice(0,4);
+            }
             break;
         }
     }
@@ -2737,7 +2740,7 @@ function parseCode(){
         }
     }
 
-    // Use the NEW enhanced FQTV extraction
+    // Use the NEW enhanced FQTV extraction with alphanumeric support
     const fqtvResult = extractFqtvFromQRCodeWithEnhancedTier(code, flightNo);
 
     // SPECIAL HANDLING FOR SQ FLIGHTS
@@ -2788,6 +2791,7 @@ function parseCode(){
 }
 
 // ----- NEW: Extract FQTV from QR code with enhanced tier logic -----
+// ----- NEW: Improved FQTV extraction that handles alphanumeric FQTV numbers -----
 function extractFqtvFromQRCodeWithEnhancedTier(codeValue, flightNumber = '') {
     const codeUpper = codeValue.toUpperCase();
     let fqtv = '';
@@ -2797,13 +2801,17 @@ function extractFqtvFromQRCodeWithEnhancedTier(codeValue, flightNumber = '') {
     console.log("🔍 Extracting FQTV from:", codeUpper);
     console.log("📊 Flight:", flightNumber);
     
-    // Look for patterns with airline code + number + tier
+    // Look for patterns with airline code + alphanumeric + tier
     const patterns = [
-        // Pattern: BA 15915367 N2 (with spaces)
+        // Pattern: AA 864W0D4 N3 (alphanumeric with space)
+        /([A-Z]{2})\s+([A-Z0-9]+)\s+(N[0-3])/i,
+        // Pattern: AA864W0D4N3 (alphanumeric without space)
+        /([A-Z]{2})([A-Z0-9]+)(N[0-3])/i,
+        // Pattern: AA 864W0D4/N3 (alphanumeric with slash)
+        /([A-Z]{2})\s+([A-Z0-9]+)\s*\/(N[0-3])/i,
+        // Original patterns for numeric only
         /([A-Z]{2})\s+(\d+)\s+(N[0-3])/i,
-        // Pattern: BA15915367N2 (without spaces)
         /([A-Z]{2})(\d+)(N[0-3])/i,
-        // Pattern: BA 15915367/N2 (with slash)
         /([A-Z]{2})\s+(\d+)\s*\/(N[0-3])/i,
     ];
     
@@ -2818,18 +2826,18 @@ function extractFqtvFromQRCodeWithEnhancedTier(codeValue, flightNumber = '') {
         }
     }
     
-    // If no pattern found, search for airline code + number anywhere in the string
+    // If no pattern found, search for airline code + alphanumeric anywhere in the string
     if (!fqtv) {
         const words = codeUpper.split(/\s+/);
         
-        // Look for airline code followed by number
+        // Look for airline code followed by alphanumeric
         for (let i = 0; i < words.length; i++) {
             // Check if word is exactly 2 letters (airline code)
             if (words[i].length === 2 && /^[A-Z]{2}$/.test(words[i])) {
                 const airlineCode = words[i];
                 
-                // Check next word for number
-                if (i + 1 < words.length && /^\d+$/.test(words[i + 1])) {
+                // Check next word for alphanumeric (letters and numbers)
+                if (i + 1 < words.length && /^[A-Z0-9]+$/.test(words[i + 1])) {
                     fqtv = `${airlineCode} ${words[i + 1]}`;
                     fqtvAirlineCode = airlineCode;
                     
@@ -2846,8 +2854,8 @@ function extractFqtvFromQRCodeWithEnhancedTier(codeValue, flightNumber = '') {
                     break;
                 }
                 
-                // Check if word contains airline code + number (e.g., BA15915367)
-                const combinedPattern = /^([A-Z]{2})(\d+)$/;
+                // Check if word contains airline code + alphanumeric (e.g., AA864W0D4)
+                const combinedPattern = /^([A-Z]{2})([A-Z0-9]+)$/;
                 const combinedMatch = words[i].match(combinedPattern);
                 if (combinedMatch) {
                     fqtv = `${combinedMatch[1]} ${combinedMatch[2]}`;
