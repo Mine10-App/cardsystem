@@ -2584,7 +2584,7 @@ function validatePaxCount(flightNumber, seatNumber, enteredPax) {
     return { isValid: true };
 }
 
-// ----- Extract FQTV from QR code (UPDATED for different airlines) -----
+// ----- FIXED: Extract FQTV from QR code with proper tier handling -----
 function extractFqtvFromQRCode(codeValue, flightNumber = '') {
     const codeUpper = codeValue.toUpperCase();
     let fqtv = '';
@@ -2595,214 +2595,200 @@ function extractFqtvFromQRCode(codeValue, flightNumber = '') {
     const flightAirlineCode = flightNumber ? flightNumber.substring(0, 2).toUpperCase() : '';
     const isQRFlight = flightAirlineCode === 'QR';
     
-    // First, look for patterns like "BA 15915367/G" or "BA 15915367/Gold"
-    const patternWithTier = /([A-Z]{2})\s*(\d+)\s*\/(P|G|S|PLATINUM|GOLD|SILVER|EMERALD|SAPPHIRE|RUBY)/i;
-    const matchWithTier = codeUpper.match(patternWithTier);
+    console.log("🔍 Extracting FQTV from:", codeUpper);
+    console.log("📊 Flight airline:", flightAirlineCode, "Is QR:", isQRFlight);
     
-    if (matchWithTier) {
-        fqtv = `${matchWithTier[1]} ${matchWithTier[2]}`;
-        const tierValue = matchWithTier[3].toUpperCase();
-        fqtvAirlineCode = matchWithTier[1];
-        
-        // Map tier based on airline match and flight type
-        if (isQRFlight) {
-            // QR flight: always use letters (P/G/S)
-            switch(tierValue) {
-                case 'P':
-                case 'PLATINUM':
-                case 'EMERALD':
-                    tier = 'P';
-                    break;
-                case 'G':
-                case 'GOLD':
-                case 'SAPPHIRE':
-                    tier = 'G';
-                    break;
-                case 'S':
-                case 'SILVER':
-                case 'RUBY':
-                    tier = 'S';
-                    break;
-            }
-        } else if (fqtvAirlineCode === flightAirlineCode) {
-            // Same airline (not QR): use full words
-            switch(tierValue) {
-                case 'P':
-                case 'PLATINUM':
-                    tier = 'Platinum';
-                    break;
-                case 'G':
-                case 'GOLD':
-                    tier = 'Gold';
-                    break;
-                case 'S':
-                case 'SILVER':
-                    tier = 'Silver';
-                    break;
-                case 'EMERALD':
-                    tier = 'Emerald';
-                    break;
-                case 'SAPPHIRE':
-                    tier = 'Sapphire';
-                    break;
-                case 'RUBY':
-                    tier = 'Ruby';
-                    break;
-            }
-        } else {
-            // Different airline: use Emerald/Sapphire/Ruby
-            switch(tierValue) {
-                case 'P':
-                case 'PLATINUM':
-                case 'EMERALD':
-                    tier = 'Emerald';
-                    break;
-                case 'G':
-                case 'GOLD':
-                case 'SAPPHIRE':
-                    tier = 'Sapphire';
-                    break;
-                case 'S':
-                case 'SILVER':
-                case 'RUBY':
-                    tier = 'Ruby';
-                    break;
-            }
+    // First, try to find patterns with airline code + number + tier
+    // Look for patterns like "BA 15915367 N2" or "BA15915367N2"
+    const patterns = [
+        // Pattern: BA 15915367 N2 (with spaces)
+        /([A-Z]{2})\s+(\d+)\s+(N[0-3])/i,
+        // Pattern: BA15915367N2 (without spaces)
+        /([A-Z]{2})(\d+)(N[0-3])/i,
+        // Pattern: BA 15915367/N2 (with slash)
+        /([A-Z]{2})\s+(\d+)\s*\/(N[0-3])/i,
+        // Pattern: BA 15915367/G or BA 15915367/Gold
+        /([A-Z]{2})\s+(\d+)\s*\/(P|G|S|PLATINUM|GOLD|SILVER)/i
+    ];
+    
+    for (let pattern of patterns) {
+        const match = codeUpper.match(pattern);
+        if (match) {
+            fqtv = `${match[1]} ${match[2]}`;
+            tier = match[3].toUpperCase();
+            fqtvAirlineCode = match[1];
+            console.log("✅ Found FQTV pattern:", { fqtv, tier, fqtvAirlineCode });
+            break;
         }
     }
     
-    // If no tier found with letter/word, look for N codes
+    // If no pattern found, search for airline code + number anywhere in the string
     if (!fqtv) {
-        // Pattern 1: QR 243049639 N1
-        const pattern1 = /QR\s*(\d+)\s*(N[0-3])/i;
-        const match1 = codeUpper.match(pattern1);
-        if (match1) {
-            fqtv = `QR ${match1[1]}`;
-            tier = match1[2];
-            fqtvAirlineCode = 'QR';
-        }
+        const words = codeUpper.split(/\s+/);
         
-        // Pattern 2: QR243049639N1
-        const pattern2 = /QR(\d+)(N[0-3])/i;
-        const match2 = codeUpper.match(pattern2);
-        if (match2 && !fqtv) {
-            fqtv = `QR ${match2[1]}`;
-            tier = match2[2];
-            fqtvAirlineCode = 'QR';
-        }
-        
-        // Pattern 3: EK 123456 N2 (for Emirates)
-        const pattern3 = /EK\s*(\d+)\s*(N[0-3])/i;
-        const match3 = codeUpper.match(pattern3);
-        if (match3 && !fqtv) {
-            fqtv = `EK ${match3[1]}`;
-            tier = match3[2];
-            fqtvAirlineCode = 'EK';
-        }
-        
-        // Pattern 4: Look for any airline code followed by number and N1/N2/N3
-        const pattern4 = /([A-Z]{2})\s*(\d+)\s*(N[0-3])/i;
-        const match4 = codeUpper.match(pattern4);
-        if (match4 && !fqtv) {
-            fqtv = `${match4[1]} ${match4[2]}`;
-            tier = match4[3];
-            fqtvAirlineCode = match4[1];
-        }
-        
-        // Pattern 5: Look for airline code + number without explicit tier
-        if (!fqtv) {
-            const pattern5 = /([A-Z]{2})\s*(\d+)/i;
-            const match5 = codeUpper.match(pattern5);
-            if (match5) {
-                fqtv = `${match5[1]} ${match5[2]}`;
-                fqtvAirlineCode = match5[1];
+        // Look for airline code followed by number
+        for (let i = 0; i < words.length; i++) {
+            // Check if word is exactly 2 letters (airline code)
+            if (words[i].length === 2 && /^[A-Z]{2}$/.test(words[i])) {
+                const airlineCode = words[i];
+                
+                // Check next word for number
+                if (i + 1 < words.length && /^\d+$/.test(words[i + 1])) {
+                    fqtv = `${airlineCode} ${words[i + 1]}`;
+                    fqtvAirlineCode = airlineCode;
+                    
+                    // Look for tier in nearby words
+                    for (let j = i + 2; j < Math.min(i + 5, words.length); j++) {
+                        const tierWord = words[j].toUpperCase();
+                        if (tierWord.includes('N1') || tierWord.includes('N2') || tierWord.includes('N3') || 
+                            tierWord.includes('N0')) {
+                            tier = tierWord;
+                            break;
+                        }
+                    }
+                    console.log("✅ Found FQTV by scanning:", { fqtv, tier, fqtvAirlineCode });
+                    break;
+                }
+                
+                // Check if word contains airline code + number (e.g., BA15915367)
+                const combinedPattern = /^([A-Z]{2})(\d+)$/;
+                const combinedMatch = words[i].match(combinedPattern);
+                if (combinedMatch) {
+                    fqtv = `${combinedMatch[1]} ${combinedMatch[2]}`;
+                    fqtvAirlineCode = combinedMatch[1];
+                    
+                    // Look for tier in nearby words
+                    for (let j = i + 1; j < Math.min(i + 4, words.length); j++) {
+                        const tierWord = words[j].toUpperCase();
+                        if (tierWord.includes('N1') || tierWord.includes('N2') || tierWord.includes('N3') || 
+                            tierWord.includes('N0')) {
+                            tier = tierWord;
+                            break;
+                        }
+                    }
+                    console.log("✅ Found combined FQTV:", { fqtv, tier, fqtvAirlineCode });
+                    break;
+                }
             }
         }
     }
     
     // Handle N0 case - if tier is N0, return empty string
     if (tier && tier.toUpperCase() === 'N0') {
+        console.log("⚠️ N0 tier detected, returning empty FQTV");
         return '';
     }
     
-    // Map tier code to tier name based on airline match
-    let tierName = '';
+    // Map tier code to appropriate display format
+    let tierDisplay = '';
     if (tier) {
         const tierUpper = tier.toUpperCase();
+        console.log("🎯 Processing tier:", tierUpper, "for QR flight:", isQRFlight);
         
-        // Special handling for QR flights
         if (isQRFlight) {
-            // QR always uses letters: P/G/S
+            // QR flights: always use letters P/G/S
             switch(tierUpper) {
                 case 'N1':
-                case 'P':
-                    tierName = 'P';
+                    tierDisplay = 'P';
                     break;
                 case 'N2':
-                case 'G':
-                    tierName = 'G';
+                    tierDisplay = 'G';
                     break;
                 case 'N3':
+                    tierDisplay = 'S';
+                    break;
+                case 'P':
+                case 'PLATINUM':
+                    tierDisplay = 'P';
+                    break;
+                case 'G':
+                case 'GOLD':
+                    tierDisplay = 'G';
+                    break;
                 case 'S':
-                    tierName = 'S';
+                case 'SILVER':
+                    tierDisplay = 'S';
                     break;
                 default:
-                    tierName = tierUpper;
+                    tierDisplay = tierUpper;
             }
+            console.log("✅ QR flight tier display:", tierDisplay);
         } 
-        // Check if FQTV airline code matches flight airline code
-        else if (fqtvAirlineCode && flightAirlineCode && 
-                fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-            // Same airline (not QR): use full words
-            switch(tierUpper) {
-                case 'N1':
-                case 'P':
-                    tierName = 'Platinum';
-                    break;
-                case 'N2':
-                case 'G':
-                    tierName = 'Gold';
-                    break;
-                case 'N3':
-                case 'S':
-                    tierName = 'Silver';
-                    break;
-                default:
-                    tierName = tierUpper;
+        else {
+            // Non-QR flights: check if same airline
+            const isSameAirline = fqtvAirlineCode && flightAirlineCode && 
+                                 fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase();
+            
+            console.log("🔍 Checking airline match:", { 
+                fqtvAirline: fqtvAirlineCode, 
+                flightAirline: flightAirlineCode,
+                isSameAirline: isSameAirline 
+            });
+            
+            if (isSameAirline) {
+                // Same airline (not QR): use full words
+                switch(tierUpper) {
+                    case 'N1':
+                        tierDisplay = 'Platinum';
+                        break;
+                    case 'N2':
+                        tierDisplay = 'Gold';
+                        break;
+                    case 'N3':
+                        tierDisplay = 'Silver';
+                        break;
+                    case 'P':
+                    case 'PLATINUM':
+                        tierDisplay = 'Platinum';
+                        break;
+                    case 'G':
+                    case 'GOLD':
+                        tierDisplay = 'Gold';
+                        break;
+                    case 'S':
+                    case 'SILVER':
+                        tierDisplay = 'Silver';
+                        break;
+                    default:
+                        tierDisplay = tierUpper;
+                }
+            } else {
+                // Different airline: use Emerald/Sapphire/Ruby
+                switch(tierUpper) {
+                    case 'N1':
+                    case 'P':
+                    case 'PLATINUM':
+                        tierDisplay = 'Emerald';
+                        break;
+                    case 'N2':
+                    case 'G':
+                    case 'GOLD':
+                        tierDisplay = 'Sapphire';
+                        break;
+                    case 'N3':
+                    case 'S':
+                    case 'SILVER':
+                        tierDisplay = 'Ruby';
+                        break;
+                    default:
+                        tierDisplay = tierUpper;
+                }
             }
-        } else {
-            // Different airline: use Emerald/Sapphire/Ruby
-            switch(tierUpper) {
-                case 'N1':
-                case 'P':
-                    tierName = 'Emerald';
-                    break;
-                case 'N2':
-                case 'G':
-                    tierName = 'Sapphire';
-                    break;
-                case 'N3':
-                case 'S':
-                    tierName = 'Ruby';
-                    break;
-                default:
-                    tierName = tierUpper;
-            }
+            console.log("✅ Non-QR flight tier display:", tierDisplay);
         }
     }
     
     // Combine FQTV and tier
-    if (fqtv && tierName) {
-        // For QR flights with different airline FQTV, show appropriate tier
-        if (isQRFlight && fqtvAirlineCode !== 'QR') {
-            return `${fqtv}/${tierName}`;
-        }
-        return `${fqtv}/${tierName}`;
+    let result = '';
+    if (fqtv && tierDisplay) {
+        result = `${fqtv}/${tierDisplay}`;
+        console.log("🎯 Final FQTV result:", result);
     } else if (fqtv) {
-        return fqtv;
+        result = fqtv;
+        console.log("ℹ️ FQTV without tier:", result);
     }
     
-    return '';
+    return result;
 }
 // ----- Validate Seat for Restricted Airlines -----
 function validateAndFixSeatForRestrictedAirline(flightNumber, seatValue) {
@@ -4406,79 +4392,111 @@ function processFqtvTier(fqtvNumber, flightCode) {
     
     const fqtvUpper = fqtvNumber.toUpperCase();
     const flightUpper = flightCode ? flightCode.toUpperCase() : '';
-    
-    // Check if this is a QR flight
     const isQRFlight = flightUpper.startsWith('QR');
     
-    // Extract tier if it's at the end (e.g., /G, /Gold, /S, etc.)
-    let tierCode = '';
-    let extractedTier = '';
+    console.log("🔍 Processing FQTV tier:", fqtvNumber, "Flight:", flightCode, "Is QR:", isQRFlight);
     
-    // Check for letter tiers at the end (P, G, S)
-    const letterTierMatch = fqtvUpper.match(/\/\s*(P|G|S)\s*$/);
-    if (letterTierMatch) {
-        extractedTier = letterTierMatch[1];
-        // Map letter to N code for processing
-        if (extractedTier === 'P') tierCode = 'n1';
-        else if (extractedTier === 'G') tierCode = 'n2';
-        else if (extractedTier === 'S') tierCode = 'n3';
+    // Extract any existing tier from the FQTV string
+    let existingTier = '';
+    
+    // Check for /P, /G, /S
+    const letterMatch = fqtvUpper.match(/\/(P|G|S)$/);
+    if (letterMatch) {
+        existingTier = letterMatch[1];
+    }
+    // Check for /Platinum, /Gold, /Silver
+    const wordMatch = fqtvUpper.match(/\/(PLATINUM|GOLD|SILVER|EMERALD|SAPPHIRE|RUBY)$/i);
+    if (wordMatch && !existingTier) {
+        existingTier = wordMatch[1].toUpperCase();
+    }
+    // Check for /N1, /N2, /N3
+    const nMatch = fqtvUpper.match(/\/(N[123])$/i);
+    if (nMatch && !existingTier) {
+        existingTier = nMatch[1].toUpperCase();
     }
     
-    // Check for word tiers at the end (Platinum, Gold, Silver)
-    const wordTierMatch = fqtvUpper.match(/\/\s*(PLATINUM|GOLD|SILVER|EMERALD|SAPPHIRE|RUBY)\s*$/i);
-    if (wordTierMatch && !tierCode) {
-        const tierWord = wordTierMatch[1].toUpperCase();
-        if (tierWord === 'PLATINUM' || tierWord === 'EMERALD') tierCode = 'n1';
-        else if (tierWord === 'GOLD' || tierWord === 'SAPPHIRE') tierCode = 'n2';
-        else if (tierWord === 'SILVER' || tierWord === 'RUBY') tierCode = 'n3';
-    }
+    console.log("📊 Existing tier in FQTV:", existingTier);
     
-    // Check for N codes (N1, N2, N3)
-    if (!tierCode) {
-        const nTierMatch = fqtvUpper.match(/\/(N[123])\s*$/i);
-        if (nTierMatch) {
-            tierCode = nTierMatch[1].toLowerCase();
+    // If we already have a tier in the FQTV, use it
+    if (existingTier) {
+        if (isQRFlight) {
+            // QR flights: map to P/G/S
+            switch(existingTier) {
+                case 'N1':
+                case 'PLATINUM':
+                case 'EMERALD':
+                case 'P':
+                    return 'P';
+                case 'N2':
+                case 'GOLD':
+                case 'SAPPHIRE':
+                case 'G':
+                    return 'G';
+                case 'N3':
+                case 'SILVER':
+                case 'RUBY':
+                case 'S':
+                    return 'S';
+                default:
+                    return existingTier;
+            }
+        } else {
+            // Non-QR flights: check airline match
+            let fqtvAirlineCode = '';
+            const fqtvMatch = fqtvUpper.match(/^([A-Z]{2})/);
+            if (fqtvMatch) {
+                fqtvAirlineCode = fqtvMatch[1];
+            }
+            
+            const flightAirlineCode = flightUpper.slice(0, 2);
+            const isSameAirline = fqtvAirlineCode && flightAirlineCode && 
+                                 fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase();
+            
+            console.log("🔍 Airline check:", {
+                fqtvAirline: fqtvAirlineCode,
+                flightAirline: flightAirlineCode,
+                isSameAirline: isSameAirline
+            });
+            
+            if (isSameAirline) {
+                // Same airline: map to full words
+                switch(existingTier) {
+                    case 'N1':
+                    case 'P':
+                        return 'Platinum';
+                    case 'N2':
+                    case 'G':
+                        return 'Gold';
+                    case 'N3':
+                    case 'S':
+                        return 'Silver';
+                    default:
+                        return existingTier;
+                }
+            } else {
+                // Different airline: map to Emerald/Sapphire/Ruby
+                switch(existingTier) {
+                    case 'N1':
+                    case 'P':
+                    case 'PLATINUM':
+                        return 'Emerald';
+                    case 'N2':
+                    case 'G':
+                    case 'GOLD':
+                        return 'Sapphire';
+                    case 'N3':
+                    case 'S':
+                    case 'SILVER':
+                        return 'Ruby';
+                    default:
+                        return existingTier;
+                }
+            }
         }
     }
     
-    if (!tierCode) return '';
-    
-    let fqtvAirlineCode = '';
-    const fqtvMatch = fqtvUpper.match(/^([A-Z]{2})[- ]/);
-    if (fqtvMatch) {
-        fqtvAirlineCode = fqtvMatch[1];
-    } else {
-        fqtvAirlineCode = fqtvUpper.substring(0, 2);
-    }
-    
-    const flightAirlineCode = flightUpper.slice(0, 2);
-    
-    // Special handling for QR flights
-    if (isQRFlight) {
-        // For QR flights, always use letter codes (P/G/S)
-        switch(tierCode) {
-            case 'n1':
-                return 'P';
-            case 'n2':
-                return 'G';
-            case 'n3':
-                return 'S';
-            default:
-                return '';
-        }
-    }
-    
-    let tierMapping;
-    if (fqtvAirlineCode && flightAirlineCode && 
-        fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase()) {
-        // Same airline (not QR): use full words
-        tierMapping = fqtvTierMappings.same;
-    } else {
-        // Different airline: use Emerald/Sapphire/Ruby
-        tierMapping = fqtvTierMappings.different;
-    }
-    
-    return tierMapping[tierCode] || '';
+    console.log("ℹ️ No existing tier found in FQTV");
+    return '';
 }
 
 // ----- User Authentication -----
