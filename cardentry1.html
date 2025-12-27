@@ -2400,14 +2400,14 @@ const airlines = {
 // ----- FIXED: Correct FQTV Tier Level Mappings -----
 const fqtvTierMappings = {
   'same': {
-    'n1': 'Platinum',    // Same airline: n1 = Platinum
-    'n2': 'Gold',        // Same airline: n2 = Gold
-    'n3': 'Silver'       // Same airline: n3 = Silver
+    'n1': 'P',    // Same airline: n1 = Platinum (P)
+    'n2': 'G',    // Same airline: n2 = Gold (G)
+    'n3': 'S'     // Same airline: n3 = Silver (S)
   },
   'different': {
-    'n1': 'Emerald',     // Different airline: n1 = Emerald
-    'n2': 'Sapphire',    // Different airline: n2 = Sapphire
-    'n3': 'Ruby'         // Different airline: n3 = Ruby
+    'n1': 'P',    // Different airline: n1 = Platinum (P)
+    'n2': 'G',    // Different airline: n2 = Gold (G)
+    'n3': 'S'     // Different airline: n3 = Silver (S)
   }
 };
 
@@ -2506,7 +2506,19 @@ function validatePaxCount(flightNumber, seatNumber, enteredPax) {
       message: `Flight ${flightNumber} (${flightNumber.substring(0, 2)}) allows only 1 passenger per seat`
     };
   }
-  // ----- Extract FQTV from QR code -----
+  
+  // Then check seat-pax match for non-restricted airlines
+  if (!isRestricted) {
+    const seatPaxValidation = validateSeatPaxMatch(seatNumber, enteredPax);
+    if (!seatPaxValidation.isValid) {
+      return seatPaxValidation;
+    }
+  }
+  
+  return { isValid: true };
+}
+
+// ----- Extract FQTV from QR code -----
 function extractFqtvFromQRCode(codeValue, flightNumber = '') {
   const codeUpper = codeValue.toUpperCase();
   let fqtv = '';
@@ -2565,8 +2577,8 @@ function extractFqtvFromQRCode(codeValue, flightNumber = '') {
     return '';
   }
   
-  // Map tier code to tier name based on airline match
-  let tierName = '';
+  // Map tier code to tier letter based on airline match
+  let tierLetter = '';
   if (tier) {
     const tierUpper = tier.toUpperCase();
     
@@ -2575,41 +2587,41 @@ function extractFqtvFromQRCode(codeValue, flightNumber = '') {
                        fqtvAirlineCode.toUpperCase() === flightAirlineCode.toUpperCase();
     
     if (sameAirline) {
-      // Same airline: n1 = Platinum, n2 = Gold, n3 = Silver
+      // Same airline: n1 = P (Platinum), n2 = G (Gold), n3 = S (Silver)
       switch(tierUpper) {
         case 'N1':
-          tierName = 'Platinum';
+          tierLetter = 'P';
           break;
         case 'N2':
-          tierName = 'Gold';
+          tierLetter = 'G';
           break;
         case 'N3':
-          tierName = 'Silver';
+          tierLetter = 'S';
           break;
         default:
-          tierName = tier;
+          tierLetter = tier;
       }
     } else {
-      // Different airline: n1 = Emerald, n2 = Sapphire, n3 = Ruby
+      // Different airline: n1 = P, n2 = G, n3 = S
       switch(tierUpper) {
         case 'N1':
-          tierName = 'Emerald';
+          tierLetter = 'P';
           break;
         case 'N2':
-          tierName = 'Sapphire';
+          tierLetter = 'G';
           break;
         case 'N3':
-          tierName = 'Ruby';
+          tierLetter = 'S';
           break;
         default:
-          tierName = tier;
+          tierLetter = tier;
       }
     }
   }
   
   // Combine FQTV and tier
-  if (fqtv && tierName) {
-    return `${fqtv}/${tierName}`;
+  if (fqtv && tierLetter) {
+    return `${fqtv}/${tierLetter}`;
   } else if (fqtv) {
     return fqtv;
   }
@@ -2661,21 +2673,216 @@ function validateAndFixSeatForRestrictedAirline(flightNumber, seatValue) {
   return seatValue;
 }
 
-// ======== END OF NEW FUNCTIONS ========
+// ----- Auto-correct Seat for Restricted Airlines -----
+function autoCorrectSeatForRestrictedAirline(flightNumber, seatValue) {
+  const correctedSeat = validateAndFixSeatForRestrictedAirline(flightNumber, seatValue);
+  
+  // If seat was corrected, show alert
+  if (correctedSeat !== seatValue && correctedSeat) {
+    showAlert(`Seat auto-corrected from "${seatValue}" to "${correctedSeat}" for restricted airline ${flightNumber.substring(0, 2)}`, false, true);
+  }
+  
+  return correctedSeat;
+}
 
 // ----- Parse code -----
 function parseCode(){
-  // ... the updated parseCode() function ...
-}
-  // Then check seat-pax match for non-restricted airlines
-  if (!isRestricted) {
-    const seatPaxValidation = validateSeatPaxMatch(seatNumber, enteredPax);
-    if (!seatPaxValidation.isValid) {
-      return seatPaxValidation;
+  const code = codeInput.value.trim().toUpperCase();
+  if(!code) return;
+  const parts = code.split(/\s+/);
+
+  const idxMLE = code.indexOf('MLE');
+  let name='', pnr='';
+  if(idxMLE!==-1){
+    let fullNamePart = code.substring(0,idxMLE).trim();
+    if(fullNamePart.length>8){
+      name = fullNamePart.substring(2, fullNamePart.length-7).trim();
+      pnr = fullNamePart.substring(fullNamePart.length-7).trim();
+    }
+  }
+
+  let flightNo=''; let flightTokenIndex=-1;
+  for(let i=0;i<parts.length;i++){
+    if(parts[i].includes('MLE')){
+      flightTokenIndex=i;
+      const mleToken = parts[i];
+      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
+      break;
+    }
+  }
+
+  if(flightNo.length>=2){
+    const iata = flightNo.slice(0,2);
+    airlineSelect.value = airlines[iata]?iata:'';
+  } else airlineSelect.value='';
+
+  let seatNo='';
+  let seatClass='';
+  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
+    let seatToken = parts[flightTokenIndex+2];
+    if(seatToken.length>9){
+      if (seatToken.length >= 4) {
+        seatClass = seatToken.charAt(3);
+      }
+      
+      if (seatToken.length >= 8) {
+        const rowPart = seatToken.substring(4, 7);
+        const seatLetter = seatToken.charAt(7);
+        const rowNumber = parseInt(rowPart, 10).toString();
+        seatNo = rowNumber + seatLetter;
+      }
+    }
+  }
+
+  // FQTV detection - IMPROVED VERSION with P/G/S display
+  let fqtv = '';
+  let fqtvTier = '';
+  let hasNoFqtv = false;
+
+  // First, look for FQTV number and tier in the code
+  // The pattern in your example: QR 243049639 N1
+  // or sometimes: QR 243049639N1 (without space)
+  
+  // Join all parts for better searching
+  const fullCode = code;
+  
+  // Look for QR airline code followed by numbers
+  const qrMatch = fullCode.match(/QR\s*(\d+)\s*(N[0-3])/i);
+  if (qrMatch) {
+    const [, fqtvNumber, tierCode] = qrMatch;
+    fqtv = `QR ${fqtvNumber}`;
+    
+    // Map tier code to tier letter (P/G/S)
+    switch(tierCode.toUpperCase()) {
+      case 'N1':
+        fqtvTier = 'P'; // Platinum
+        break;
+      case 'N2':
+        fqtvTier = 'G'; // Gold
+        break;
+      case 'N3':
+        fqtvTier = 'S'; // Silver
+        break;
+      case 'N0':
+        fqtvTier = 'N0';
+        hasNoFqtv = true;
+        break;
+      default:
+        fqtvTier = tierCode;
     }
   }
   
-  return { isValid: true };
+  // If no QR match, try other airline codes
+  if (!fqtv) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      const nextPart = parts[i + 1] || '';
+      const nextNextPart = parts[i + 2] || '';
+      
+      // Check if this part is an airline code
+      if (part.length === 2 && /^[A-Z]{2}$/.test(part)) {
+        // Check if next part is a number (FQTV number)
+        if (/^\d+$/.test(nextPart)) {
+          fqtv = `${part} ${nextPart}`;
+          
+          // Check for tier in the following parts
+          for (let j = i + 2; j < Math.min(i + 5, parts.length); j++) {
+            const tierPart = parts[j].toUpperCase();
+            if (tierPart.includes('N1')) {
+              fqtvTier = 'P';
+              break;
+            } else if (tierPart.includes('N2')) {
+              fqtvTier = 'G';
+              break;
+            } else if (tierPart.includes('N3')) {
+              fqtvTier = 'S';
+              break;
+            } else if (tierPart === 'N0') {
+              fqtvTier = 'N0';
+              hasNoFqtv = true;
+              break;
+            }
+          }
+          break;
+        }
+        // Check if part itself contains airline code + number (e.g., QR243049639)
+        else if (part.length > 2 && /^[A-Z]{2}\d+$/.test(part)) {
+          const airlineCode = part.substring(0, 2);
+          const fqtvNumber = part.substring(2);
+          fqtv = `${airlineCode} ${fqtvNumber}`;
+          
+          // Check for tier in next parts
+          for (let j = i + 1; j < Math.min(i + 4, parts.length); j++) {
+            const tierPart = parts[j].toUpperCase();
+            if (tierPart.includes('N1')) {
+              fqtvTier = 'P';
+              break;
+            } else if (tierPart.includes('N2')) {
+              fqtvTier = 'G';
+              break;
+            } else if (tierPart.includes('N3')) {
+              fqtvTier = 'S';
+              break;
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+  
+  // Combine FQTV and tier
+  let finalFqtv = '';
+  if (!hasNoFqtv && fqtv) {
+    if (fqtvTier) {
+      finalFqtv = `${fqtv}/${fqtvTier}`;
+    } else {
+      finalFqtv = fqtv;
+    }
+  }
+
+  // SPECIAL HANDLING FOR SQ FLIGHTS
+  if (flightNo.startsWith('SQ')) {
+    seatNo = '';
+    pnr = '';
+  }
+
+  nameInput.value = name;
+  pnrInput.value = pnr;
+  flightInput.value = flightNo;
+  
+  // Auto-correct seat for restricted airlines
+  if (isPaxRestrictedAirline(flightNo) && seatNo) {
+    seatNo = autoCorrectSeatForRestrictedAirline(flightNo, seatNo);
+  }
+  
+  seatInput.value = seatNo;
+  classInput.value = seatClass;
+  fqtvInput.value = finalFqtv;
+  serialInput.value = '';
+  remarksInput.value = '';
+  
+  // Auto-calculate pax based on seat
+  if (seatNo) {
+    const calculatedPax = calculatePaxFromSeatNumber(seatNo);
+    
+    if (isPaxRestrictedAirline(flightNo)) {
+      // Restricted airline - always 1 pax
+      numPaxInput.value = '1';
+      showAlert(`Flight ${flightNo} (${flightNo.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
+    } else {
+      // Auto-calculate for non-restricted airlines
+      numPaxInput.value = calculatedPax;
+      if (calculatedPax > 1) {
+        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatNo}`, false, false, true);
+      }
+    }
+  } else {
+    numPaxInput.value = '1';
+  }
+  
+  // Check seat-pax match
+  checkSeatPaxMatch();
 }
 
 // ----- Initialize Airline Dropdown -----
@@ -2963,8 +3170,17 @@ function saveZoomEntry() {
     return;
   }
   
+  // Auto-correct seat for restricted airlines
+  let correctedSeat = seat;
+  if (isPaxRestrictedAirline(flight)) {
+    correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
+    if (correctedSeat !== seat) {
+      zoomSeatInput.value = correctedSeat;
+    }
+  }
+  
   // Validate seat-pax match
-  const seatPaxValidation = validateSeatPaxMatch(seat, pax);
+  const seatPaxValidation = validateSeatPaxMatch(correctedSeat, pax);
   if (!seatPaxValidation.isValid) {
     showAlert(seatPaxValidation.message, true);
     zoomPaxInput.value = seatPaxValidation.calculatedPax;
@@ -2989,7 +3205,7 @@ function saveZoomEntry() {
     pnr: zoomPnrInput.value.trim(),
     flight: flight,
     airline: zoomAirlineSelect.value,
-    seat: seat,
+    seat: correctedSeat,
     class: zoomClassInput.value.trim(),
     serial: zoomSerialInput.value.trim(),
     remarks: zoomRemarksInput.value.trim(),
@@ -3085,11 +3301,17 @@ function showZoomModalWithField(fieldId, fieldValue) {
   const pax = parseInt(numPaxInput.value) || 1;
   const airline = airlineSelect.value;
   
+  // Auto-correct seat for restricted airlines
+  let correctedSeat = seat;
+  if (isPaxRestrictedAirline(flight)) {
+    correctedSeat = autoCorrectSeatForRestrictedAirline(flight, seat);
+  }
+  
   // Set zoom modal values
   zoomNameInput.value = name;
   zoomFlightInput.value = flight;
   zoomPnrInput.value = pnr;
-  zoomSeatInput.value = seat;
+  zoomSeatInput.value = correctedSeat;
   zoomClassInput.value = seatClass;
   zoomFqtvInput.value = fqtv;
   zoomSerialInput.value = serial;
@@ -3214,7 +3436,14 @@ zoomSaveBtn.addEventListener('click', function() {
   nameInput.value = zoomNameInput.value.trim();
   flightInput.value = zoomFlightInput.value.trim();
   pnrInput.value = zoomPnrInput.value.trim();
-  seatInput.value = zoomSeatInput.value.trim();
+  
+  // Auto-correct seat for restricted airlines
+  let correctedSeat = zoomSeatInput.value.trim();
+  if (isPaxRestrictedAirline(flightInput.value)) {
+    correctedSeat = autoCorrectSeatForRestrictedAirline(flightInput.value, correctedSeat);
+  }
+  
+  seatInput.value = correctedSeat;
   classInput.value = zoomClassInput.value.trim();
   fqtvInput.value = zoomFqtvInput.value.trim();
   serialInput.value = zoomSerialInput.value.trim();
@@ -3407,6 +3636,19 @@ function checkZoomSeatPaxMatch() {
     zoomSeatWarning.style.display = 'none';
     zoomSeatInput.style.borderColor = '';
     zoomPaxInput.style.borderColor = '';
+  }
+}
+
+// ----- Auto-correct Seat for Restricted Airlines -----
+function autoCorrectSeatFromInput(inputElement, flightValue) {
+  const seatValue = inputElement.value.trim();
+  if (!seatValue || !flightValue) return;
+  
+  if (isPaxRestrictedAirline(flightValue)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
+    if (correctedSeat !== seatValue) {
+      inputElement.value = correctedSeat;
+    }
   }
 }
 
@@ -3603,15 +3845,15 @@ async function saveToQRSystem(codeValue) {
     
     const qrData = extractQRDataFromCode(codeValue);
     
-    // FIXED: Correct FFP tier mapping for QR system
+    // FIXED: Correct FFP tier mapping for QR system (P/G/S)
     if (qrData.originalTier) {
       const tierUpper = qrData.originalTier.toUpperCase();
       if (tierUpper === 'N1') {
-        qrData.ffpTier = 'Silver';
+        qrData.ffpTier = 'P'; // Platinum
       } else if (tierUpper === 'N2') {
-        qrData.ffpTier = 'Gold';
+        qrData.ffpTier = 'G'; // Gold
       } else if (tierUpper === 'N3') {
-        qrData.ffpTier = 'Platinum';
+        qrData.ffpTier = 'S'; // Silver
       } else {
         qrData.ffpTier = qrData.originalTier;
       }
@@ -3686,15 +3928,15 @@ function storeQRDataLocally(codeValue) {
   try {
     const qrData = extractQRDataFromCode(codeValue);
     
-    // FIXED: Apply correct tier mapping for local storage too
+    // FIXED: Apply correct tier mapping for local storage too (P/G/S)
     if (qrData.originalTier) {
       const tierUpper = qrData.originalTier.toUpperCase();
       if (tierUpper === 'N1') {
-        qrData.ffpTier = 'Silver';
+        qrData.ffpTier = 'P'; // Platinum
       } else if (tierUpper === 'N2') {
-        qrData.ffpTier = 'Gold';
+        qrData.ffpTier = 'G'; // Gold
       } else if (tierUpper === 'N3') {
-        qrData.ffpTier = 'Platinum';
+        qrData.ffpTier = 'S'; // Silver
       } else {
         qrData.ffpTier = qrData.originalTier;
       }
@@ -3889,8 +4131,18 @@ function extractQRDataFromCode(codeValue) {
         
         if (lastWord.length === 2 && /^[A-Z0-9]{2}$/.test(lastWord.toUpperCase())) {
           originalTier = lastWord.toUpperCase();
-          // Note: We'll fix the tier mapping later in saveToQRSystem
-          ffpTier = originalTier;
+          // Map tier code to letter (P/G/S)
+          if (originalTier === 'N1') {
+            ffpTier = 'P';
+          } else if (originalTier === 'N2') {
+            ffpTier = 'G';
+          } else if (originalTier === 'N3') {
+            ffpTier = 'S';
+          } else if (originalTier === 'N0') {
+            ffpTier = 'N0';
+          } else {
+            ffpTier = originalTier;
+          }
         }
       }
     }
@@ -3959,13 +4211,13 @@ function convertFFPTier(carrierCode, ffpOwner, originalTier) {
   
   const tier = originalTier.toUpperCase();
   
-  // FIXED: Correct tier mapping
+  // FIXED: Correct tier mapping to letters (P/G/S)
   if (tier === 'N1') {
-    return 'Silver';
+    return 'P';
   } else if (tier === 'N2') {
-    return 'Gold';
+    return 'G';
   } else if (tier === 'N3') {
-    return 'Platinum';
+    return 'S';
   } else if (tier === 'N0') {
     return 'N0';
   }
@@ -4462,8 +4714,18 @@ async function approveEntry(index) {
       return;
     }
 
-    // Validate seat-pax match before approval
-    const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
+    // Auto-correct seat for restricted airlines
+    let correctedSeat = entry.seat;
+    if (isPaxRestrictedAirline(entry.flight)) {
+      correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, correctedSeat);
+      if (correctedSeat !== entry.seat) {
+        entry.seat = correctedSeat;
+        localStorage.setItem('codesData', JSON.stringify(data));
+      }
+    }
+
+    // Validate seat-pax match after correction
+    const seatPaxValidation = validateSeatPaxMatch(correctedSeat, entry.numPax);
     if (!seatPaxValidation.isValid) {
       showAlert(`Cannot approve: ${seatPaxValidation.message}`, true);
       isApproving = false;
@@ -4471,7 +4733,7 @@ async function approveEntry(index) {
     }
 
     // Validate pax count before approval
-    const paxValidation = validatePaxCount(entry.flight, entry.seat, entry.numPax);
+    const paxValidation = validatePaxCount(entry.flight, correctedSeat, entry.numPax);
     if (!paxValidation.isValid) {
       showAlert(`Cannot approve: ${paxValidation.message}`, true);
       isApproving = false;
@@ -4486,9 +4748,9 @@ async function approveEntry(index) {
 
     const flightUpper = entry.flight.toUpperCase();
     const nameUpper = entry.name.toUpperCase();
-    const seatUpper = entry.seat.toUpperCase();
+    const seatUpper = correctedSeat.toUpperCase();
     
-    const duplicateCheck = checkDuplicateInCache(entry.flight, entry.seat, currentShiftDate, entry.name);
+    const duplicateCheck = checkDuplicateInCache(entry.flight, correctedSeat, currentShiftDate, entry.name);
     if (duplicateCheck.isDuplicate) {
       showAlert(duplicateCheck.message, true);
       isApproving = false;
@@ -4503,16 +4765,16 @@ async function approveEntry(index) {
     if (entry.fqtv && entry.fqtv.trim() !== '') {
       let fqtvValue = entry.fqtv.trim();
       
-      const tierMatch = fqtvValue.match(/\/(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|G|S)$/i);
+      const tierMatch = fqtvValue.match(/\/(P|G|S|Platinum|Gold|Silver)$/i);
       const hasTier = tierMatch !== null;
       
       if (hasTier) {
         processedFqtv = fqtvValue;
       } else {
-        fqtvValue = fqtvValue.replace(/\/\s*(Sapphire|Emerald|Ruby|Platinum|Gold|Silver|GOLD|SILVER|PLATINUM|SAPPHIRE|EMERALD|RUBY)\s*$/i, '').trim();
+        fqtvValue = fqtvValue.replace(/\/\s*(P|G|S|Platinum|Gold|Silver|GOLD|SILVER|PLATINUM)\s*$/i, '').trim();
         fqtvValue = fqtvValue.replace(/\/[Nn][123]\s*$/, '').trim();
         
-        // FIXED: Use the corrected tier mapping function
+        // FIXED: Use the corrected tier mapping function (returns P/G/S)
         const tierLevel = processFqtvTier(fqtvValue, entry.flight);
         
         if (tierLevel) {
@@ -4561,7 +4823,7 @@ async function approveEntry(index) {
     approvedEntry.docName = docName;
     
     // Save to localStorage first
-    saveToApprovedCache(entry.flight, entry.seat, approvedEntry.date, entry.name, docName);
+    saveToApprovedCache(entry.flight, correctedSeat, approvedEntry.date, entry.name, docName);
     
     let approvedLocalData = JSON.parse(localStorage.getItem('approvedLocalData') || '[]');
     approvedLocalData.push(approvedEntry);
@@ -4804,6 +5066,15 @@ async function saveEntry(entry){
   entry.date = currentShiftDate;
   entry.shift = currentShiftType;
   
+  // Auto-correct seat for restricted airlines
+  if (isPaxRestrictedAirline(entry.flight)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
+    if (correctedSeat !== entry.seat) {
+      entry.seat = correctedSeat;
+      seatInput.value = correctedSeat;
+    }
+  }
+  
   // Validate seat-pax match
   const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
   if (!seatPaxValidation.isValid) {
@@ -5036,6 +5307,16 @@ function handleCellBlur() {
     const entry = data[rowIndex];
     
     if (entry) {
+      // Auto-correct seat for restricted airlines
+      if (cellIndex === 2 && isPaxRestrictedAirline(entry.flight)) {
+        const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
+        if (correctedSeat !== entry.seat) {
+          entry.seat = correctedSeat;
+          row.cells[2].textContent = correctedSeat;
+          localStorage.setItem('codesData', JSON.stringify(data));
+        }
+      }
+      
       // Re-check seat-pax match
       const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
       if (!seatPaxValidation.isValid) {
@@ -5146,7 +5427,15 @@ function saveEditedEntry(rowIndex) {
   // Update entry
   entry.name = updatedName;
   entry.flight = updatedFlight;
-  entry.seat = updatedSeat;
+  
+  // Auto-correct seat for restricted airlines
+  if (isPaxRestrictedAirline(updatedFlight)) {
+    entry.seat = autoCorrectSeatForRestrictedAirline(updatedFlight, updatedSeat);
+    targetRow.cells[2].textContent = entry.seat;
+  } else {
+    entry.seat = updatedSeat;
+  }
+  
   entry.class = updatedClass;
   entry.fqtv = updatedFqtv;
   entry.serial = updatedSerial;
@@ -5154,12 +5443,12 @@ function saveEditedEntry(rowIndex) {
   entry.pnr = updatedPnr;
   
   // Handle seat-pax validation
-  const seatPaxValidation = validateSeatPaxMatch(updatedSeat, updatedNumPax);
+  const seatPaxValidation = validateSeatPaxMatch(entry.seat, updatedNumPax);
   if (!seatPaxValidation.isValid) {
     // Auto-correct pax based on seat
     entry.numPax = seatPaxValidation.calculatedPax;
     targetRow.cells[5].textContent = seatPaxValidation.calculatedPax;
-    showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${updatedSeat}`, false, false, true);
+    showAlert(`Pax auto-corrected to ${seatPaxValidation.calculatedPax} based on seat ${entry.seat}`, false, false, true);
   } else {
     entry.numPax = updatedNumPax;
   }
@@ -5313,199 +5602,6 @@ function deleteEntry(index) {
     renderEntries();
     showAlert('Entry deleted successfully!');
   }
-}
-
-// ----- Parse code -----
-function parseCode(){
-  const code = codeInput.value.trim().toUpperCase();
-  if(!code) return;
-  const parts = code.split(/\s+/);
-
-  const idxMLE = code.indexOf('MLE');
-  let name='', pnr='';
-  if(idxMLE!==-1){
-    let fullNamePart = code.substring(0,idxMLE).trim();
-    if(fullNamePart.length>8){
-      name = fullNamePart.substring(2, fullNamePart.length-7).trim();
-      pnr = fullNamePart.substring(fullNamePart.length-7).trim();
-    }
-  }
-
-  let flightNo=''; let flightTokenIndex=-1;
-  for(let i=0;i<parts.length;i++){
-    if(parts[i].includes('MLE')){
-      flightTokenIndex=i;
-      const mleToken = parts[i];
-      flightNo = mleToken.slice(-2) + (parts[i+1]||'').slice(0,4);
-      break;
-    }
-  }
-
-  if(flightNo.length>=2){
-    const iata = flightNo.slice(0,2);
-    airlineSelect.value = airlines[iata]?iata:'';
-  } else airlineSelect.value='';
-
-  let seatNo='';
-  let seatClass='';
-  if(flightTokenIndex!==-1 && parts[flightTokenIndex+2]){
-    let seatToken = parts[flightTokenIndex+2];
-    if(seatToken.length>9){
-      if (seatToken.length >= 4) {
-        seatClass = seatToken.charAt(3);
-      }
-      
-      if (seatToken.length >= 8) {
-        const rowPart = seatToken.substring(4, 7);
-        const seatLetter = seatToken.charAt(7);
-        const rowNumber = parseInt(rowPart, 10).toString();
-        seatNo = rowNumber + seatLetter;
-      }
-    }
-  }
-
-  // FQTV detection - IMPROVED VERSION
-  let fqtv = '';
-  let fqtvTier = '';
-  let hasNoFqtv = false;
-
-  // First, look for FQTV number and tier in the code
-  // The pattern in your example: QR 243049639 N1
-  // or sometimes: QR 243049639N1 (without space)
-  
-  // Join all parts for better searching
-  const fullCode = code;
-  
-  // Look for QR airline code followed by numbers
-  const qrMatch = fullCode.match(/QR\s*(\d+)\s*(N[0-3])/i);
-  if (qrMatch) {
-    const [, fqtvNumber, tierCode] = qrMatch;
-    fqtv = `QR ${fqtvNumber}`;
-    
-    // Map tier code to tier name
-    switch(tierCode.toUpperCase()) {
-      case 'N1':
-        fqtvTier = 'Platinum';
-        break;
-      case 'N2':
-        fqtvTier = 'Gold';
-        break;
-      case 'N3':
-        fqtvTier = 'Silver';
-        break;
-      case 'N0':
-        fqtvTier = 'N0';
-        break;
-      default:
-        fqtvTier = tierCode;
-    }
-  }
-  
-  // If no QR match, try other airline codes
-  if (!fqtv) {
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      const nextPart = parts[i + 1] || '';
-      const nextNextPart = parts[i + 2] || '';
-      
-      // Check if this part is an airline code
-      if (part.length === 2 && /^[A-Z]{2}$/.test(part)) {
-        // Check if next part is a number (FQTV number)
-        if (/^\d+$/.test(nextPart)) {
-          fqtv = `${part} ${nextPart}`;
-          
-          // Check for tier in the following parts
-          for (let j = i + 2; j < Math.min(i + 5, parts.length); j++) {
-            const tierPart = parts[j].toUpperCase();
-            if (tierPart.includes('N1')) {
-              fqtvTier = 'Platinum';
-              break;
-            } else if (tierPart.includes('N2')) {
-              fqtvTier = 'Gold';
-              break;
-            } else if (tierPart.includes('N3')) {
-              fqtvTier = 'Silver';
-              break;
-            } else if (tierPart === 'N0') {
-              fqtvTier = 'N0';
-              hasNoFqtv = true;
-              break;
-            }
-          }
-          break;
-        }
-        // Check if part itself contains airline code + number (e.g., QR243049639)
-        else if (part.length > 2 && /^[A-Z]{2}\d+$/.test(part)) {
-          const airlineCode = part.substring(0, 2);
-          const fqtvNumber = part.substring(2);
-          fqtv = `${airlineCode} ${fqtvNumber}`;
-          
-          // Check for tier in next parts
-          for (let j = i + 1; j < Math.min(i + 4, parts.length); j++) {
-            const tierPart = parts[j].toUpperCase();
-            if (tierPart.includes('N1')) {
-              fqtvTier = 'Platinum';
-              break;
-            } else if (tierPart.includes('N2')) {
-              fqtvTier = 'Gold';
-              break;
-            } else if (tierPart.includes('N3')) {
-              fqtvTier = 'Silver';
-              break;
-            }
-          }
-          break;
-        }
-      }
-    }
-  }
-  
-  // Combine FQTV and tier
-  let finalFqtv = '';
-  if (!hasNoFqtv && fqtv) {
-    if (fqtvTier) {
-      finalFqtv = `${fqtv}/${fqtvTier}`;
-    } else {
-      finalFqtv = fqtv;
-    }
-  }
-
-  // SPECIAL HANDLING FOR SQ FLIGHTS
-  if (flightNo.startsWith('SQ')) {
-    seatNo = '';
-    pnr = '';
-  }
-
-  nameInput.value = name;
-  pnrInput.value = pnr;
-  flightInput.value = flightNo;
-  seatInput.value = seatNo;
-  classInput.value = seatClass;
-  fqtvInput.value = finalFqtv;
-  serialInput.value = '';
-  remarksInput.value = '';
-  
-  // Auto-calculate pax based on seat
-  if (seatNo) {
-    const calculatedPax = calculatePaxFromSeatNumber(seatNo);
-    
-    if (isPaxRestrictedAirline(flightNo)) {
-      // Restricted airline - always 1 pax
-      numPaxInput.value = '1';
-      showAlert(`Flight ${flightNo} (${flightNo.substring(0, 2)}) allows only 1 passenger per seat`, false, true);
-    } else {
-      // Auto-calculate for non-restricted airlines
-      numPaxInput.value = calculatedPax;
-      if (calculatedPax > 1) {
-        showAlert(`Pax auto-calculated as ${calculatedPax} based on seat ${seatNo}`, false, false, true);
-      }
-    }
-  } else {
-    numPaxInput.value = '1';
-  }
-  
-  // Check seat-pax match
-  checkSeatPaxMatch();
 }
 
 // ----- Barcode Scanner Detection -----
@@ -6223,6 +6319,15 @@ manualSaveBtn.addEventListener('click', async function() {
     approved: false
   };
   
+  // Auto-correct seat for restricted airlines
+  if (isPaxRestrictedAirline(entry.flight)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(entry.flight, entry.seat);
+    if (correctedSeat !== entry.seat) {
+      entry.seat = correctedSeat;
+      seatInput.value = correctedSeat;
+    }
+  }
+  
   // Validate seat-pax match
   const seatPaxValidation = validateSeatPaxMatch(entry.seat, entry.numPax);
   if (!seatPaxValidation.isValid) {
@@ -6256,18 +6361,30 @@ zoomCancelBtn.addEventListener('click', closeZoomModal);
 closeFqtvZoomBtn.addEventListener('click', closeFqtvZoomModal);
 fqtvZoomCancelBtn.addEventListener('click', closeFqtvZoomModal);
 
-// Seat input listeners for real-time validation (FIXED: Only alert on changes)
+// Seat input listeners for real-time validation and auto-correction
 seatInput.addEventListener('input', function() {
   const currentSeat = this.value.trim();
+  const flightValue = flightInput.value.trim();
+  
   if (currentSeat !== lastSeatValue) {
+    // Auto-correct seat for restricted airlines
+    if (flightValue && isPaxRestrictedAirline(flightValue)) {
+      const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, currentSeat);
+      if (correctedSeat !== currentSeat) {
+        this.value = correctedSeat;
+      }
+    }
+    
     checkSeatPaxMatch();
-    lastSeatValue = currentSeat;
+    lastSeatValue = this.value.trim();
     
     // Auto-correct pax based on seat (only for non-restricted airlines)
-    if (currentSeat) {
-      const flightValue = flightInput.value.trim();
+    if (this.value.trim()) {
       if (!isPaxRestrictedAirline(flightValue)) {
         autoCorrectPaxFromSeat(this, numPaxInput);
+      } else {
+        // For restricted airlines, always set pax to 1
+        numPaxInput.value = '1';
       }
     }
   }
@@ -6282,30 +6399,11 @@ numPaxInput.addEventListener('input', function() {
   }
 });
 
-zoomSeatInput.addEventListener('input', function() {
-  checkZoomSeatPaxMatch();
-  // Auto-correct pax based on seat
-  if (this.value.trim()) {
-    const flightValue = zoomFlightInput.value.trim();
-    if (!isPaxRestrictedAirline(flightValue)) {
-      autoCorrectPaxFromSeat(this, zoomPaxInput);
-    }
-  }
-});
-
-zoomFlightInput.addEventListener('input', function() {
-  checkZoomSeatPaxMatch();
-  // Auto-select airline based on flight code
-  if (this.value.length >= 2) {
-    const iata = this.value.substring(0, 2).toUpperCase();
-    if (airlines[iata]) {
-      zoomAirlineSelect.value = iata;
-    }
-  }
-});
-
+// Flight input listener for auto-seat correction
 flightInput.addEventListener('input', function() {
-  checkSeatPaxMatch();
+  const flightValue = this.value.trim();
+  const seatValue = seatInput.value.trim();
+  
   // Auto-select airline based on flight code
   if (this.value.length >= 2) {
     const iata = this.value.substring(0, 2).toUpperCase();
@@ -6313,6 +6411,65 @@ flightInput.addEventListener('input', function() {
       airlineSelect.value = iata;
     }
   }
+  
+  // Auto-correct seat if airline is restricted
+  if (flightValue && seatValue && isPaxRestrictedAirline(flightValue)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
+    if (correctedSeat !== seatValue) {
+      seatInput.value = correctedSeat;
+      showAlert(`Seat auto-corrected from "${seatValue}" to "${correctedSeat}" for restricted airline ${flightValue.substring(0, 2)}`, false, true);
+    }
+  }
+  
+  checkSeatPaxMatch();
+});
+
+zoomSeatInput.addEventListener('input', function() {
+  const flightValue = zoomFlightInput.value.trim();
+  const seatValue = this.value.trim();
+  
+  // Auto-correct seat for restricted airlines
+  if (flightValue && isPaxRestrictedAirline(flightValue)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
+    if (correctedSeat !== seatValue) {
+      this.value = correctedSeat;
+    }
+  }
+  
+  checkZoomSeatPaxMatch();
+  
+  // Auto-correct pax based on seat
+  if (this.value.trim()) {
+    if (!isPaxRestrictedAirline(flightValue)) {
+      autoCorrectPaxFromSeat(this, zoomPaxInput);
+    } else {
+      // For restricted airlines, always set pax to 1
+      zoomPaxInput.value = '1';
+    }
+  }
+});
+
+zoomFlightInput.addEventListener('input', function() {
+  const flightValue = this.value.trim();
+  const seatValue = zoomSeatInput.value.trim();
+  
+  // Auto-select airline based on flight code
+  if (this.value.length >= 2) {
+    const iata = this.value.substring(0, 2).toUpperCase();
+    if (airlines[iata]) {
+      zoomAirlineSelect.value = iata;
+    }
+  }
+  
+  // Auto-correct seat if airline is restricted
+  if (flightValue && seatValue && isPaxRestrictedAirline(flightValue)) {
+    const correctedSeat = autoCorrectSeatForRestrictedAirline(flightValue, seatValue);
+    if (correctedSeat !== seatValue) {
+      zoomSeatInput.value = correctedSeat;
+    }
+  }
+  
+  checkZoomSeatPaxMatch();
 });
 
 refreshShiftBtn.addEventListener('click', refreshShiftData);
@@ -6387,11 +6544,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   console.log("- FIXED: Manual Entry Zoom - Click only (no tab)");
   console.log("- FIXED: FQTV Zoom - Click AND Tab navigation");
   console.log("- FIXED: Seat-Pax alerts only on actual field changes");
-  console.log("- FIXED: FQTV Tier mapping: Same airline: n1=Platinum, n2=Gold, n3=Silver");
-  console.log("- FIXED: FQTV Tier mapping: Different airline: n1=Emerald, n2=Sapphire, n3=Ruby");
+  console.log("- FIXED: FQTV Tier mapping: Shows P/G/S (Platinum/Gold/Silver)");
+  console.log("- FIXED: Auto-correct seats for restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK)");
+  console.log("- FIXED: QR system saves with same tier logic (P/G/S)");
   console.log("- OPTIMIZED: Reduced Firebase reads (30min cache, 15min refresh)");
   console.log("- FIXED: Seat-Pax tally system (1A=1 pax, 1AB=2 pax, 1A/2B=2 pax)");
-  console.log("- FIXED: Restricted airlines (FZ,SQ,EY,QR,BA,MH,DE,GF,EK,VS,MU,HK) = 1 pax only");
+  console.log("- FIXED: Restricted airlines = 1 pax only and single seat only");
   
   clearOldProcessedCodes();
   
