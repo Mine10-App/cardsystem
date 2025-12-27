@@ -2993,14 +2993,40 @@ function parseCode(){
     }
     
     // Combine FQTV and tier
-    let finalFqtv = '';
-    if (!hasNoFqtv && fqtv) {
-        if (fqtvTier) {
-            finalFqtv = `${fqtv}/${fqtvTier}`;
-        } else {
+            // Combine FQTV and tier with proper display
+        let finalFqtv = '';
+        if (!hasNoFqtv && fqtv) {
+            if (fqtvTier) {
+                // For different airlines (not QR and not same), show Emerald/Sapphire/Ruby
+                if (!isQRFlight && flightAirlineCode !== fqtvAirlineCode) {
+                    switch(fqtvTier.toUpperCase()) {
+                        case 'P':
+                        case 'PLATINUM':
+                            finalFqtv = `${fqtv}/Emerald`;
+                            break;
+                        case 'G':
+                        case 'GOLD':
+                            finalFqtv = `${fqtv}/Sapphire`;
+                            break;
+                        case 'S':
+                        case 'SILVER':
+                            finalFqtv = `${fqtv}/Ruby`;
+                            break;
+                        default:
+                            finalFqtv = `${fqtv}/${fqtvTier}`;
+                    }
+                } else {
+                    // QR or same airline: show P/G/S or Platinum/Gold/Silver
+                    finalFqtv = `${fqtv}/${fqtvTier}`;
+                }
+            } else {
+                finalFqtv = fqtv;
+            }
+            console.log("🎯 Final FQTV result:", finalFqtv);
+        } else if (fqtv) {
             finalFqtv = fqtv;
+            console.log("ℹ️ FQTV without tier:", finalFqtv);
         }
-    }
 
     // SPECIAL HANDLING FOR SQ FLIGHTS
     if (flightNo.startsWith('SQ')) {
@@ -4387,6 +4413,7 @@ function convertFFPTier(carrierCode, ffpOwner, originalTier) {
 }
 
 // ----- FIXED: Process FQTV Tier Level with airline-specific mappings -----
+// ----- FIXED: Process FQTV Tier Level with airline-specific mappings -----
 function processFqtvTier(fqtvNumber, flightCode) {
     if (!fqtvNumber || fqtvNumber.trim() === '') return '';
     
@@ -4404,7 +4431,7 @@ function processFqtvTier(fqtvNumber, flightCode) {
     if (letterMatch) {
         existingTier = letterMatch[1];
     }
-    // Check for /Platinum, /Gold, /Silver
+    // Check for /Platinum, /Gold, /Silver, /Emerald, /Sapphire, /Ruby
     const wordMatch = fqtvUpper.match(/\/(PLATINUM|GOLD|SILVER|EMERALD|SAPPHIRE|RUBY)$/i);
     if (wordMatch && !existingTier) {
         existingTier = wordMatch[1].toUpperCase();
@@ -4417,8 +4444,13 @@ function processFqtvTier(fqtvNumber, flightCode) {
     
     console.log("📊 Existing tier in FQTV:", existingTier);
     
-    // If we already have a tier in the FQTV, use it
+    // If we already have a tier in the FQTV, check if it's already Emerald/Sapphire/Ruby
     if (existingTier) {
+        // If it's already Emerald/Sapphire/Ruby, return as-is (for non-QR different airline)
+        if (existingTier === 'EMERALD' || existingTier === 'SAPPHIRE' || existingTier === 'RUBY') {
+            return existingTier;
+        }
+        
         if (isQRFlight) {
             // QR flights: map to P/G/S
             switch(existingTier) {
@@ -4459,7 +4491,7 @@ function processFqtvTier(fqtvNumber, flightCode) {
             });
             
             if (isSameAirline) {
-                // Same airline: map to full words
+                // Same airline (not QR): use full words
                 switch(existingTier) {
                     case 'N1':
                     case 'P':
